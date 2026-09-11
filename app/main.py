@@ -1,0 +1,39 @@
+from pathlib import Path
+
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+
+from app.api.health import router as health_router
+from app.config import settings
+
+
+app = FastAPI(
+    title=settings.app_name,
+    version="0.1.0",
+)
+
+
+FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+app.mount("/static", StaticFiles(directory=FRONTEND_DIR / "static"), name="static")
+
+
+@app.get("/", response_class=FileResponse, include_in_schema=False)
+def landing_page():
+    return FileResponse(FRONTEND_DIR / "index.html", media_type="text/html")
+
+
+@app.get("/api/v1/")
+def root():
+    return {
+        "message": "RHU LabChain backend is running",
+        "node_id": settings.node_id,
+        "node_name": settings.node_name,
+    }
+
+
+app.include_router(
+    health_router,
+    prefix="/api/v1",
+    tags=["System"],
+)

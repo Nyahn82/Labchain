@@ -1,0 +1,24 @@
+[Unit]
+Description=RHU LabChain Node 1 FastAPI
+Wants=network-online.target
+Requires=mysql.service
+After=network-online.target mysql.service
+
+[Service]
+Type=simple
+User=rhuadmin
+Group=rhuadmin
+WorkingDirectory=/opt/rhu-labchain
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+ExecStart=/opt/rhu-labchain/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 5001 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=on-failure
+RestartSec=5
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
