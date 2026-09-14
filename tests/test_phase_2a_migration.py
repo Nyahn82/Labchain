@@ -16,11 +16,13 @@ from app.models import Base
 from test_phase_2a_models import TABLES
 from test_phase_2b_models import TABLES as PHASE_2B_TABLES
 from test_phase_2c_models import TABLES as PHASE_2C_TABLES
+from test_phase_2d_models import TABLES as PHASE_2D_TABLES
 
 ROOT = Path(__file__).resolve().parents[1]
 REVISION = "20260914_01"
 PHASE_2B = "20260914_02"
-HEAD = "20260914_03"
+PHASE_2C = "20260914_03"
+HEAD = "20260914_04"
 
 
 def config(buffer=None):
@@ -64,7 +66,7 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     assert "DROP INDEX" not in downgrade.getvalue()
 
 
-@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, HEAD])
+@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, PHASE_2C, HEAD])
 def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     class Recorder:
         def __init__(self):
@@ -85,7 +87,7 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     recorder = Recorder()
     monkeypatch.setattr(migration, "op", recorder)
     migration.upgrade()
-    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, HEAD: PHASE_2C_TABLES}[revision_id]
+    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, PHASE_2C: PHASE_2C_TABLES, HEAD: PHASE_2D_TABLES}[revision_id]
     assert set(recorder.metadata.tables) == expected
 
     def signature(table):
@@ -101,6 +103,7 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
               fk.ondelete, fk.onupdate) for fk in table.foreign_key_constraints},
             {(str(i.name), tuple(i.columns.keys()), i.unique) for i in table.indexes},
             dict(table.dialect_kwargs),
+            {(str(c.name), str(c.sqltext)) for c in table.constraints if isinstance(c, sa.CheckConstraint)},
         )
 
     for name in expected:

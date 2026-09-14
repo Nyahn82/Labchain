@@ -11,8 +11,8 @@ import pytest
 import sqlalchemy as sa
 
 from app.models import Base
-from test_phase_2a_migration import config, revision, REVISION, PHASE_2B, HEAD
-from test_phase_2c_models import TABLES, UNIQUES
+from test_phase_2a_migration import config, revision, REVISION, PHASE_2B, PHASE_2C as HEAD, HEAD as CURRENT_HEAD
+from test_phase_2c_models import TABLES, UNIQUES, PHASE_2A_TABLES, PHASE_2B_TABLES
 
 ORDER = [
     "lab_order", "order_panel", "lab_order_item", "lab_payment", "specimen",
@@ -44,9 +44,9 @@ def test_single_head_parent_and_offline_mysql_migration(monkeypatch):
 
     monkeypatch.setattr(engine, "connect", no_connection)
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD]
+    assert scripts.get_heads() == [CURRENT_HEAD]
     assert scripts.get_revision(HEAD).down_revision == PHASE_2B
-    assert [r.revision for r in scripts.walk_revisions()] == [HEAD, PHASE_2B, REVISION]
+    assert [r.revision for r in scripts.walk_revisions(head=HEAD)] == [HEAD, PHASE_2B, REVISION]
     upgrade = StringIO()
     command.upgrade(config(upgrade), f"{PHASE_2B}:{HEAD}", sql=True)
     sql = upgrade.getvalue()
@@ -74,7 +74,7 @@ def test_single_head_parent_and_offline_mysql_migration(monkeypatch):
 def workflow_connection():
     engine = sa.create_engine("sqlite://")
     t = Base.metadata.tables
-    previous = set(t) - TABLES
+    previous = PHASE_2A_TABLES | PHASE_2B_TABLES
     try:
         with engine.connect() as c:
             c.exec_driver_sql("PRAGMA foreign_keys=ON")
@@ -92,7 +92,7 @@ def workflow_connection():
             c.commit()
             with Operations.context(MigrationContext.configure(c)):
                 revision(HEAD).upgrade()
-            assert set(sa.inspect(c).get_table_names()) == set(t)
+            assert set(sa.inspect(c).get_table_names()) == previous | TABLES
             for name in ORDER:
                 assert c.scalar(sa.select(sa.func.count()).select_from(t[name])) == 0
                 c.execute(t[name].insert().values(**ROWS[name]))

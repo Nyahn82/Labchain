@@ -1,4 +1,4 @@
-"""Register every Phase 2A/2B/2C model for Alembic without loading database settings."""
+"""Register every Phase 2A/2B/2C/2D model for Alembic without loading database settings."""
 
 from app.models.base import Base
 from app.models.identity import (
@@ -19,6 +19,20 @@ from app.models.workflow import (
     RejectionReason, SpecimenRejection, LabResultItem,
 )
 
+from app.models.reporting import (
+    ReportTemplate, LabReport, ReportResultItem,
+    ReportPatientSnapshot, Signatory, ReportSignatory,
+    ReportVerification, Attachment,
+)
+from app.models.logging import (
+    EmailLog, PrintLog, AuditLog,
+    LoginLog,
+)
+from app.models.blockchain import (
+    BlockchainNode, BlockchainEvent, BlockchainVerificationLog,
+    BlockchainSyncLog,
+)
+
 __all__ = [
     "Base", "FacilityProfile", "Patient", "Staff", "ReferringFacility",
     "RequestingPhysician", "UserAccount", "StaffAccountLink", "PatientAccountLink",
@@ -27,4 +41,11 @@ __all__ = [
     "PanelSection", "PanelTest", "ReferenceRange", "TestInterpretationRule",
     "LabOrder", "OrderPanel", "LabOrderItem", "LabPayment", "Specimen",
     "SpecimenOrderItem", "RejectionReason", "SpecimenRejection", "LabResultItem",
+    "ReportTemplate", "LabReport", "ReportResultItem",
+    "ReportPatientSnapshot", "Signatory", "ReportSignatory",
+    "ReportVerification", "Attachment",
+    "EmailLog", "PrintLog", "AuditLog",
+    "LoginLog",
+    "BlockchainNode", "BlockchainEvent", "BlockchainVerificationLog",
+    "BlockchainSyncLog",
 ]
