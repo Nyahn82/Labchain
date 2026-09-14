@@ -1,0 +1,4 @@
+Restart=on-failure
+ExecStart={ path=/opt/rhu-labchain/.venv/bin/uvicorn ; argv[]=/opt/rhu-labchain/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 5001 --proxy-headers --forwarded-allow-ips=127.0.0.1 ; ignore_errors=no ; start_time=[Sat 2026-09-12 03:49:51 UTC] ; stop_time=[n/a] ; pid=876 ; code=(null) ; status=0/0 }
+User=rhuadmin
+Group=rhuadmin
