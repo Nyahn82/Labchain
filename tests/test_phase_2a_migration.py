@@ -13,19 +13,21 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 from app.models import Base
+from test_phase_2a_models import TABLES
 
 ROOT = Path(__file__).resolve().parents[1]
 REVISION = "20260914_01"
+HEAD = "20260914_02"
 
 
 def config(buffer=None):
     return Config(str(ROOT / "alembic.ini"), output_buffer=buffer)
 
 
-def revision():
+def revision(revision_id=REVISION):
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [REVISION]
-    return scripts.get_revision(REVISION).module
+    assert scripts.get_heads() == [HEAD]
+    return scripts.get_revision(revision_id).module
 
 
 def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
@@ -36,17 +38,18 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
 
     monkeypatch.setattr(engine, "connect", no_connection)
     upgrade = StringIO()
-    command.upgrade(config(upgrade), "head", sql=True)
+    command.upgrade(config(upgrade), REVISION, sql=True)
     sql = upgrade.getvalue()
     created = re.findall(r"CREATE TABLE `?([a-z_]+)`? \(", sql)
-    assert set(created) == set(Base.metadata.tables) | {"alembic_version"}
+    assert set(created) == TABLES | {"alembic_version"}
     assert "ENUM('M','F','Other')" in sql
     assert "ENUM('ACTIVE','INACTIVE','LOCKED')" in sql
     assert sql.count("AUTO_INCREMENT") == 10
     assert sql.count("ENGINE=InnoDB") == 12
     assert "synthetic-test-only" not in sql
     assert "CURRENT_TIMESTAMP" in sql
-    for table in Base.metadata.tables.values():
+    for name in TABLES:
+        table = Base.metadata.tables[name]
         for fk in table.foreign_keys:
             assert created.index(fk.column.table.name) < created.index(table.name)
     downgrade = StringIO()
@@ -58,7 +61,8 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     assert "DROP INDEX" not in downgrade.getvalue()
 
 
-def test_frozen_migration_matches_model_metadata(monkeypatch):
+@pytest.mark.parametrize("revision_id", [REVISION, HEAD])
+def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     class Recorder:
         def __init__(self):
             self.metadata = sa.MetaData()
@@ -74,11 +78,12 @@ def test_frozen_migration_matches_model_metadata(monkeypatch):
             table = self.metadata.tables[table_name]
             sa.Index(name, *(table.c[c] for c in columns), **options)
 
-    migration = revision()
+    migration = revision(revision_id)
     recorder = Recorder()
     monkeypatch.setattr(migration, "op", recorder)
     migration.upgrade()
-    assert set(recorder.metadata.tables) == set(Base.metadata.tables)
+    expected = TABLES if revision_id == REVISION else set(Base.metadata.tables) - TABLES
+    assert set(recorder.metadata.tables) == expected
 
     def signature(table):
         def column(c):
@@ -89,12 +94,14 @@ def test_frozen_migration_matches_model_metadata(monkeypatch):
         return (
             [column(c) for c in table.columns],
             {(type(c).__name__, str(c.name), tuple(c.columns.keys())) for c in table.constraints},
-            {(fk.parent.name, fk.target_fullname, fk.ondelete, fk.onupdate) for fk in table.foreign_keys},
+            {(str(fk.name), tuple((e.parent.name, e.target_fullname) for e in fk.elements),
+              fk.ondelete, fk.onupdate) for fk in table.foreign_key_constraints},
             {(str(i.name), tuple(i.columns.keys()), i.unique) for i in table.indexes},
             dict(table.dialect_kwargs),
         )
 
-    for name, model in Base.metadata.tables.items():
+    for name in expected:
+        model = Base.metadata.tables[name]
         assert signature(recorder.metadata.tables[name]) == signature(model), name
 
 
@@ -117,7 +124,7 @@ def migrated_connection():
 def test_relational_constraints_and_round_trip(migrated_connection):
     c = migrated_connection
     tables = Base.metadata.tables
-    assert set(sa.inspect(c).get_table_names()) == set(tables)
+    assert set(sa.inspect(c).get_table_names()) == TABLES
     c.execute(tables["user_account"].insert(), [
         dict(user_id=i, username=f"test{i}", password_hash="synthetic-hash", account_status="ACTIVE")
         for i in (1, 2)
@@ -167,7 +174,7 @@ def test_alembic_online_environment_reuses_application_engine(monkeypatch):
         command.upgrade(config(), "head")
         with engine.connect() as connection:
             assert set(sa.inspect(connection).get_table_names()) == set(Base.metadata.tables) | {"alembic_version"}
-            assert MigrationContext.configure(connection).get_current_revision() == REVISION
+            assert MigrationContext.configure(connection).get_current_revision() == HEAD
         command.check(config())
         command.downgrade(config(), "base")
         with engine.connect() as connection:
