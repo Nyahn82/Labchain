@@ -99,7 +99,8 @@ def test_enum_values_defaults_and_patient_name_index():
     assert UserAccount.__table__.c.account_status.type.enums == ["ACTIVE", "INACTIVE", "LOCKED"]
     assert Patient.__table__.c.sex.nullable
     assert not UserAccount.__table__.c.account_status.nullable
-    for table in Base.metadata.tables.values():
+    for name in TABLES:
+        table = Base.metadata.tables[name]
         if "created_at" in table.c:
             assert not table.c.created_at.nullable
             assert str(table.c.created_at.server_default.arg) == "CURRENT_TIMESTAMP"

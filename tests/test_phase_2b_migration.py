@@ -10,7 +10,7 @@ import pytest
 import sqlalchemy as sa
 
 from app.models import Base
-from test_phase_2a_migration import config, revision, REVISION as PARENT, HEAD
+from test_phase_2a_migration import config, revision, REVISION as PARENT, PHASE_2B as HEAD
 from test_phase_2a_models import TABLES as PHASE_2A_TABLES
 from test_phase_2b_models import TABLES
 

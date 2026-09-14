@@ -14,10 +14,13 @@ from sqlalchemy.dialects import mysql
 
 from app.models import Base
 from test_phase_2a_models import TABLES
+from test_phase_2b_models import TABLES as PHASE_2B_TABLES
+from test_phase_2c_models import TABLES as PHASE_2C_TABLES
 
 ROOT = Path(__file__).resolve().parents[1]
 REVISION = "20260914_01"
-HEAD = "20260914_02"
+PHASE_2B = "20260914_02"
+HEAD = "20260914_03"
 
 
 def config(buffer=None):
@@ -61,7 +64,7 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     assert "DROP INDEX" not in downgrade.getvalue()
 
 
-@pytest.mark.parametrize("revision_id", [REVISION, HEAD])
+@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, HEAD])
 def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     class Recorder:
         def __init__(self):
@@ -82,7 +85,7 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     recorder = Recorder()
     monkeypatch.setattr(migration, "op", recorder)
     migration.upgrade()
-    expected = TABLES if revision_id == REVISION else set(Base.metadata.tables) - TABLES
+    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, HEAD: PHASE_2C_TABLES}[revision_id]
     assert set(recorder.metadata.tables) == expected
 
     def signature(table):
