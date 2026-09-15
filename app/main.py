@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.api import administration, patients, physicians, referring_facilities, staff
 from app.api.auth import router as auth_router
 from app.api.health import router as health_router
 from app.config import settings
@@ -43,3 +44,6 @@ app.include_router(
     prefix="/api/v1",
     tags=["Authentication"],
 )
+
+for identity_router in (patients.router, staff.router, physicians.router, referring_facilities.router, administration.router):
+    app.include_router(identity_router, prefix="/api/v1")

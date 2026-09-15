@@ -27,3 +27,5 @@ uvicorn==0.52.4
 uvloop==0.22.1
 watchfiles==1.2.0
 websockets==17.1
+email-validator==2.3.0
+dnspython==2.8.0

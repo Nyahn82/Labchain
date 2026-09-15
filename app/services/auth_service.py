@@ -32,7 +32,8 @@ def authenticate(
     user_agent: str | None, previous_token: str | None = None,
 ) -> LoginResult | None:
     with db.begin():
-        user = db.scalar(select(UserAccount).where(UserAccount.username == username))
+        # Serialize session issuance with administrative status changes/revocation.
+        user = db.scalar(select(UserAccount).where(UserAccount.username == username).with_for_update())
         valid = verify_password(password, user.password_hash if user else None)
         now = utc_now()
         allowed = user is not None and valid and user.account_status == "ACTIVE"
