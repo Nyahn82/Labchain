@@ -22,7 +22,8 @@ ROOT = Path(__file__).resolve().parents[1]
 REVISION = "20260914_01"
 PHASE_2B = "20260914_02"
 PHASE_2C = "20260914_03"
-HEAD = "20260914_04"
+PHASE_2D = "20260914_04"
+HEAD = "20260915_01"
 
 
 def config(buffer=None):
@@ -66,7 +67,7 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     assert "DROP INDEX" not in downgrade.getvalue()
 
 
-@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, PHASE_2C, HEAD])
+@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, PHASE_2C, PHASE_2D, HEAD])
 def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     class Recorder:
         def __init__(self):
@@ -87,7 +88,7 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     recorder = Recorder()
     monkeypatch.setattr(migration, "op", recorder)
     migration.upgrade()
-    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, PHASE_2C: PHASE_2C_TABLES, HEAD: PHASE_2D_TABLES}[revision_id]
+    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, PHASE_2C: PHASE_2C_TABLES, PHASE_2D: PHASE_2D_TABLES, HEAD: {"auth_session"}}[revision_id]
     assert set(recorder.metadata.tables) == expected
 
     def signature(table):

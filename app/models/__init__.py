@@ -1,4 +1,4 @@
-"""Register every Phase 2A/2B/2C/2D model for Alembic without loading database settings."""
+"""Register domain and authentication infrastructure models without loading settings."""
 
 from app.models.base import Base
 from app.models.identity import (
@@ -8,6 +8,7 @@ from app.models.auth import (
     PatientAccountLink, Permission, Role, RolePermission,
     StaffAccountLink, UserAccount, UserRole,
 )
+from app.models.auth_session import AuthSession
 
 from app.models.laboratory import (
     LabDepartment, SampleType, TestCatalog, TestSampleType, TestPanel,
@@ -36,7 +37,7 @@ from app.models.blockchain import (
 __all__ = [
     "Base", "FacilityProfile", "Patient", "Staff", "ReferringFacility",
     "RequestingPhysician", "UserAccount", "StaffAccountLink", "PatientAccountLink",
-    "Role", "Permission", "UserRole", "RolePermission",
+    "AuthSession", "Role", "Permission", "UserRole", "RolePermission",
     "LabDepartment", "SampleType", "TestCatalog", "TestSampleType", "TestPanel",
     "PanelSection", "PanelTest", "ReferenceRange", "TestInterpretationRule",
     "LabOrder", "OrderPanel", "LabOrderItem", "LabPayment", "Specimen",

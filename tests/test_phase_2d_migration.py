@@ -12,7 +12,7 @@ import pytest
 import sqlalchemy as sa
 
 from app.models import Base
-from test_phase_2a_migration import config, revision, REVISION, PHASE_2B, PHASE_2C, HEAD
+from test_phase_2a_migration import config, revision, REVISION, PHASE_2B, PHASE_2C, PHASE_2D as HEAD, HEAD as CURRENT_HEAD
 from test_phase_2d_models import TABLES, PREVIOUS_TABLES, UNIQUES, ENUMS
 
 ORDER = [
@@ -64,9 +64,9 @@ def test_single_head_and_offline_mysql_scope(monkeypatch):
 
     monkeypatch.setattr(engine, "connect", no_connection)
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD]
+    assert scripts.get_heads() == [CURRENT_HEAD]
     assert scripts.get_revision(HEAD).down_revision == PHASE_2C
-    assert [r.revision for r in scripts.walk_revisions()] == [HEAD, PHASE_2C, PHASE_2B, REVISION]
+    assert [r.revision for r in scripts.walk_revisions(head=HEAD)] == [HEAD, PHASE_2C, PHASE_2B, REVISION]
     output = StringIO()
     command.upgrade(config(output), f"{PHASE_2C}:{HEAD}", sql=True)
     sql = output.getvalue()
