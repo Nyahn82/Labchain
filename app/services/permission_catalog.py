@@ -4,6 +4,7 @@ from sqlalchemy import select
 from app.models import Permission
 
 PERMISSION_CATALOG = (
+    ('PATIENT_ACCOUNT_ACTIVATE', 'Activate patient accounts', 'Issue activation tokens and read patient activation status.'),
     ('PATIENT_READ', 'Read patients', 'View and search patient records.'),
     ('PATIENT_CREATE', 'Create patients', 'Create patient demographic records.'),
     ('PATIENT_UPDATE', 'Update patients', 'Update patient demographic records.'),

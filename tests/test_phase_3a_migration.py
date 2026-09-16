@@ -14,12 +14,12 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 from app.models import Base
-from test_phase_2a_migration import config, revision, HEAD, PHASE_2D
+from test_phase_2a_migration import config, revision, PHASE_3A as HEAD, PHASE_2D, HEAD as CURRENT_HEAD
 from test_phase_2d_models import TABLES, PREVIOUS_TABLES
 
 
 def test_session_schema_and_only_one_new_infrastructure_table():
-    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {"auth_session"}
+    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {"auth_session", "patient_activation_token"}
     table = Base.metadata.tables["auth_session"]
     assert set(table.c.keys()) == {
         "session_id", "user_id", "token_hash", "csrf_token_hash", "created_at",
@@ -39,9 +39,10 @@ def test_session_schema_and_only_one_new_infrastructure_table():
 
 def test_new_head_offline_mysql_upgrade_and_downgrade():
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD] == ["20260915_01"]
+    assert scripts.get_heads() == [CURRENT_HEAD]
+    assert HEAD == "20260915_01"
     assert scripts.get_revision(HEAD).down_revision == PHASE_2D == "20260914_04"
-    assert len(list(scripts.walk_revisions())) == 5
+    assert len(list(scripts.walk_revisions(head=HEAD))) == 5
     output = StringIO()
     command.upgrade(config(output), f"{PHASE_2D}:{HEAD}", sql=True)
     sql = output.getvalue()

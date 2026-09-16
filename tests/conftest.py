@@ -8,6 +8,7 @@ import pytest
 # Environment variables take precedence over the existing private .env file.
 # Set every application field so tests never use production configuration.
 os.environ.update({
+    "PATIENT_ACTIVATION_TTL_MINUTES": "30",
     "AUTH_SESSION_TTL_MINUTES": "480",
     "AUTH_SESSION_COOKIE_NAME": "rhu_session",
     "AUTH_CSRF_COOKIE_NAME": "rhu_csrf",

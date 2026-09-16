@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     db_user: str
     db_password: SecretStr
 
+    patient_activation_ttl_minutes: int = Field(default=30, ge=1, le=1440)
+
     report_storage_dir: Path | None = None
     public_base_url: str | None = None
     report_signature_dir: Path | None = None

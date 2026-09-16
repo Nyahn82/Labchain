@@ -442,10 +442,10 @@ def test_users_pagination_and_no_credentials(admin):
     assert request(admin, 'GET', '/users?page_size=101').status_code == 422
 
 
-def test_openapi_contract_and_no_schema_change():
+def test_openapi_contract_and_migration_chain():
     from app.main import app
     from alembic.script import ScriptDirectory
-    from test_phase_2a_migration import config
+    from test_phase_2a_migration import config, HEAD
     schema = app.openapi()
     assert set(schema['paths']['/api/v1/patients']) == {'get', 'post'}
     assert set(schema['paths']['/api/v1/patients/{patient_id}']) == {'get', 'patch'}
@@ -453,8 +453,8 @@ def test_openapi_contract_and_no_schema_change():
         assert schema['paths'][BASE + '/' + path]['get']['tags']
     assert 'password_hash' not in json.dumps(schema)
     assert '/api/v1/patients/{patient_id}/account' not in schema['paths']
-    assert ScriptDirectory.from_config(config()).get_heads() == ['20260915_01']
-    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 5
+    assert ScriptDirectory.from_config(config()).get_heads() == [HEAD]
+    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 6
 
 
 def test_account_patient_summary_is_read_only_and_minimal(admin):
