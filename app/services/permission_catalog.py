@@ -1,4 +1,4 @@
-"""Stable Phase 3B/3C/4A permission metadata; never grant permissions implicitly."""
+"""Stable Phase 3B/3C/4A/4B permission metadata; never grant permissions implicitly."""
 
 from sqlalchemy import select
 from app.models import Permission
@@ -39,6 +39,10 @@ PERMISSION_CATALOG = (
     ('SPECIMEN_RECEIVE', 'Receive specimens', 'Record receipt of collected specimens.'),
     ('SPECIMEN_REJECT', 'Reject specimens', 'Reject collected or received specimens.'),
     ('REJECTION_REASON_MANAGE', 'Manage rejection reasons', 'View, create and update specimen rejection reasons.'),
+    ('LAB_RESULT_READ', 'Read laboratory results', 'View result values and encoding/review/verification provenance.'),
+    ('LAB_RESULT_ENTER', 'Enter laboratory results', 'Create results and correct drafts.'),
+    ('LAB_RESULT_REVIEW', 'Review laboratory results', 'Review draft results.'),
+    ('LAB_RESULT_VERIFY', 'Verify laboratory results', 'Verify reviewed results and complete requested tests.'),
 )
 
 

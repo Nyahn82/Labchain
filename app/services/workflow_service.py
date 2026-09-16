@@ -239,7 +239,7 @@ def record_payment(db, order_id, payload, actor_id, ip_address):
 
 
 def start_processing(db, order, items):
-    """Registration starts only REQUESTED entities; completion belongs to 4B."""
+    """Registration or result entry starts only REQUESTED entities."""
     if order.status == 'REQUESTED':
         order.status, order.updated_at = 'IN_PROGRESS', utc_now()
     panel_ids = set()

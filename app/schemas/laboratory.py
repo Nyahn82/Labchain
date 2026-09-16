@@ -218,6 +218,12 @@ class ResolverQuery(Input):
     as_of_date: date
 
 
+class RangeSelection(ResolverQuery):
+    """Internal callers may have unknown demographics; the public query stays strict."""
+    sex: PatientSex | None
+    age_years: Annotated[Decimal, Field(ge=0, allow_inf_nan=False)] | None
+
+
 class RuleFields(Input):
     interpretation_text: Description | None = None
     possible_causes: Description | None = None

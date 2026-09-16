@@ -219,27 +219,35 @@ class ReferenceRangeAmbiguityError(HTTPException):
         super().__init__(409, 'Multiple reference ranges have equal applicability; review configuration.')
 
 
-def resolve_reference_range(db, test_id: int, patient_sex: str, age_years: Decimal,
-                            as_of_date: date) -> ReferenceRange | None:
+def resolve_reference_range(db, test_id: int, patient_sex: str | None, age_years: Decimal | None,
+                            as_of_date: date, *, lock: bool = False) -> ReferenceRange | None:
     """Select configuration by test/sex/age/date; never evaluate a result.
 
     Callers derive age from PATIENT.birth_date as of the desired date. This
-    service receives no patient ID and stores no age. None means no match.
+    service receives no patient ID and stores no age. Unknown age only matches
+    age-unbounded ranges; unknown sex only matches ANY. None means no match.
+    Mutation callers request current shared reads with lock=True.
     """
     try:
-        inputs = s.ResolverQuery(sex=patient_sex, age_years=age_years, as_of_date=as_of_date)
+        inputs = s.RangeSelection(sex=patient_sex, age_years=age_years, as_of_date=as_of_date)
     except ValidationError:
         raise HTTPException(422, 'Invalid reference range selection parameters.') from None
-    get_record(db, TestCatalog, test_id)
-    allowed = ['ANY'] if inputs.sex == 'Other' else [inputs.sex, 'ANY']
-    candidates = list(db.scalars(select(ReferenceRange).where(
+    (related if lock else get_record)(db, TestCatalog, test_id)
+    allowed = ['ANY'] if inputs.sex in {'Other', None} else [inputs.sex, 'ANY']
+    age_conditions = ([ReferenceRange.age_min.is_(None), ReferenceRange.age_max.is_(None)]
+                      if inputs.age_years is None else [
+                          or_(ReferenceRange.age_min.is_(None), ReferenceRange.age_min <= inputs.age_years),
+                          or_(ReferenceRange.age_max.is_(None), ReferenceRange.age_max >= inputs.age_years)])
+    statement = select(ReferenceRange).where(
         ReferenceRange.test_id == test_id, ReferenceRange.is_active.is_(True),
         ReferenceRange.sex.in_(allowed),
-        or_(ReferenceRange.age_min.is_(None), ReferenceRange.age_min <= inputs.age_years),
-        or_(ReferenceRange.age_max.is_(None), ReferenceRange.age_max >= inputs.age_years),
+        *age_conditions,
         or_(ReferenceRange.effective_from.is_(None), ReferenceRange.effective_from <= inputs.as_of_date),
         or_(ReferenceRange.effective_to.is_(None), ReferenceRange.effective_to >= inputs.as_of_date),
-    )))
+    )
+    if lock:
+        statement = statement.with_for_update(read=True).execution_options(populate_existing=True)
+    candidates = list(db.scalars(statement))
     preferred = [row for row in candidates if row.sex == inputs.sex]
     selected = preferred or candidates
     if len(selected) > 1:
