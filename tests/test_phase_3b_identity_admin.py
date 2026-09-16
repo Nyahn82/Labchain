@@ -408,7 +408,7 @@ def test_bootstrap_idempotent_preserves_metadata_and_assignments(api, capsys):
     bootstrap_permissions.main()
     assert 'created 1 permission(s)' in capsys.readouterr().out
     with api.factory() as db:
-        assert count(db, Permission) == 18 and count(db, RolePermission) == 1
+        assert count(db, Permission) == len(PERMISSION_CATALOG) + 1 and count(db, RolePermission) == 1
         permission = db.scalar(select(Permission).where(Permission.permission_code == 'PATIENT_READ'))
         assert permission.permission_name == 'Custom metadata' and permission.description == 'Preserve me'
 
