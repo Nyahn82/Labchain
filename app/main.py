@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from app.api import administration, laboratory, patients, physicians, referring_facilities, staff, workflow, results
+from app.api import administration, laboratory, patients, physicians, referring_facilities, staff, workflow, results, reporting
 from app.api.auth import router as auth_router
 from app.api.health import router as health_router
 from app.config import settings
@@ -53,3 +53,5 @@ app.include_router(laboratory.router, prefix="/api/v1")
 app.include_router(workflow.router, prefix="/api/v1")
 
 app.include_router(results.router, prefix="/api/v1")
+
+app.include_router(reporting.router, prefix="/api/v1")

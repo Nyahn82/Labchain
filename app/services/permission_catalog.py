@@ -1,4 +1,4 @@
-"""Stable Phase 3B/3C/4A/4B permission metadata; never grant permissions implicitly."""
+"""Stable Phase 3B/3C/4A/4B/5A permission metadata; never grant permissions implicitly."""
 
 from sqlalchemy import select
 from app.models import Permission
@@ -43,6 +43,16 @@ PERMISSION_CATALOG = (
     ('LAB_RESULT_ENTER', 'Enter laboratory results', 'Create results and correct drafts.'),
     ('LAB_RESULT_REVIEW', 'Review laboratory results', 'Review draft results.'),
     ('LAB_RESULT_VERIFY', 'Verify laboratory results', 'Verify reviewed results and complete requested tests.'),
+    ('FACILITY_PROFILE_READ', 'Read issuing facility', 'Read the issuing RHU facility profile.'),
+    ('FACILITY_PROFILE_MANAGE', 'Manage issuing facility', 'Configure the single issuing RHU facility.'),
+    ('REPORT_TEMPLATE_READ', 'Read report templates', 'Read and search report templates.'),
+    ('REPORT_TEMPLATE_MANAGE', 'Manage report templates', 'Create, update and deactivate report templates.'),
+    ('SIGNATORY_READ', 'Read signatories', 'Read and search signatory profiles.'),
+    ('SIGNATORY_MANAGE', 'Manage signatories', 'Manage signatory profiles and assign report signatories.'),
+    ('REPORT_READ', 'Read official reports', 'Read official report metadata and snapshots.'),
+    ('REPORT_GENERATE', 'Generate official reports', 'Generate initial reports from completed verified orders.'),
+    ('REPORT_SIGN', 'Sign official reports', 'Sign reports as the linked staff identity.'),
+    ('REPORT_APPROVE', 'Approve official reports', 'Approve generated reports with complete signatures.'),
 )
 
 

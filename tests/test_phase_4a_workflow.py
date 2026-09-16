@@ -534,10 +534,10 @@ def test_all_audits_bootstrap_and_privacy(admin, caplog):
 def test_openapi_phase4a_contract():
     from app.main import app
     paths = app.openapi()['paths']
-    # The dedicated order-results read belongs to Phase 4B.
+    # Order results and reports belong to Phase 4B and Phase 5A respectively.
     phase = {path: methods for path, methods in paths.items() if path.startswith((
         BASE + '/lab-orders', BASE + '/specimens', BASE + '/lab/rejection-reasons'))
-        and not path.endswith('/results')}
+        and not path.endswith(('/results', '/reports'))}
     assert sum(len(methods) for methods in phase.values()) == 15
     assert not any('result' in path for path in phase)
     for methods in phase.values():
