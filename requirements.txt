@@ -29,3 +29,9 @@ watchfiles==1.2.0
 websockets==17.1
 email-validator==2.3.0
 dnspython==2.8.0
+reportlab==5.0.1
+qrcode==8.2
+Pillow==12.3.0
+charset-normalizer==3.5.1
+# PDF artifact assertions in the test suite
+pypdf==6.8.0

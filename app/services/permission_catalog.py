@@ -52,6 +52,11 @@ PERMISSION_CATALOG = (
     ('REPORT_READ', 'Read official reports', 'Read official report metadata and snapshots.'),
     ('REPORT_GENERATE', 'Generate official reports', 'Generate initial reports from completed verified orders.'),
     ('REPORT_SIGN', 'Sign official reports', 'Sign reports as the linked staff identity.'),
+    ('REPORT_RELEASE', 'Release reports', 'Release approved reports as immutable PDF artifacts.'),
+    ('REPORT_DOWNLOAD', 'Download reports', 'Download released and revoked historical PDFs.'),
+    ('REPORT_PRINT', 'Print reports', 'Record each PDF print request.'),
+    ('REPORT_REVOKE', 'Revoke reports', 'Revoke released report verification with a reason.'),
+    ('REPORT_REVISE', 'Revise reports', 'Create a new version from current verified source results.'),
     ('REPORT_APPROVE', 'Approve official reports', 'Approve generated reports with complete signatures.'),
 )
 

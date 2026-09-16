@@ -1,8 +1,9 @@
-"""Phase 5A authenticated reporting endpoints; no release or snapshot edit routes."""
+"""Authenticated snapshot, approval and immutable artifact lifecycle endpoints."""
 from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.api.laboratory import Paging
@@ -12,6 +13,7 @@ from app.models import LabOrder, LabReport, ReportTemplate, Signatory, UserAccou
 from app.schemas import reporting as s
 from app.schemas.identity import Identifier, Page
 from app.services import reporting_service as service
+from app.services import report_release_service as release_service
 from app.services.identity_service import get_record, list_records
 
 router = APIRouter(tags=['Official Reports'], route_class=PrivateRoute)
@@ -131,3 +133,43 @@ def sign_report(report_id: Identifier, payload: s.SignRequest, request: Request,
 def approve_report(report_id: Identifier, request: Request, db: Db,
                    actor: Annotated[UserAccount, Depends(require_permission('REPORT_APPROVE'))]):
     return service.approve_report(db, report_id, actor.user_id, get_request_ip(request))
+
+
+# Artifact lifecycle routes retain PrivateRoute's no-store, RBAC and CSRF behavior.
+
+
+@router.post('/reports/{report_id}/release', response_model=s.ReportDetail)
+def release_report(report_id: Identifier, request: Request, db: Db,
+                   actor: Annotated[UserAccount, Depends(require_permission('REPORT_RELEASE'))]):
+    return release_service.release_report(db, report_id, actor.user_id, get_request_ip(request))
+
+
+@router.get('/reports/{report_id}/pdf', response_class=StreamingResponse,
+            responses={200: {'content': {'application/pdf': {}}}})
+def download_report(report_id: Identifier, request: Request, db: Db,
+                    actor: Annotated[UserAccount, Depends(require_permission('REPORT_DOWNLOAD'))]):
+    return release_service.staff_pdf(db, report_id, actor.user_id, get_request_ip(request))
+
+
+@router.post('/reports/{report_id}/print', response_class=StreamingResponse,
+             responses={200: {'content': {'application/pdf': {}}}})
+def print_report(report_id: Identifier, payload: s.PrintRequest, request: Request, db: Db,
+                 actor: Annotated[UserAccount, Depends(require_permission('REPORT_PRINT'))]):
+    return release_service.staff_pdf(db, report_id, actor.user_id, get_request_ip(request), copies=payload.copies)
+
+
+@router.get('/reports/{report_id}/verification', response_model=s.VerificationResponse)
+def report_verification(report_id: Identifier, db: Db, actor: ReportReader):
+    return release_service.verification_metadata(db, report_id)
+
+
+@router.post('/reports/{report_id}/revoke', response_model=s.ReportDetail)
+def revoke_report(report_id: Identifier, payload: s.RevokeRequest, request: Request, db: Db,
+                  actor: Annotated[UserAccount, Depends(require_permission('REPORT_REVOKE'))]):
+    return release_service.revoke_report(db, report_id, payload, actor.user_id, get_request_ip(request))
+
+
+@router.post('/reports/{report_id}/revise', response_model=s.ReportDetail, status_code=201)
+def revise_report(report_id: Identifier, payload: s.GenerateRequest, request: Request, db: Db,
+                  actor: Annotated[UserAccount, Depends(require_permission('REPORT_REVISE'))]):
+    return release_service.revise_report(db, report_id, payload, actor.user_id, get_request_ip(request))

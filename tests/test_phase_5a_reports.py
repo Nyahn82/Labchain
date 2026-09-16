@@ -461,8 +461,10 @@ def test_historical_configuration_guards_and_no_snapshot_crud(admin):
         assert call(admin, 'DELETE', path).status_code == 405
     for path in ['/report-result-items/1', '/report-patient-snapshot/1']:
         assert call(admin, 'PATCH', path, {}).status_code == 404
-    for path in ['/reports/1/release', '/reports/1/revoke']:
-        assert call(admin, 'POST', path).status_code == 404
+    # Phase 5B adds these routes; the retired template still prevents release,
+    # and revocation requires an explicit reason. Snapshot edits stay absent.
+    assert call(admin, 'POST', '/reports/1/release').status_code == 409
+    assert call(admin, 'POST', '/reports/1/revoke').status_code == 422
 
 
 @pytest.mark.parametrize('action,target', [('generate', 'lab_report'), ('generate', 'report_patient_snapshot'),
@@ -529,7 +531,7 @@ def test_audit_actions_privacy_permissions_and_openapi(admin):
     spec = app.openapi()
     operations = [(path, method) for path, methods in spec['paths'].items() for method, operation in methods.items()
                   if 'Official Reports' in operation.get('tags', [])]
-    assert len(operations) == 19
+    assert len(operations) == 25
     assert all(spec['paths'][path][method]['security'] for path, method in operations)
     assert 'password_hash' not in json.dumps(spec)
 

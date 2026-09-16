@@ -1,6 +1,7 @@
 """Phase 5A allowlisted inputs and historical report outputs."""
 from datetime import date, datetime
-from typing import Literal
+from typing import Annotated, Literal
+from pydantic import Field
 
 from app.schemas.identity import Address, Contact, Email, Identifier, Input, text_field
 from app.schemas.laboratory import Output, Partial, SortOrder
@@ -128,6 +129,8 @@ class ResultSnapshot(Output):
 
 
 class ReportResponse(Output):
+    verification_status: Literal['AUTHENTIC', 'REVOKED'] | None = None
+    is_current_released: bool = False
     report_id: int
     report_code: str
     order_id: int
@@ -155,3 +158,27 @@ class ReportDetail(ReportResponse):
     patient_snapshot: PatientSnapshot | None
     result_snapshots: list[ResultSnapshot]
     signatories: list[ReportSignatoryResponse]
+
+
+class PrintRequest(Input):
+    copies: Annotated[int, Field(strict=True, ge=1, le=20)] = 1
+
+
+class RevokeRequest(Input):
+    reason: text_field(16000)
+
+
+class VerificationResponse(Output):
+    verification_status: Literal['AUTHENTIC', 'REVOKED']
+    created_at: datetime
+    revoked_at: datetime | None
+    report_hash: str
+    verification_url: str
+
+
+class PublicVerificationResponse(Output):
+    status: Literal['VERIFIED', 'REVOKED', 'ALTERED', 'NOT_FOUND']
+    issuing_facility: str | None = None
+    report_date: date | None = None
+    version: int | None = None
+    message: str

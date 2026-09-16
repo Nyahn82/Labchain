@@ -9,7 +9,7 @@ from app.models import (
     FacilityProfile, LabOrder, LabOrderItem, LabReport, LabResultItem, OrderPanel,
     PanelSection, PanelTest, Patient, ReferenceRange, ReportPatientSnapshot,
     ReportResultItem, ReportSignatory, ReportTemplate, RequestingPhysician,
-    Signatory, Staff, StaffAccountLink, TestCatalog, TestPanel,
+    Signatory, Staff, StaffAccountLink, TestCatalog, TestPanel, ReportVerification,
 )
 from app.schemas import reporting as s
 from app.services.auth_service import utc_now
@@ -113,12 +113,20 @@ def report_signatories(db, report_id, *, lock=False):
                                      staff_name=printable_name(staff)) for link, profile, staff in rows]
 
 
+def version_metadata(db, report):
+    verification = db.scalar(select(ReportVerification.verification_status).where(
+        ReportVerification.report_id == report.report_id).order_by(ReportVerification.verification_id.desc()).limit(1))
+    latest = db.scalar(select(LabReport.report_id).where(LabReport.order_id == report.order_id,
+        LabReport.report_status == 'RELEASED').order_by(LabReport.version_no.desc(), LabReport.report_id.desc()).limit(1))
+    return dict(verification_status=verification, is_current_released=latest == report.report_id)
+
+
 def report_detail(db, report_id, *, lock=False):
     report = get_record(db, LabReport, report_id, lock=lock)
     patient = db.scalar(current(select(ReportPatientSnapshot).where(ReportPatientSnapshot.report_id == report_id), lock))
     lines = list(db.scalars(current(select(ReportResultItem).where(ReportResultItem.report_id == report_id)
                                    .order_by(ReportResultItem.sort_order, ReportResultItem.report_result_item_id), lock)))
-    return s.ReportDetail(**fields(report),
+    return s.ReportDetail(**fields(report), **version_metadata(db, report),
         facility=s.FacilityResponse.model_validate(get_record(db, FacilityProfile, report.facility_id, lock=lock)),
         template=s.TemplateResponse.model_validate(get_record(db, ReportTemplate, report.template_id, lock=lock))
                  if report.template_id is not None else None,
@@ -142,7 +150,9 @@ def list_reports(db, *, page, page_size, search=None, order_id=None, status=None
         statement = statement.where(or_(*(field.icontains(search.strip(), autoescape=True) for field in (
             LabReport.report_code, LabOrder.order_code, ReportPatientSnapshot.patient_code, ReportPatientSnapshot.patient_name))))
     total = db.scalar(select(func.count()).select_from(statement.subquery()))
-    rows = list(db.scalars(statement.order_by(LabReport.report_id.desc()).offset((page - 1) * page_size).limit(page_size)))
+    ordering = (LabReport.version_no.desc(), LabReport.report_id.desc()) if order_id is not None else (LabReport.report_id.desc(),)
+    rows = [s.ReportResponse(**fields(row), **version_metadata(db, row)) for row in
+            db.scalars(statement.order_by(*ordering).offset((page - 1) * page_size).limit(page_size))]
     return dict(items=rows, page=page, page_size=page_size, total=total)
 
 
@@ -196,34 +206,40 @@ def snapshot_lines(db, sources):
     return [dict(values, sort_order=index) for index, (_, values) in enumerate(sorted(ordered, key=lambda pair: pair[0]), 1)]
 
 
+def create_report_snapshots(db, order, payload, actor_id, *, version_no=1, supersedes_report_id=None):
+    """Shared initial/revision snapshot builder; caller owns order lock and transaction."""
+    sources = verified_sources(db, order)
+    issuing = facility(db, lock=True)
+    if payload.template_id is not None:
+        template = related(db, ReportTemplate, payload.template_id)
+        if not template.is_active:
+            raise HTTPException(409, 'The selected report template is inactive.')
+    patient = related(db, Patient, order.patient_id)
+    physician = related(db, RequestingPhysician, order.physician_id) if order.physician_id is not None else None
+    now = utc_now()
+    report = LabReport(report_code=f'RPT-{now:%Y%m%d}-{secrets.token_hex(8).upper()}',
+        order_id=order.order_id, facility_id=issuing.facility_id, **payload.model_dump(), version_no=version_no,
+        supersedes_report_id=supersedes_report_id, report_status='GENERATED', generated_by_user_id=actor_id, generated_at=now)
+    db.add(report)
+    db.flush()
+    db.add(ReportPatientSnapshot(report_id=report.report_id, patient_code=patient.patient_code,
+        patient_name=printable_name(patient), birth_date=patient.birth_date,
+        age_at_report=full_years(patient.birth_date, now.date()), sex=patient.sex,
+        physician_name=printable_name(physician) if physician else None))
+    db.add_all(ReportResultItem(report_id=report.report_id, **line) for line in snapshot_lines(db, sources))
+    db.flush()
+    return report, len(sources)
+
+
 @retry_deadlocks
 def generate_report(db, order_id, payload, actor_id, ip_address):
     with mutation(db):
         order = get_record(db, LabOrder, order_id, lock=True)
         if db.scalar(current(select(LabReport.report_id).where(LabReport.order_id == order_id).limit(1))) is not None:
-            raise HTTPException(409, 'A report already exists; use the future report-revision workflow.')
-        sources = verified_sources(db, order)
-        issuing = facility(db, lock=True)
-        if payload.template_id is not None:
-            template = related(db, ReportTemplate, payload.template_id)
-            if not template.is_active:
-                raise HTTPException(409, 'The selected report template is inactive.')
-        patient = related(db, Patient, order.patient_id)
-        physician = related(db, RequestingPhysician, order.physician_id) if order.physician_id is not None else None
-        now = utc_now()
-        report = LabReport(report_code=f'RPT-{now:%Y%m%d}-{secrets.token_hex(8).upper()}',
-            order_id=order_id, facility_id=issuing.facility_id, **payload.model_dump(), version_no=1,
-            supersedes_report_id=None, report_status='GENERATED', generated_by_user_id=actor_id, generated_at=now)
-        db.add(report)
-        db.flush()
-        db.add(ReportPatientSnapshot(report_id=report.report_id, patient_code=patient.patient_code,
-            patient_name=printable_name(patient), birth_date=patient.birth_date,
-            age_at_report=full_years(patient.birth_date, now.date()), sex=patient.sex,
-            physician_name=printable_name(physician) if physician else None))
-        db.add_all(ReportResultItem(report_id=report.report_id, **line) for line in snapshot_lines(db, sources))
-        db.flush()
+            raise HTTPException(409, 'A report already exists; use the report-revision workflow.')
+        report, source_count = create_report_snapshots(db, order, payload, actor_id)
         audit(db, actor_id, 'REPORT_GENERATE', 'lab_report', report.report_id, ip_address,
-              new={'order_id': order_id, 'version_no': 1, 'status': 'GENERATED', 'result_count': len(sources)})
+              new={'order_id': order_id, 'version_no': 1, 'status': 'GENERATED', 'result_count': source_count})
         response = report_detail(db, report.report_id, lock=True)
     return response
 
