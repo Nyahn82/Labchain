@@ -458,7 +458,9 @@ def test_all_audit_actions_and_idempotent_bootstrap(lab_admin):
 def test_openapi_complete_and_scope():
     from app.main import app
     paths = app.openapi()['paths']
-    lab_paths = {path: methods for path, methods in paths.items() if path.startswith(BASE)}
+    # Phase 4A adds rejection reasons under /lab and a separate /lab-orders prefix.
+    lab_paths = {path: methods for path, methods in paths.items()
+                 if path.startswith(BASE + '/') and not path.startswith(BASE + '/rejection-reasons')}
     assert sum(len(methods) for methods in lab_paths.values()) == 32
     for path, methods in lab_paths.items():
         assert 'delete' not in methods

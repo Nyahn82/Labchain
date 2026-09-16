@@ -1,4 +1,4 @@
-"""Stable Phase 3B/3C permission metadata; never grant permissions implicitly."""
+"""Stable Phase 3B/3C/4A permission metadata; never grant permissions implicitly."""
 
 from sqlalchemy import select
 from app.models import Permission
@@ -28,6 +28,17 @@ PERMISSION_CATALOG = (
     ('TEST_PANEL_MANAGE', 'Manage test panels', 'Manage panels, sections and test composition.'),
     ('REFERENCE_RANGE_MANAGE', 'Manage reference ranges', 'Manage reference range configuration and applicability.'),
     ('INTERPRETATION_RULE_MANAGE', 'Manage interpretation rules', 'Manage approved general explanatory text only.'),
+    ('LAB_ORDER_READ', 'Read laboratory orders', 'View orders and their workflow details.'),
+    ('LAB_ORDER_CREATE', 'Create laboratory orders', 'Request individual tests and expand panels.'),
+    ('LAB_ORDER_CANCEL', 'Cancel laboratory orders', 'Cancel unfinished laboratory orders.'),
+    ('PAYMENT_READ', 'Read payment history', 'View laboratory order payment history.'),
+    ('PAYMENT_RECORD', 'Record payment history', 'Append laboratory payment status records.'),
+    ('SPECIMEN_READ', 'Read specimens', 'View specimens, mappings and rejection history.'),
+    ('SPECIMEN_REGISTER', 'Register specimens', 'Register specimens mapped to requested tests.'),
+    ('SPECIMEN_COLLECT', 'Collect specimens', 'Record specimen collection.'),
+    ('SPECIMEN_RECEIVE', 'Receive specimens', 'Record receipt of collected specimens.'),
+    ('SPECIMEN_REJECT', 'Reject specimens', 'Reject collected or received specimens.'),
+    ('REJECTION_REASON_MANAGE', 'Manage rejection reasons', 'View, create and update specimen rejection reasons.'),
 )
 
 
