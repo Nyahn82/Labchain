@@ -9,6 +9,40 @@ recovery, email/SMS delivery, patient self-edit, patient search, internal order 
 specimen workflow access, unreleased results, blockchain runtime and frontend
 work are outside this phase.
 
+## Implementation file inventory
+
+Relative to the intact Phase 5B commit `6d788dba88200f529c2c0040d9f45a19bbd72bbe`,
+Phase 6A adds these 13 files:
+
+* `app/api/patient_activation.py`
+* `app/api/patient_portal.py`
+* `app/dependencies/patient.py`
+* `app/models/patient_activation.py`
+* `app/schemas/patient_portal.py`
+* `app/services/patient_activation_service.py`
+* `app/services/patient_portal_service.py`
+* `migrations/versions/20260916_01_phase_6a_patient_activation.py`
+* `tests/mysql_phase6a_probe.py`
+* `tests/test_phase_6a_migration.py`
+* `tests/test_phase_6a_mysql.py`
+* `tests/test_phase_6a_patient_portal.py`
+* `docs/PHASE_6A_PATIENT_PORTAL.md`
+
+It modifies these nine existing files:
+
+* `.env.example`
+* `app/config.py`
+* `app/main.py`
+* `app/models/__init__.py`
+* `app/services/permission_catalog.py`
+* `tests/conftest.py`
+* `tests/test_phase_2a_migration.py`
+* `tests/test_phase_3a_migration.py`
+* `tests/test_phase_3b_identity_admin.py`
+
+The existing migration tests now distinguish their historical revision from the
+new repository head; previous migration files remain unchanged.
+
 ## Migration and configuration
 
 The one new migration is
@@ -353,8 +387,8 @@ staging exercise. Existing public QR verification does not require these cookies
 
 ## Validation and remaining limitations
 
-Final full-suite result: **989 passed, 0 failed, 0 skipped**, with two existing
-Starlette/httpx/AnyIO deprecation warnings, in 846.29 seconds. The command was
+Full-suite revalidation on 2026-09-19: **989 passed, 0 failed, 0 skipped**, with
+two existing Starlette/httpx/AnyIO deprecation warnings, in 763.74 seconds. The command was
 `python -m pytest -vv -ra --tb=long`. Bidirectional cross-patient detail/PDF
 substitution tests and all eight native MySQL scenarios passed. `pip check`
 passed; Alembic has one head, `20260916_01`. No production migration or restart
@@ -377,3 +411,27 @@ MFA remains pending for Phase 6B. There is no automated identity proofing,
 credential recovery, activation delivery or production rate limiter in this
 phase. Legal/contact identity changes remain staff-managed. Phase 5B artifact
 storage/hash limitations and clinical-result immutability remain unchanged.
+
+## Continuation review — 2026-09-19
+
+The requested Phase 6A implementation was already present when the continuation
+review began. The review found no required application changes. This continuation
+adds the implementation file inventory and refreshes validation evidence in this
+document. The full test log is `/tmp/rhu-phase6a-validation-20260919.log` on the
+validation host; it is temporary evidence, not a deployed application artifact.
+
+All five pre-existing migrations match the intact Phase 5B commit byte for byte.
+The baseline comparison passes `git diff --check`; dependency consistency and the
+single Alembic head were also verified.
+
+The local Git repository has an unresolved metadata fault: commit object
+`68b8ca9427039f16023e7fbe391e827e8ef4becc` is a zero-byte loose object, and both
+`main` and `origin/main` point to it. Normal HEAD-based status/history commands
+fail. The preceding Phase 5B commit remains readable, enabling the explicit
+baseline comparison above. Git metadata was not modified. Recover the missing
+commit object from a trusted remote or backup before normal Git-based release
+work; resetting the branch to the older commit would not recover that history.
+
+No production migration, role/permission bootstrap, service restart or deployment
+was executed during this continuation. Production activation rate limiting remains
+a rollout prerequisite, and MFA remains outside Phase 6A.
