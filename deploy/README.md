@@ -1,3 +1,5 @@
+> **Phase 7A frontend deployment supersedes the legacy frontend instructions below.** Serve compiled Vite assets from `/var/www/rhu-labchain` and follow [the Phase 7A deployment guide](../docs/PHASE_7A_STAFF_FRONTEND.md#hostinger-deployment). Preserve the installed HTTPS/Certbot configuration. The historical `/opt/rhu-labchain/frontend` static root is no longer the production portal root.
+
 # RHU LabChain Phase 1 deployment
 
 This project remains a modular monolith. MySQL holds application data. No patient modules or blockchain implementation are included.

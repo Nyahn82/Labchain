@@ -1,3 +1,5 @@
+> **Phase 7A frontend deployment supersedes the legacy frontend instructions below.** Serve compiled Vite assets from `/var/www/rhu-labchain` and follow [the Phase 7A deployment guide](../docs/PHASE_7A_STAFF_FRONTEND.md#hostinger-deployment). Preserve the installed HTTPS/Certbot configuration. The historical `/opt/rhu-labchain/frontend` static root is no longer the production portal root.
+
 # RHU LabChain frontend and Nginx deployment manual
 
 Run these commands on the Hostinger VPS as `rhuadmin`, using an SSH terminal or Hostinger's VPS browser terminal. Paste one numbered step at a time. Enter your sudo password only at the terminal prompt; nothing appears while you type. Stop on any error and keep the error message for troubleshooting. Do not paste passwords, `.env` contents, or database credentials into chat.
