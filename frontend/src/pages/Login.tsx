@@ -1,21 +1,31 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Activity, ShieldCheck } from "lucide-react";
 import { api } from "../api/client";
 import { useAuth } from "../auth/Auth";
+import { landingFor } from "../auth/PatientAccess";
 import { Alert } from "../components/UI";
-export function Login() {
-  const { user, refresh } = useAuth();
+export function Login({
+  patient = false,
+  challenge = false,
+}: {
+  patient?: boolean;
+  challenge?: boolean;
+}) {
+  const { user, refresh, clear, notice } = useAuth();
   const navigate = useNavigate();
-  const [mfa, setMfa] = useState(false);
+  const location = useLocation();
+  const [mfa, setMfa] = useState(challenge);
   const [recovery, setRecovery] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error>();
-  if (user) return <Navigate to="/dashboard" replace />;
+  if (user && !location.state?.reauthenticate)
+    return <Navigate to={landingFor(user)} replace />;
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const data = new FormData(form);
+    form.reset();
     setBusy(true);
     setError(undefined);
     try {
@@ -40,11 +50,16 @@ export function Login() {
       );
       form.reset();
       if (response?.mfa_required) {
+        clear();
+        if (patient) {
+          navigate("/patient/mfa", { replace: true });
+          return;
+        }
         setMfa(true);
         return;
       }
-      await refresh();
-      navigate("/dashboard", { replace: true });
+      const current = await refresh();
+      navigate(landingFor(current), { replace: true });
     } catch (e) {
       setError(e as Error);
       form.reset();
@@ -58,31 +73,49 @@ export function Login() {
         <div className="brand">
           <Activity size={32} /> RHU LabChain
         </div>
-        <p className="eyebrow">STAFF WEB PORTAL</p>
+        <p className="eyebrow">
+          {patient ? "PATIENT PORTAL" : "STAFF WEB PORTAL"}
+        </p>
         <h1>
           Care starts with
           <br />
           clear results.
         </h1>
         <p>
-          A connected workspace for your laboratory.
+          {patient
+            ? "Your laboratory reports, securely in one place."
+            : "A connected workspace for your laboratory."}
           <br />
-          From patient registration to released reports.
+          {patient
+            ? "Access your reports and manage your account."
+            : "From patient registration to released reports."}
         </p>
         <div className="security-note">
-          <ShieldCheck /> Secure access for authorized staff
+          <ShieldCheck />{" "}
+          {patient
+            ? "Private access to your own reports"
+            : "Secure access for authorized staff"}
         </div>
       </section>
       <section className="login-card card">
-        <p className="eyebrow">YOUR LABORATORY WORKSPACE</p>
+        <p className="eyebrow">
+          {patient ? "YOUR PATIENT ACCOUNT" : "YOUR LABORATORY WORKSPACE"}
+        </p>
         <h2>{mfa ? "Verify your sign-in" : "Welcome back"}</h2>
         <p className="muted">
           {mfa
             ? recovery
               ? "Enter an unused recovery code."
               : "Enter the code from your authenticator."
-            : "Sign in with your staff account to continue."}
+            : patient
+              ? "Sign in to view your released reports."
+              : "Sign in with your staff account to continue."}
         </p>
+        {(notice || location.state?.message) && (
+          <p role="status" className="success">
+            {notice || String(location.state.message)}
+          </p>
+        )}
         <Alert error={error} />
         <form onSubmit={submit}>
           <fieldset disabled={busy}>
@@ -116,7 +149,8 @@ export function Login() {
                   autoComplete="one-time-code"
                   inputMode={recovery ? "text" : "numeric"}
                   required
-                  maxLength={recovery ? 100 : 6}
+                  maxLength={recovery ? 128 : 6}
+                  pattern={recovery ? undefined : "[0-9]{6}"}
                 />
               </label>
             )}
@@ -137,6 +171,7 @@ export function Login() {
                 <button
                   type="button"
                   onClick={() => {
+                    if (patient) navigate("/patient/login", { replace: true });
                     setMfa(false);
                     setError(undefined);
                   }}
@@ -148,8 +183,16 @@ export function Login() {
           </fieldset>
         </form>
         <p className="small muted">
-          Patient access is managed separately. Contact your administrator for
-          account assistance.
+          {patient ? (
+            <>
+              <Link to="/patient/activate">Activate your account</Link> ·{" "}
+              <Link to="/login">Staff sign in</Link>
+            </>
+          ) : (
+            <Link to="/patient/login">Patient sign in or activation</Link>
+          )}
+          <br />
+          <Link to="/verify">Verify a report</Link>
         </p>
       </section>
     </main>

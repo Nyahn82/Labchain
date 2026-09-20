@@ -12,7 +12,7 @@ const source = files
 describe("frontend security boundaries", () => {
   it("has no persistent auth/record storage or HTML injection sinks", () => {
     expect(source).not.toMatch(
-      /\b(localStorage|sessionStorage|dangerouslySetInnerHTML)\b/,
+      /\b(localStorage|sessionStorage|indexedDB|dangerouslySetInnerHTML)\b/,
     );
   });
   it("exposes only the public CSRF cookie name as browser configuration", () => {

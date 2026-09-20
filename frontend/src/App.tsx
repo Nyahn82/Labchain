@@ -10,10 +10,51 @@ import { LabDetail, Laboratory } from "./pages/Laboratory";
 import { CreateOrder, OrderDetail, Orders } from "./pages/Orders";
 import { SpecimenDetail } from "./pages/Specimens";
 import { ReportDetail, Reports } from "./pages/Reports";
+import { PatientRoute } from "./auth/PatientAccess";
+import { PatientShell } from "./layouts/PatientShell";
+import { Activation } from "./pages/patient/Activation";
+import {
+  PatientHome,
+  PatientProfile,
+  PatientReports,
+  AccessHistory,
+} from "./pages/patient/Portal";
+import { PatientReport } from "./pages/patient/PatientReport";
+import { MfaSetup, PatientSecurityPage } from "./pages/patient/Security";
+import { Verification } from "./pages/Verification";
 export function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route
+        path="/patient/login"
+        element={<Login key="patient-login" patient />}
+      />
+      <Route
+        path="/patient/mfa"
+        element={<Login key="patient-mfa" patient challenge />}
+      />
+      <Route path="/patient/activate" element={<Activation />} />
+      <Route path="/verify" element={<Verification />} />
+      <Route path="/verify/:token" element={<Verification />} />
+      <Route element={<PatientRoute />}>
+        <Route path="/patient/setup-mfa" element={<MfaSetup />} />
+        <Route element={<PatientShell />}>
+          <Route path="/patient" element={<PatientHome />} />
+          <Route path="/patient/profile" element={<PatientProfile />} />
+          <Route path="/patient/reports" element={<PatientReports />} />
+          <Route
+            path="/patient/reports/:reportId"
+            element={<PatientReport />}
+          />
+          <Route path="/patient/security" element={<PatientSecurityPage />} />
+          <Route path="/patient/access-history" element={<AccessHistory />} />
+          <Route
+            path="/patient/*"
+            element={<Navigate to="/patient" replace />}
+          />
+        </Route>
+      </Route>
       <Route element={<AuthenticatedRoute />}>
         <Route element={<Shell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />

@@ -3,6 +3,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useRef,
   type ReactNode,
 } from "react";
 import { Navigate, Outlet } from "react-router-dom";
@@ -13,7 +14,8 @@ interface AuthState {
   loading: boolean;
   error: Error | null;
   refresh: () => Promise<User>;
-  clear: () => void;
+  clear: (notice?: string) => void;
+  notice: string | null;
   can: (permission: string) => boolean;
 }
 const AuthContext = createContext<AuthState>(null!);
@@ -28,33 +30,56 @@ export function allowed(user: User | null, permission: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState<string | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  const sessionRequest = useRef<AbortController | null>(null);
   async function refresh() {
-    const current = await api<User>("/auth/me");
-    setUser(current);
-    setError(null);
-    return current;
+    sessionRequest.current?.abort();
+    const controller = new AbortController();
+    sessionRequest.current = controller;
+    try {
+      const current = await api<User>("/auth/me", {
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted)
+        throw new DOMException("Request cancelled", "AbortError");
+      setUser(current);
+      setNotice(null);
+      setError(null);
+      return current;
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
   }
-  function clear() {
+  function clear(message?: string) {
+    sessionRequest.current?.abort();
+    setNotice(message || null);
     setUser(null);
     setError(null);
+    setLoading(false);
   }
   useEffect(() => {
-    let active = true;
-    api<User>("/auth/me")
+    const controller = new AbortController();
+    sessionRequest.current = controller;
+    api<User>("/auth/me", { signal: controller.signal })
       .then((u) => {
-        if (active) setUser(u);
+        if (!controller.signal.aborted) setUser(u);
       })
       .catch((e) => {
-        if (active && !(e instanceof ApiError && e.status === 401)) setError(e);
+        if (
+          !controller.signal.aborted &&
+          !(e instanceof ApiError && e.status === 401)
+        )
+          setError(e);
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       });
     const expired = () => clear();
     window.addEventListener("session-expired", expired);
     return () => {
-      active = false;
+      controller.abort();
+      sessionRequest.current?.abort();
       window.removeEventListener("session-expired", expired);
     };
   }, []);
@@ -66,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error,
         refresh,
         clear,
+        notice,
         can: (p) => allowed(user, p),
       }}
     >
@@ -88,7 +114,15 @@ export function AuthenticatedRoute() {
         <button onClick={() => refresh().catch(() => undefined)}>Retry</button>
       </div>
     );
-  return user ? <Outlet /> : <Navigate to="/login" replace />;
+  return user ? (
+    user.roles.includes("PATIENT") ? (
+      <Navigate to="/patient" replace />
+    ) : (
+      <Outlet />
+    )
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }
 export function PermissionGuard({
   permission,

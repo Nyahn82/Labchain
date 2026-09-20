@@ -71,8 +71,30 @@ export async function api<T = unknown>(
       throw error;
     throw new ApiError(0);
   }
+  if (options.signal?.aborted)
+    throw new DOMException("Request cancelled", "AbortError");
   if (!response.ok) {
     let fields: string[] = [];
+    if (response.status === 403 && !options.public) {
+      try {
+        const body = await response.clone().json();
+        if (
+          body.detail === "MFA_ENROLLMENT_REQUIRED" ||
+          body.detail === "MFA_REQUIRED" ||
+          body.detail === "MFA verification required."
+        )
+          window.dispatchEvent(
+            new CustomEvent("patient-security-required", {
+              detail:
+                body.detail === "MFA verification required."
+                  ? "MFA_REQUIRED"
+                  : body.detail,
+            }),
+          );
+      } catch {
+        /* Only known policy codes are used; raw details are never displayed. */
+      }
+    }
     if (response.status === 422) {
       try {
         const data = await response.json();
@@ -99,7 +121,10 @@ export async function api<T = unknown>(
   }
   if (response.status === 204) return undefined as T;
   try {
-    return (await (options.blob ? response.blob() : response.json())) as T;
+    const data = await (options.blob ? response.blob() : response.json());
+    if (options.signal?.aborted)
+      throw new DOMException("Request cancelled", "AbortError");
+    return data as T;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError")
       throw error;
