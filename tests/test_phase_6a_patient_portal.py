@@ -23,7 +23,10 @@ PASSWORD = 'Synthetic-patient-password-123!'
 
 
 @pytest.fixture
-def portal(api):
+def portal(api, monkeypatch):
+    # Preserve Phase 6A behavior under the supported policy-off configuration.
+    # Phase 6B tests explicitly enable policy and exercise ownership after real MFA.
+    monkeypatch.setattr(settings, 'patient_mfa_required', False)
     for router in (patient_activation.router, patient_portal.router, patients.router, administration.router):
         api.app.include_router(router, prefix='/api/v1')
     with api.factory.begin() as db:

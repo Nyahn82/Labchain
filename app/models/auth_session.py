@@ -23,4 +23,6 @@ class AuthSession(Base):
     ip_address: Mapped[str | None] = mapped_column(String(45))
     user_agent: Mapped[str | None] = mapped_column(String(255))
 
+    mfa_verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+
     user: Mapped["UserAccount"] = relationship("UserAccount", foreign_keys=[user_id])

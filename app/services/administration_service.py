@@ -148,6 +148,8 @@ def update_status(db, user_id, payload, actor_id, ip_address):
         user.account_status = payload.account_status
         user.updated_at = utc_now()
         if payload.account_status in {'INACTIVE', 'LOCKED'}:
+            from app.services.mfa_service import revoke_challenges
+            revoke_challenges(db, user_id, user.updated_at)
             db.execute(update(AuthSession).where(AuthSession.user_id == user_id,
                                                 AuthSession.revoked_at.is_(None))
                        .values(revoked_at=user.updated_at))

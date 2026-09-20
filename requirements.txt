@@ -35,3 +35,6 @@ Pillow==12.3.0
 charset-normalizer==3.5.1
 # PDF artifact assertions in the test suite
 pypdf==6.8.0
+
+pyotp==2.10.0
+cryptography==50.0.1

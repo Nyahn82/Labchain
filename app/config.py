@@ -3,6 +3,7 @@ from typing import Literal
 from urllib.parse import urlsplit
 
 from pydantic import Field, SecretStr, model_validator
+from app.security.mfa_crypto import decode_key
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -19,6 +20,22 @@ class Settings(BaseSettings):
     db_name: str
     db_user: str
     db_password: SecretStr
+
+    mfa_totp_issuer: str = Field(default="RHU LabChain", min_length=1, max_length=100)
+    mfa_challenge_ttl_minutes: int = Field(default=5, ge=1, le=15)
+    mfa_max_challenge_attempts: int = Field(default=5, ge=1, le=10)
+    mfa_totp_valid_window: int = Field(default=1, ge=0, le=1)
+    mfa_recovery_code_count: int = Field(default=8, ge=1, le=20)
+    mfa_secret_encryption_key: SecretStr = Field(repr=False)
+    patient_mfa_required: bool = True
+    mfa_challenge_cookie_name: str = Field(default="rhu_mfa_challenge", pattern=r"^[A-Za-z0-9_-]{1,64}$")
+
+    @model_validator(mode="after")
+    def validate_mfa(self):
+        decode_key(self.mfa_secret_encryption_key.get_secret_value())
+        if self.mfa_challenge_cookie_name in {self.auth_session_cookie_name, self.auth_csrf_cookie_name}:
+            raise ValueError("MFA cookie name must differ from authentication cookie names.")
+        return self
 
     patient_activation_ttl_minutes: int = Field(default=30, ge=1, le=1440)
 

@@ -8,6 +8,14 @@ import pytest
 # Environment variables take precedence over the existing private .env file.
 # Set every application field so tests never use production configuration.
 os.environ.update({
+    "MFA_SECRET_ENCRYPTION_KEY": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+    "MFA_TOTP_ISSUER": "RHU LabChain",
+    "MFA_CHALLENGE_TTL_MINUTES": "5",
+    "MFA_MAX_CHALLENGE_ATTEMPTS": "5",
+    "MFA_TOTP_VALID_WINDOW": "1",
+    "MFA_RECOVERY_CODE_COUNT": "8",
+    "MFA_CHALLENGE_COOKIE_NAME": "rhu_mfa_challenge",
+    "PATIENT_MFA_REQUIRED": "true",
     "PATIENT_ACTIVATION_TTL_MINUTES": "30",
     "AUTH_SESSION_TTL_MINUTES": "480",
     "AUTH_SESSION_COOKIE_NAME": "rhu_session",

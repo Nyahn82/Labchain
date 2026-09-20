@@ -24,7 +24,8 @@ PHASE_2B = "20260914_02"
 PHASE_2C = "20260914_03"
 PHASE_2D = "20260914_04"
 PHASE_3A = "20260915_01"
-HEAD = "20260916_01"
+PHASE_6A = "20260916_01"
+HEAD = "20260920_01"
 
 
 def config(buffer=None):
@@ -68,7 +69,7 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     assert "DROP INDEX" not in downgrade.getvalue()
 
 
-@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, PHASE_2C, PHASE_2D, PHASE_3A, HEAD])
+@pytest.mark.parametrize("revision_id", [REVISION, PHASE_2B, PHASE_2C, PHASE_2D, PHASE_3A, PHASE_6A])
 def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     class Recorder:
         def __init__(self):
@@ -89,7 +90,7 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
     recorder = Recorder()
     monkeypatch.setattr(migration, "op", recorder)
     migration.upgrade()
-    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, PHASE_2C: PHASE_2C_TABLES, PHASE_2D: PHASE_2D_TABLES, PHASE_3A: {"auth_session"}, HEAD: {"patient_activation_token"}}[revision_id]
+    expected = {REVISION: TABLES, PHASE_2B: PHASE_2B_TABLES, PHASE_2C: PHASE_2C_TABLES, PHASE_2D: PHASE_2D_TABLES, PHASE_3A: {"auth_session"}, PHASE_6A: {"patient_activation_token"}}[revision_id]
     assert set(recorder.metadata.tables) == expected
 
     def signature(table):
@@ -110,6 +111,9 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
 
     for name in expected:
         model = Base.metadata.tables[name]
+        if name == 'auth_session':
+            model = model.to_metadata(sa.MetaData(naming_convention=Base.metadata.naming_convention))
+            model._columns.remove(model.c.mfa_verified_at)
         assert signature(recorder.metadata.tables[name]) == signature(model), name
 
 

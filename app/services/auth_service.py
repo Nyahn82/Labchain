@@ -1,6 +1,12 @@
 """Atomic authentication writes. Tokens exist only in memory and browser cookies."""
 
+from __future__ import annotations
+
 import secrets
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.services.mfa_service import ChallengeRequired
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
@@ -30,47 +36,46 @@ class LoginResult:
 def authenticate(
     db: Session, username: str, password: str, *, ip_address: str | None,
     user_agent: str | None, previous_token: str | None = None,
-) -> LoginResult | None:
+) -> LoginResult | ChallengeRequired | None:
     with db.begin():
         # Serialize session issuance with administrative status changes/revocation.
         user = db.scalar(select(UserAccount).where(UserAccount.username == username).with_for_update())
         valid = verify_password(password, user.password_hash if user else None)
         now = utc_now()
         allowed = user is not None and valid and user.account_status == "ACTIVE"
-        db.add(LoginLog(
-            user_id=user.user_id if user else None, username_attempted=username,
-            login_time=now, ip_address=ip_address, status="SUCCESS" if allowed else "FAILED",
-        ))
         if not allowed:
-            # Returning exits the transaction normally: persist the failed attempt.
+            db.add(LoginLog(user_id=user.user_id if user else None, username_attempted=username,
+                login_time=now, ip_address=ip_address, status="FAILED"))
             return None
 
         if password_needs_rehash(user.password_hash):
             user.password_hash = hash_password(password)
-        session_token = secrets.token_urlsafe(32)
-        csrf_token = secrets.token_urlsafe(32)
         if previous_token and len(previous_token) <= 256:
-            # Replace the current browser's old session on successful re-login.
-            db.execute(update(AuthSession).where(
-                AuthSession.token_hash == hash_token(previous_token),
-                AuthSession.revoked_at.is_(None),
-            ).values(revoked_at=now))
-        db.add(AuthSession(
-            user_id=user.user_id, token_hash=hash_token(session_token),
-            csrf_token_hash=hash_token(csrf_token), created_at=now,
-            expires_at=now + timedelta(minutes=settings.auth_session_ttl_minutes),
-            ip_address=ip_address, user_agent=user_agent[:255] if user_agent else None,
-        ))
-        user.last_login_at = now
-        db.add(AuditLog(
-            user_id=user.user_id, action="AUTH_LOGIN", entity_type="user_account",
-            record_id=user.user_id, ip_address=ip_address, created_at=now,
-        ))
-        account = LoginResponse(
-            user_id=user.user_id, username=user.username, account_status=user.account_status,
-            roles=get_user_roles(db, user.user_id),
-        )
-    return LoginResult(account, session_token, csrf_token)
+            db.execute(update(AuthSession).where(AuthSession.token_hash == hash_token(previous_token),
+                AuthSession.revoked_at.is_(None)).values(revoked_at=now))
+        from app.services.mfa_service import configuration, enabled, create_challenge
+        if enabled(configuration(db, user.user_id)):
+            return create_challenge(db, user, ip_address, user_agent)
+        result = complete_login(db, user, ip_address, user_agent)
+    return result
+
+
+def complete_login(db, user, ip_address, user_agent, *, mfa_verified_at=None):
+    """Called only after all required credentials pass; caller owns the commit."""
+    now = utc_now()
+    session_token, csrf_token = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
+    db.add(AuthSession(user_id=user.user_id, token_hash=hash_token(session_token),
+        csrf_token_hash=hash_token(csrf_token), created_at=now,
+        expires_at=now+timedelta(minutes=settings.auth_session_ttl_minutes),
+        ip_address=ip_address, user_agent=user_agent[:255] if user_agent else None,
+        mfa_verified_at=mfa_verified_at))
+    user.last_login_at = now
+    db.add(LoginLog(user_id=user.user_id, username_attempted=user.username,
+        login_time=now, ip_address=ip_address, status="SUCCESS"))
+    db.add(AuditLog(user_id=user.user_id, action="AUTH_LOGIN", entity_type="user_account",
+        record_id=user.user_id, ip_address=ip_address, created_at=now))
+    return LoginResult(LoginResponse(user_id=user.user_id, username=user.username,
+        account_status=user.account_status, roles=get_user_roles(db, user.user_id)), session_token, csrf_token)
 
 
 def revoke_session(db: Session, session: AuthSession, ip_address: str | None) -> None:

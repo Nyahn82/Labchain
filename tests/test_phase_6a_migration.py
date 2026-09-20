@@ -14,12 +14,12 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
 from app.models import Base
-from test_phase_2a_migration import config, revision, HEAD, PHASE_3A
+from test_phase_2a_migration import config, revision, PHASE_6A as HEAD, PHASE_3A, HEAD as CURRENT_HEAD
 from test_phase_2d_models import TABLES, PREVIOUS_TABLES
 
 
 def test_activation_model_and_exact_infrastructure_scope():
-    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {'auth_session', 'patient_activation_token'}
+    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {'auth_session', 'patient_activation_token', 'user_totp_mfa', 'mfa_recovery_code', 'mfa_challenge'}
     table = Base.metadata.tables['patient_activation_token']
     assert set(table.c.keys()) == {'activation_token_id', 'patient_id', 'token_hash', 'issued_by_user_id',
         'created_at', 'expires_at', 'used_at', 'revoked_at'}
@@ -36,9 +36,10 @@ def test_activation_model_and_exact_infrastructure_scope():
 
 def test_one_new_head_and_offline_mysql_scope():
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD] == ['20260916_01']
+    assert scripts.get_heads() == [CURRENT_HEAD]
+    assert HEAD == '20260916_01'
     assert scripts.get_revision(HEAD).down_revision == PHASE_3A == '20260915_01'
-    assert len(list(scripts.walk_revisions())) == 6
+    assert len(list(scripts.walk_revisions(head=HEAD))) == 6
     output = StringIO()
     command.upgrade(config(output), f'{PHASE_3A}:{HEAD}', sql=True)
     sql = output.getvalue()
@@ -65,7 +66,9 @@ def test_activation_constraints_and_downgrade_preserve_existing_data():
         db.execute(tables['user_account'].insert().values(user_id=1, username='synthetic', password_hash='synthetic', account_status='ACTIVE'))
         db.execute(tables['patient'].insert().values(patient_id=1, patient_code='SYNTH', first_name='Synthetic', last_name='Patient'))
         previous = set(sa.inspect(db).get_table_names())
-        before = {name: db.execute(sa.select(tables[name])).all() for name in previous}
+        historical = sa.MetaData()
+        historical.reflect(bind=db)
+        before = {name: db.execute(sa.select(historical.tables[name])).all() for name in previous}
         with Operations.context(MigrationContext.configure(db)): revision(HEAD).upgrade()
         now = datetime(2026, 9, 16)
         table = tables['patient_activation_token']
@@ -80,7 +83,7 @@ def test_activation_constraints_and_downgrade_preserve_existing_data():
             with db.begin_nested(), pytest.raises(sa.exc.IntegrityError): db.execute(tables[name].delete())
         with Operations.context(MigrationContext.configure(db)): revision(HEAD).downgrade()
         assert set(sa.inspect(db).get_table_names()) == previous
-        assert {name: db.execute(sa.select(tables[name])).all() for name in previous} == before
+        assert {name: db.execute(sa.select(historical.tables[name])).all() for name in previous} == before
     engine.dispose()
 
 

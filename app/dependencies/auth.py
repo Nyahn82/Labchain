@@ -71,6 +71,16 @@ def get_current_session(
     if session is None or session.user.account_status != "ACTIVE":
         raise HTTPException(401, "Authentication required.")
     validate_csrf(request, session)
+    if limited_patient_session(db, session):
+        allowed = {
+            ('GET', '/api/v1/auth/me'), ('POST', '/api/v1/auth/logout'),
+            ('GET', '/api/v1/patient/security'), ('POST', '/api/v1/patient/mfa/totp/enroll'),
+            ('POST', '/api/v1/patient/mfa/totp/confirm'),
+        }
+        if (request.method, request.url.path) not in allowed:
+            from app.services.mfa_service import configuration, enabled
+            reason = 'MFA_REQUIRED' if enabled(configuration(db, session.user_id, lock=False)) else 'MFA_ENROLLMENT_REQUIRED'
+            raise HTTPException(403, reason)
     return session
 
 
@@ -109,3 +119,10 @@ def require_permission(*permission_codes: str):
         return user
 
     return dependency
+
+
+def limited_patient_session(db, session):
+    if not settings.patient_mfa_required or 'PATIENT' not in get_user_roles(db, session.user_id):
+        return False
+    from app.services.mfa_service import configuration, enabled
+    return session.mfa_verified_at is None or not enabled(configuration(db, session.user_id, lock=False))

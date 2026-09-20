@@ -9,6 +9,7 @@ from app.models.auth import (
     StaffAccountLink, UserAccount, UserRole,
 )
 from app.models.auth_session import AuthSession
+from app.models.mfa import UserTotpMfa, MfaRecoveryCode, MfaChallenge
 from app.models.patient_activation import PatientActivationToken
 
 from app.models.laboratory import (
@@ -38,7 +39,7 @@ from app.models.blockchain import (
 __all__ = [
     "Base", "FacilityProfile", "Patient", "Staff", "ReferringFacility",
     "RequestingPhysician", "UserAccount", "StaffAccountLink", "PatientAccountLink",
-    "AuthSession", "PatientActivationToken", "Role", "Permission", "UserRole", "RolePermission",
+    "UserTotpMfa", "MfaRecoveryCode", "MfaChallenge", "AuthSession", "PatientActivationToken", "Role", "Permission", "UserRole", "RolePermission",
     "LabDepartment", "SampleType", "TestCatalog", "TestSampleType", "TestPanel",
     "PanelSection", "PanelTest", "ReferenceRange", "TestInterpretationRule",
     "LabOrder", "OrderPanel", "LabOrderItem", "LabPayment", "Specimen",

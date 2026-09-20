@@ -7,14 +7,14 @@ from sqlalchemy.orm import Session
 
 from app.api.private import PrivateRoute
 from app.dependencies.auth import get_db, get_request_ip
-from app.dependencies.patient import PatientContext, get_current_patient
+from app.dependencies.patient import PatientContext, require_patient_mfa
 from app.schemas import patient_portal as s
 from app.schemas.identity import Identifier, Page
 from app.services import patient_portal_service as service
 
 router = APIRouter(prefix='/patient', tags=['Patient Portal'], route_class=PrivateRoute)
 Db = Annotated[Session, Depends(get_db)]
-CurrentPatient = Annotated[PatientContext, Depends(get_current_patient)]
+CurrentPatient = Annotated[PatientContext, Depends(require_patient_mfa)]
 
 
 @router.get('/me', response_model=s.PatientProfile)
