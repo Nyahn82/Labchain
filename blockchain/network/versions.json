@@ -1,0 +1,15 @@
+{
+  "reviewed_on": "2026-09-20",
+  "fabric_version": "2.5.16",
+  "fabric_linux_amd64_sha256": "18c91e7f2f11b601e6622cc70454d568af897707ee9adf111e9fa91a233881bf",
+  "peer_image": "ghcr.io/hyperledger/fabric-peer:2.5.16@sha256:58979b65744b5e7f775d5c65af3831d9beb344d8294c6aa82cbae59e7f7760d6",
+  "orderer_image": "ghcr.io/hyperledger/fabric-orderer:2.5.16@sha256:1d918fc7e1e05b28a9a2f91a61f6435d058f156ef97b5005271de66fbf1370f1",
+  "chaincode_base_image": "node:22.23.2-bookworm-slim@sha256:48e4b67d85f87bd551df43704e24d252f56cc5f8e9718841aace50f19948f0f9",
+  "chaincode_image": "rhu-labchain-anchor:1.0.0",
+  "fabric_contract_api": "2.5.8",
+  "fabric_shim": "2.5.8",
+  "ca_service": null,
+  "identity_bootstrap": "cryptogen 2.5.16, academic prototype only",
+  "validated_compose": "2.39.4",
+  "minimum_compose": "2.24.0"
+}

@@ -1,0 +1,27 @@
+# Prototype bootstrap ONLY. Retain signing CAs offline, never in node bundles.
+OrdererOrgs:
+  - Name: Orderer
+    Domain: orderer.labchain.internal
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: orderer
+        SANS: [node4.labchain.internal, localhost, 127.0.0.1]
+PeerOrgs:
+  - Name: Org1
+    Domain: org1.labchain.internal
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: peer1
+        SANS: [node1.labchain.internal, localhost, 127.0.0.1]
+      - Hostname: peer2
+        SANS: [node2.labchain.internal, localhost, 127.0.0.1]
+    Users: {Count: 0}
+  - Name: Org2
+    Domain: org2.labchain.internal
+    EnableNodeOUs: true
+    Specs:
+      - Hostname: peer3
+        SANS: [node3.labchain.internal, localhost, 127.0.0.1]
+      - Hostname: peer4
+        SANS: [node4.labchain.internal, localhost, 127.0.0.1]
+    Users: {Count: 0}

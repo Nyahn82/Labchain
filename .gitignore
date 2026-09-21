@@ -12,3 +12,24 @@ frontend/node_modules/
 frontend/dist/
 frontend/coverage/
 frontend/*.tsbuildinfo
+
+# Phase 8A: generated Fabric identities, ledgers, bundles and local tooling
+blockchain/**/node_modules/
+blockchain/**/coverage/
+blockchain/network/tools/
+blockchain/network/runtime/
+blockchain/network/generated/
+blockchain/network/artifacts/
+blockchain/network/bundles/
+blockchain/**/crypto-config/
+blockchain/**/organizations/
+blockchain/**/wallet/
+blockchain/**/wallets/
+blockchain/**/*_sk
+blockchain/**/*.key
+blockchain/**/*.pem
+blockchain/**/*.p12
+blockchain/**/*.pfx
+blockchain/**/keystore/
+blockchain/**/*.tar.gz
+blockchain/**/*.tgz

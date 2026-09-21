@@ -1,0 +1,16 @@
+{
+  "name": "labchain-anchor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Append-only non-clinical integrity anchors for RHU LabChain",
+  "main": "index.js",
+  "engines": { "node": ">=22 <23" },
+  "scripts": {
+    "start": "fabric-chaincode-node server",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "fabric-contract-api": "2.5.8",
+    "fabric-shim": "2.5.8"
+  }
+}

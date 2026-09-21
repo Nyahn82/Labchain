@@ -1,0 +1,76 @@
+# Paths resolve relative to this copied configuration in generated/.
+Organizations:
+  - &OrdererOrg
+    Name: OrdererOrg
+    ID: OrdererMSP
+    MSPDir: crypto-config/ordererOrganizations/orderer.labchain.internal/msp
+    Policies:
+      Readers: {Type: Signature, Rule: "OR('OrdererMSP.member')"}
+      Writers: {Type: Signature, Rule: "OR('OrdererMSP.member')"}
+      Admins: {Type: Signature, Rule: "OR('OrdererMSP.admin')"}
+    OrdererEndpoints: [node4.labchain.internal:7050]
+  - &Org1
+    Name: Org1
+    ID: Org1MSP
+    MSPDir: crypto-config/peerOrganizations/org1.labchain.internal/msp
+    Policies:
+      Readers: {Type: Signature, Rule: "OR('Org1MSP.admin', 'Org1MSP.peer', 'Org1MSP.client')"}
+      Writers: {Type: Signature, Rule: "OR('Org1MSP.admin', 'Org1MSP.client')"}
+      Admins: {Type: Signature, Rule: "OR('Org1MSP.admin')"}
+      Endorsement: {Type: Signature, Rule: "OR('Org1MSP.peer')"}
+    AnchorPeers: [{Host: node1.labchain.internal, Port: 7051}]
+  - &Org2
+    Name: Org2
+    ID: Org2MSP
+    MSPDir: crypto-config/peerOrganizations/org2.labchain.internal/msp
+    Policies:
+      Readers: {Type: Signature, Rule: "OR('Org2MSP.admin', 'Org2MSP.peer', 'Org2MSP.client')"}
+      Writers: {Type: Signature, Rule: "OR('Org2MSP.admin', 'Org2MSP.client')"}
+      Admins: {Type: Signature, Rule: "OR('Org2MSP.admin')"}
+      Endorsement: {Type: Signature, Rule: "OR('Org2MSP.peer')"}
+    AnchorPeers: [{Host: node3.labchain.internal, Port: 7051}]
+Capabilities:
+  Channel: &ChannelCapabilities {V2_0: true}
+  Orderer: &OrdererCapabilities {V2_0: true}
+  Application: &ApplicationCapabilities {V2_5: true}
+Application: &ApplicationDefaults
+  Organizations: []
+  Policies:
+    Readers: {Type: ImplicitMeta, Rule: "ANY Readers"}
+    Writers: {Type: ImplicitMeta, Rule: "ANY Writers"}
+    Admins: {Type: ImplicitMeta, Rule: "MAJORITY Admins"}
+    LifecycleEndorsement: {Type: ImplicitMeta, Rule: "MAJORITY Endorsement"}
+    Endorsement: {Type: Signature, Rule: "AND('Org1MSP.peer','Org2MSP.peer')"}
+  Capabilities: *ApplicationCapabilities
+Orderer: &OrdererDefaults
+  OrdererType: etcdraft
+  EtcdRaft:
+    Consenters:
+      - Host: node4.labchain.internal
+        Port: 7050
+        ClientTLSCert: crypto-config/ordererOrganizations/orderer.labchain.internal/orderers/orderer.orderer.labchain.internal/tls/server.crt
+        ServerTLSCert: crypto-config/ordererOrganizations/orderer.labchain.internal/orderers/orderer.orderer.labchain.internal/tls/server.crt
+  BatchTimeout: 2s
+  BatchSize: {MaxMessageCount: 10, AbsoluteMaxBytes: 99 MB, PreferredMaxBytes: 512 KB}
+  Organizations: []
+  Policies:
+    Readers: {Type: ImplicitMeta, Rule: "ANY Readers"}
+    Writers: {Type: ImplicitMeta, Rule: "ANY Writers"}
+    Admins: {Type: ImplicitMeta, Rule: "MAJORITY Admins"}
+    BlockValidation: {Type: ImplicitMeta, Rule: "ANY Writers"}
+  Capabilities: *OrdererCapabilities
+Channel: &ChannelDefaults
+  Policies:
+    Readers: {Type: ImplicitMeta, Rule: "ANY Readers"}
+    Writers: {Type: ImplicitMeta, Rule: "ANY Writers"}
+    Admins: {Type: ImplicitMeta, Rule: "MAJORITY Admins"}
+  Capabilities: *ChannelCapabilities
+Profiles:
+  LabchainChannel:
+    <<: *ChannelDefaults
+    Orderer:
+      <<: *OrdererDefaults
+      Organizations: [*OrdererOrg]
+    Application:
+      <<: *ApplicationDefaults
+      Organizations: [*Org1, *Org2]

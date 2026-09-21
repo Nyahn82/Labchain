@@ -1091,4 +1091,4 @@ tests/test_phase_7a_frontend_hosting.py::test_asset_boundary_rejects_escape_and_
     _PortalFactoryType = Callable[[], AbstractContextManager[anyio.abc.BlockingPortal]]
 
 -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-================= 1075 passed, 2 warnings in 862.93s (0:14:22) =================
+================= 1075 passed, 2 warnings in 866.29s (0:14:26) =================
