@@ -14,6 +14,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+import yaml
+
 NETWORK = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('single_vps', NETWORK/'scripts/single_vps.py')
 single = importlib.util.module_from_spec(spec)
@@ -92,6 +94,74 @@ class SingleComposeTests(unittest.TestCase):
                 single.validate_compose(config)
 
 
+    def test_vm_endpoint_environment_is_rejected_on_every_peer(self):
+        for i in range(1, 5):
+            for endpoint in ['', 'unix:///var/run/docker.sock', 'disabled', 'none']:
+                config = copy.deepcopy(self.config)
+                config['services'][f'peer{i}']['environment']['CORE_VM_ENDPOINT'] = endpoint
+                with self.subTest(peer=i, endpoint=endpoint), self.assertRaisesRegex(ValueError, 'CORE_VM_ENDPOINT'):
+                    single.validate_compose(config)
+
+    def test_docker_control_socket_mount_is_rejected_on_every_peer(self):
+        for i in range(1, 5):
+            for source, target in [('/var/run/docker.sock', '/var/run/docker.sock'),
+                                   ('/run/docker.sock', '/control.sock')]:
+                config = copy.deepcopy(self.config)
+                config['services'][f'peer{i}']['volumes'].append(
+                    {'type': 'bind', 'source': source, 'target': target, 'read_only': True})
+                with self.subTest(peer=i, source=source), self.assertRaisesRegex(ValueError, 'Docker control socket'):
+                    single.validate_compose(config)
+
+    def test_reviewed_core_must_be_mounted_read_only_and_selected_by_every_peer(self):
+        for i in range(1, 5):
+            for mutation in ['missing', 'source', 'target', 'writable', 'create', 'cfg_path', 'cfg_missing']:
+                config = copy.deepcopy(self.config)
+                peer = config['services'][f'peer{i}']
+                mount = next(v for v in peer['volumes'] if v['target'] == '/etc/hyperledger/fabric/core.yaml')
+                if mutation == 'missing': peer['volumes'].remove(mount)
+                if mutation == 'source': mount['source'] = str(NETWORK/'tools/config/core.yaml')
+                if mutation == 'target': mount['target'] = '/unused/core.yaml'
+                if mutation == 'writable': mount['read_only'] = False
+                if mutation == 'create': mount.setdefault('bind', {})['create_host_path'] = True
+                if mutation == 'cfg_path': peer['environment']['FABRIC_CFG_PATH'] = '/unused'
+                if mutation == 'cfg_missing': del peer['environment']['FABRIC_CFG_PATH']
+                with self.subTest(peer=i, mutation=mutation), self.assertRaises(ValueError):
+                    single.validate_compose(config)
+
+    def test_ccaas_builder_configuration_is_required_on_every_peer(self):
+        for i in range(1, 5):
+            for value in [None, '[]', 'invalid-json', '[{"name":"docker","path":"/tmp"}]']:
+                config = copy.deepcopy(self.config)
+                env = config['services'][f'peer{i}']['environment']
+                if value is None:
+                    del env['CORE_CHAINCODE_EXTERNALBUILDERS']
+                else:
+                    env['CORE_CHAINCODE_EXTERNALBUILDERS'] = value
+                with self.subTest(peer=i, value=value), self.assertRaisesRegex(ValueError, 'CCAAS'):
+                    single.validate_compose(config)
+
+    def test_active_vm_endpoint_in_core_is_rejected_even_if_empty(self):
+        core = yaml.safe_load((NETWORK/'config/core.single-vps.yaml').read_text())
+        self.assertNotIn('endpoint', core['vm'])
+        with tempfile.TemporaryDirectory() as directory:
+            network = Path(directory)
+            (network/'config').mkdir()
+            path = network/'config/core.single-vps.yaml'
+            for endpoint in [None, '', 'unix:///var/run/docker.sock', 'disabled', 'none']:
+                changed = copy.deepcopy(core)
+                changed['vm']['endpoint'] = endpoint
+                path.write_text(yaml.safe_dump(changed))
+                with self.subTest(endpoint=endpoint), self.assertRaisesRegex(ValueError, 'vm.endpoint must be absent'):
+                    single.validate_peer_core(network)
+            for mutation in ['uppercase', 'dotted']:
+                changed = copy.deepcopy(core)
+                if mutation == 'uppercase': changed['vm']['Endpoint'] = 'none'
+                if mutation == 'dotted': changed['vm.endpoint'] = 'none'
+                path.write_text(yaml.safe_dump(changed))
+                with self.subTest(mutation=mutation), self.assertRaisesRegex(ValueError, 'vm.endpoint must be absent'):
+                    single.validate_peer_core(network)
+
+
 class SingleBootstrapTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -113,6 +183,13 @@ class SingleBootstrapTests(unittest.TestCase):
         with mock.patch.dict(os.environ, cls.env), contextlib.redirect_stdout(io.StringIO()):
             single.prepare(cls.network)
         cls.root = cls.network/'runtime/single-vps'
+
+    def test_custom_core_preserves_pinned_defaults_except_vm_endpoint(self):
+        upstream = yaml.safe_load((self.tools/'config/core.yaml').read_text())
+        reviewed = yaml.safe_load((NETWORK/'config/core.single-vps.yaml').read_text())
+        self.assertEqual(upstream['vm'].pop('endpoint'), 'unix:///var/run/docker.sock')
+        self.assertEqual(reviewed, upstream)
+        self.assertEqual(reviewed['chaincode']['externalBuilders'], single.CCAAS_BUILDERS)
 
     def test_twelve_private_keys_are_distinct_and_certificates_match_service_dns(self):
         single.validate_runtime(self.network)

@@ -63,6 +63,10 @@ Normal scripts only stop/restart containers and never delete these volumes. Keep
 
 All four peers install the same deterministic `labchain-anchor` CCAAS package. Its address is `{{.address}}:9999`; per-peer `CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG` resolves that to `anchor1:9999` through `anchor4:9999`. This uses [Fabric's supported multi-peer CCAAS templates](https://hyperledger-fabric.readthedocs.io/en/release-2.5/cc_basic.html#running-with-multiple-peers), keeping the package ID consistent within each organization while using separate services. TLS is required and verifies each anchor's DNS name against its organization TLS CA. The package contains public roots only, with no private client key. Anchor services publish no host port; peers reach them over the Fabric bridge using Docker DNS. Treat membership in this bridge as trusted operator access; the prototype uses server-authenticated CCAAS TLS, not client mutual TLS.
 
+All four peers share the tracked `network/config/core.single-vps.yaml`, derived from `config/core.yaml` in the checksum-verified Fabric 2.5.16 archive identified by `versions.json`. All upstream settings are retained except the active `vm.endpoint` property, which is intentionally omitted. The file is mounted read-only at `/etc/hyperledger/fabric/core.yaml`, and each peer explicitly selects `/etc/hyperledger/fabric` with `FABRIC_CFG_PATH`. Peer-specific MSP, TLS, address, gossip and CCAAS settings continue to use their existing Compose environment overrides.
+
+`CORE_VM_ENDPOINT` is deliberately absent: Viper treats an empty environment value as unset, allowing the upstream Docker socket default to take effect. Leaving `vm.endpoint` unconfigured in the selected YAML disables Fabric's legacy Docker chaincode launcher and prevents Docker daemon health-check registration, as described in [Fabric's external builder documentation](https://hyperledger-fabric.readthedocs.io/en/release-2.5/cc_launcher.html#configuring-external-builders-and-launchers). Peers have no Docker control socket mount or daemon access. Docker Compose manages the peer and external CCAAS containers externally; Fabric retains its `ccaas_builder` and service DNS configuration. The validator checks parsed YAML, selected read-only mounts, absence of `CORE_VM_ENDPOINT`/socket mounts, and the expected CCAAS builder configuration. Static tests do not establish live health; running containers require an explicit operator rollout to use the new configuration.
+
 Channel `labchain-channel`, chaincode `labchain-anchor`, version `1.0.0`, sequence `1` and the policy `AND('Org1MSP.peer','Org2MSP.peer')` are unchanged. Org1 and Org2 must both approve and endorse. Commit/invoke explicitly target peer1 and peer3; automatic endpoint failover is outside this phase. CCAAS package IDs identify connection metadata, not JavaScript image contents: use the reviewed image/source and do not rebuild changed contract code under an approved version.
 
 The unchanged contract exposes `CreateAnchor`, `ReadAnchor`, `AnchorExists` and `GetAnchorHistory`, with no update/delete transaction. Only opaque UUID references, permitted event names, hashes, source organization/node and transaction metadata are stored. Duplicate anchors are rejected; revocation/supersession append new records. Never use patient identifiers or clinical data in smoke tests. No document hashing or clinical verification is implemented here.
@@ -71,7 +75,7 @@ The unchanged contract exposes `CreateAnchor`, `ReadAnchor`, `AnchorExists` and 
 
 Use a restricted Fabric operator with Docker privileges, separate from the application account. Docker privileges are root-equivalent. The paths below show the reviewed checkout at `/opt/rhu-labchain`; scripts are path-relative and can be deployed to a dedicated operator-owned checkout instead. Do not grant the application user access to runtime keys. The single-VPS configuration uses shared settings only, with no `NODE_ID`, `NODE1_IP`–`NODE4_IP`, or `FIREWALL_READY` bypass.
 
-Prerequisites: Linux x86_64 Ubuntu, Docker Engine/Compose (2.24+), Python 3, Bash, OpenSSL, curl, util-linux/flock and pinned Fabric native tools. Reserve capacity for FastAPI/MySQL/Nginx before Fabric: configured memory caps total 8.25 GiB (4×1536 MiB peers, 4×384 MiB anchors, 768 MiB orderer), plus the application, OS, builds and headroom. CPU caps total 7 CPUs across services; they are limits, not reservations or throughput guarantees. Monitor growing ledger storage and certificate expiry.
+Prerequisites: Linux x86_64 Ubuntu, Docker Engine/Compose (2.24+), Python 3 with PyYAML (`python3-yaml` on Ubuntu), Bash, OpenSSL, curl, util-linux/flock and pinned Fabric native tools. Reserve capacity for FastAPI/MySQL/Nginx before Fabric: configured memory caps total 8.25 GiB (4×1536 MiB peers, 4×384 MiB anchors, 768 MiB orderer), plus the application, OS, builds and headroom. CPU caps total 7 CPUs across services; they are limits, not reservations or throughput guarantees. Monitor growing ledger storage and certificate expiry.
 
 Review `free -h`, `df -h`, `ss -lnt`, clock synchronization and existing service health without changing clinical records. Do not install/upgrade host software or alter UFW as an automatic part of these scripts.
 
@@ -168,17 +172,19 @@ Certificate renewal and upgrades require a reviewed procedure updating certifica
 
 ## Static validation
 
-Commands executed for this change (no daemon service launch):
+Commands executed for the peer Docker health-check fix (no daemon service launch):
 
 ```bash
 cd /opt/rhu-labchain
-docker compose --env-file blockchain/network/.env.single-vps.example \
-  -f blockchain/network/compose/docker-compose.single-vps.yml --profile '*' config --quiet
-LABCHAIN_FABRIC_TOOLS=/opt/rhu-fabric/fabric-samples \
-  python3 -m unittest discover -s blockchain/network/tests -v
-for script in blockchain/network/scripts/*.sh; do bash -n "$script"; done
-npm test --prefix blockchain/chaincode/labchain-anchor
+docker compose --profile '*' --env-file blockchain/network/.env.single-vps.example \
+  -f blockchain/network/compose/docker-compose.single-vps.yml config --quiet
+LABCHAIN_FABRIC_TOOLS=/opt/rhu-labchain/blockchain/network/tools \
+  .venv/bin/python -m pytest blockchain/network/tests/test_single_vps.py -vv -ra --tb=long
+LABCHAIN_FABRIC_TOOLS=/opt/rhu-labchain/blockchain/network/tools \
+  .venv/bin/python -m pytest blockchain/network/tests -vv -ra --tb=long
 git diff --check
 ```
 
-The suite uses temporary synthetic crypto and a recording Docker stub for startup-selection tests. Native tests inspect real Fabric-generated blocks, TLS certificates and package IDs; they do not launch a network. Current results: **37 network tests passed with no skips; 31 existing chaincode tests passed; new and legacy Compose rendering and all Bash syntax checks passed.** Validation used Compose 5.5.1, Fabric native tools 2.5.16 and host Node 24.21.0. The deployment image remains pinned to Node 22.23.2; its build/runtime were not exercised here. Full backend/frontend regression was not needed because no shared Python application, application dependency or frontend file changed. No migration, volume removal, destructive reset or service startup occurred.
+The suite uses temporary synthetic crypto and a recording Docker stub for startup-selection tests. Native tests inspect real Fabric-generated blocks, TLS certificates and package IDs; they do not launch a network. Current results: **17 single-VPS tests passed; 43 total network tests passed; zero skips and zero failures. Compose validation and `git diff --check` passed.** Regressions reject VM endpoint environment overrides, socket mounts, active YAML VM endpoints, missing/writable/unselected core mounts and changed CCAAS builders. The custom core is also compared against pinned Fabric 2.5.16 defaults, with only `vm.endpoint` removed.
+
+Earlier topology validation recorded 31 passing chaincode tests and passing legacy Compose/Bash checks. The chaincode deployment image remains pinned to Node 22.23.2; its build/runtime were not exercised for this fix. Full backend/frontend regression was not needed because no shared Python application, application dependency or frontend file changed. No migration, deployed crypto regeneration, volume removal, destructive reset or service start/stop occurred.

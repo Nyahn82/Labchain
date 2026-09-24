@@ -9,8 +9,13 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import yaml
+
 NETWORK = Path(__file__).resolve().parents[1]
 EXPECTED = {'DEPLOYMENT_MODE': 'single-vps', 'FABRIC_VERSION': '2.5.16'}
+PEER_CFG_PATH = '/etc/hyperledger/fabric'
+CCAAS_BUILDERS = [{'name': 'ccaas_builder', 'path': '/opt/hyperledger/ccaas_builder',
+                   'propagateEnvironment': ['CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG']}]
 
 
 def read_config(path):
@@ -145,8 +150,26 @@ def prepare(network=NETWORK):
     print('Protect generated/single-vps signing CAs in encrypted offline custody before bring-up.')
 
 
+def validate_peer_core(network=NETWORK):
+    """Check parsed YAML: an empty environment override cannot disable Docker in Viper."""
+    try:
+        core = yaml.safe_load((network/'config/core.single-vps.yaml').read_text())
+    except yaml.YAMLError as error:
+        raise ValueError('Invalid reviewed peer core YAML.') from error
+    if not isinstance(core, dict):
+        raise ValueError('Reviewed peer core configuration must be a mapping.')
+    # Viper treats configuration keys case-insensitively and supports dotted paths.
+    keys = {str(k).lower(): v for k, v in core.items()}
+    vm = keys.get('vm')
+    if not isinstance(vm, dict) or 'vm.endpoint' in keys or any(str(k).lower() == 'endpoint' for k in vm):
+        raise ValueError('vm.endpoint must be absent from the reviewed peer core configuration.')
+    if core.get('chaincode', {}).get('externalBuilders') != CCAAS_BUILDERS:
+        raise ValueError('The reviewed peer core must preserve the CCAAS external builder.')
+
+
 def validate_compose(config, network=NETWORK):
     """Fail closed on public publishing, host networking, shared ledgers or identity mounts."""
+    validate_peer_core(network)
     services = config['services']
     expected = {'orderer'} | {f'{role}{i}' for role in ('peer', 'anchor') for i in range(1, 5)}
     if set(services) != expected or config['name'] != 'labchain-single-vps':
@@ -173,9 +196,21 @@ def validate_compose(config, network=NETWORK):
             raise ValueError('Image differs from reviewed version pins.')
         identity = 'orderer' if name == 'orderer' else f'node{i}/peer' if role == 'peer' else f'node{i}/chaincode/tls'
         mounts = service.get('volumes', [])
+        if any(Path(str(v.get(field, ''))).name == 'docker.sock'
+               for v in mounts for field in ('source', 'target')):
+            raise ValueError('Docker control socket mounts are prohibited.')
         binds = [v for v in mounts if v['type'] == 'bind']
-        if len(binds) != 1 or Path(binds[0]['source']).resolve() != (network/'runtime/single-vps'/identity).resolve() or not binds[0].get('read_only'):
-            raise ValueError('Incorrect or shared private identity mount.')
+        expected_binds = {'/tls' if role == 'chaincode' else '/identity':
+                          (network/'runtime/single-vps'/identity).resolve()}
+        if role == 'peer':
+            expected_binds[f'{PEER_CFG_PATH}/core.yaml'] = (network/'config/core.single-vps.yaml').resolve()
+        if (len(binds) != len(expected_binds) or {v['target'] for v in binds} != set(expected_binds)
+                or any(Path(v['source']).resolve() != expected_binds[v['target']] or not v.get('read_only') for v in binds)):
+            raise ValueError('Incorrect or shared private identity/core configuration mount.')
+        if role == 'peer':
+            core_mount = next(v for v in binds if v['target'] == f'{PEER_CFG_PATH}/core.yaml')
+            if core_mount.get('bind', {}).get('create_host_path', True):
+                raise ValueError('The reviewed core file must exist; automatic host path creation is prohibited.')
         volumes = [v for v in mounts if v['type'] == 'volume']
         if role != 'chaincode':
             key = f'{name}-ledger'
@@ -187,6 +222,16 @@ def validate_compose(config, network=NETWORK):
             raise ValueError('Chaincode requires one valid writable /tmp mount.')
         if role == 'peer':
             env = service['environment']
+            if 'CORE_VM_ENDPOINT' in env:
+                raise ValueError('CORE_VM_ENDPOINT is prohibited; leave vm.endpoint unconfigured in core.yaml.')
+            if env.get('FABRIC_CFG_PATH') != PEER_CFG_PATH:
+                raise ValueError('Every peer must select the reviewed core configuration using FABRIC_CFG_PATH.')
+            try:
+                builders = json.loads(env.get('CORE_CHAINCODE_EXTERNALBUILDERS', 'null'))
+            except (ValueError, TypeError) as error:
+                raise ValueError('Invalid CCAAS external builder configuration.') from error
+            if builders != CCAAS_BUILDERS:
+                raise ValueError('Every peer must use the reviewed CCAAS external builder configuration.')
             required = {'CORE_PEER_ID': name, 'CORE_PEER_ADDRESS': f'{name}:7051',
                         'CORE_PEER_LOCALMSPID': 'Org1MSP' if i <= 2 else 'Org2MSP',
                         'CORE_PEER_GOSSIP_EXTERNALENDPOINT': f'{name}:7051',

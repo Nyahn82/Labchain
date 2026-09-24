@@ -14,6 +14,8 @@ Start with the [single-VPS deployment guide](../docs/PHASE_8A_BLOCKCHAIN_NETWORK
 
 Fabric service-to-service communication uses Docker DNS. Host-side Fabric CLI/status operations use published ports bound exclusively to `127.0.0.1`; no Fabric port is published on the VPS public interfaces and no UFW Fabric rules are required. Containers may have normal bridge egress; inbound Fabric access from outside the VPS remains unavailable through the reviewed port mappings.
 
+Peers share the read-only [`core.single-vps.yaml`](network/config/core.single-vps.yaml) based on Fabric 2.5.16. Its `vm.endpoint` is intentionally unconfigured, disabling the legacy Docker chaincode launcher and preventing Docker daemon health-check registration. Chaincode remains in external CCAAS services; peers never mount Docker's control socket. Docker Compose manages both peer and CCAAS containers externally.
+
 Legacy per-node Compose files/scripts target separate VPSs and must not be used for the single-VPS deployment. Generated crypto, runtime identities/admin keys, bundles and local configuration remain Git-ignored.
 
 Only offline validation has been performed; no Fabric services were started during the topology change. Live commitment and persistence still need explicit administrator acceptance. There is no application integration, migration or production report anchoring; MySQL remains the operational source of truth. Phase 8B is outside this work.

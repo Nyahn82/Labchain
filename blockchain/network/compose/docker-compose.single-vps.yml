@@ -95,13 +95,19 @@ services:
       CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
       CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
       CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
-      CORE_VM_ENDPOINT: ''
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
       CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
       CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor1"}'
     volumes:
     - type: bind
       source: ../runtime/single-vps/node1/peer
       target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../config/core.single-vps.yaml
+      target: /etc/hyperledger/fabric/core.yaml
       read_only: true
       bind:
         create_host_path: false
@@ -194,13 +200,19 @@ services:
       CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
       CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
       CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
-      CORE_VM_ENDPOINT: ''
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
       CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
       CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor2"}'
     volumes:
     - type: bind
       source: ../runtime/single-vps/node2/peer
       target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../config/core.single-vps.yaml
+      target: /etc/hyperledger/fabric/core.yaml
       read_only: true
       bind:
         create_host_path: false
@@ -293,13 +305,19 @@ services:
       CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
       CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
       CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
-      CORE_VM_ENDPOINT: ''
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
       CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
       CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor3"}'
     volumes:
     - type: bind
       source: ../runtime/single-vps/node3/peer
       target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../config/core.single-vps.yaml
+      target: /etc/hyperledger/fabric/core.yaml
       read_only: true
       bind:
         create_host_path: false
@@ -392,13 +410,19 @@ services:
       CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
       CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
       CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
-      CORE_VM_ENDPOINT: ''
+      FABRIC_CFG_PATH: /etc/hyperledger/fabric
       CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
       CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor4"}'
     volumes:
     - type: bind
       source: ../runtime/single-vps/node4/peer
       target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - type: bind
+      source: ../config/core.single-vps.yaml
+      target: /etc/hyperledger/fabric/core.yaml
       read_only: true
       bind:
         create_host_path: false

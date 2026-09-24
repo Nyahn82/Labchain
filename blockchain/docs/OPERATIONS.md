@@ -26,6 +26,10 @@ Read the [deployment and recovery guide](../../docs/PHASE_8A_BLOCKCHAIN_NETWORK.
 
 Replace `peerN` with exactly one of `peer1`–`peer4`. Foundation startup and adding peer2 never start peer3/peer4 or anchors. Channel checks are optional until the channel is created/joined. Failures require investigation; “container Up” does not prove ledger convergence.
 
+All four peers mount the reviewed `config/core.single-vps.yaml` read-only at `/etc/hyperledger/fabric/core.yaml` and select it with `FABRIC_CFG_PATH`. It deliberately omits `vm.endpoint`: Fabric's legacy Docker chaincode launcher is disabled and the Docker daemon health checker is not registered. `CORE_VM_ENDPOINT` must remain absent; an empty environment value does not reliably override the upstream YAML default. Peers do not mount Docker's control socket. Docker Compose manages peers and external CCAAS containers; the peer uses its configured external builder to reach the anchor services.
+
+If health reports a failed `docker` component, verify the reviewed config mount and selection rather than granting socket access. Source changes do not alter already-running containers; applying them requires a separately scheduled operator action. Do not regenerate identities or remove ledger volumes. Network validation requires PyYAML in the Python interpreter running the scripts (`python3-yaml` on Ubuntu).
+
 Read-only diagnostics:
 
 ```bash
