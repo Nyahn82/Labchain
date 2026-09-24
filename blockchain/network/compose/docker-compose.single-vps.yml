@@ -1,0 +1,473 @@
+# Explicit profiles prevent an unqualified up from starting peers. Use the single-VPS scripts.
+name: labchain-single-vps
+services:
+  orderer:
+    image: ghcr.io/hyperledger/fabric-orderer:${FABRIC_VERSION:?Set FABRIC_VERSION}@sha256:1d918fc7e1e05b28a9a2f91a61f6435d058f156ef97b5005271de66fbf1370f1
+    restart: unless-stopped
+    cap_drop:
+    - NET_RAW
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 768m
+    cpus: 1.0
+    environment:
+      FABRIC_LOGGING_SPEC: info
+      ORDERER_GENERAL_LISTENADDRESS: 0.0.0.0
+      ORDERER_GENERAL_LISTENPORT: '7050'
+      ORDERER_GENERAL_LOCALMSPID: OrdererMSP
+      ORDERER_GENERAL_LOCALMSPDIR: /identity/msp
+      ORDERER_GENERAL_BOOTSTRAPMETHOD: none
+      ORDERER_CHANNELPARTICIPATION_ENABLED: 'true'
+      ORDERER_GENERAL_TLS_ENABLED: 'true'
+      ORDERER_GENERAL_TLS_CERTIFICATE: /identity/tls/server.crt
+      ORDERER_GENERAL_TLS_PRIVATEKEY: /identity/tls/server.key
+      ORDERER_GENERAL_TLS_ROOTCAS: '[/identity/tls/ca.crt]'
+      ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE: /identity/tls/server.crt
+      ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY: /identity/tls/server.key
+      ORDERER_GENERAL_CLUSTER_ROOTCAS: '[/identity/tls/ca.crt]'
+      ORDERER_ADMIN_LISTENADDRESS: 0.0.0.0:7053
+      ORDERER_ADMIN_TLS_ENABLED: 'true'
+      ORDERER_ADMIN_TLS_CERTIFICATE: /identity/tls/server.crt
+      ORDERER_ADMIN_TLS_PRIVATEKEY: /identity/tls/server.key
+      ORDERER_ADMIN_TLS_CLIENTAUTHREQUIRED: 'true'
+      ORDERER_ADMIN_TLS_CLIENTROOTCAS: '[/identity/tls/ca.crt]'
+      ORDERER_OPERATIONS_LISTENADDRESS: 0.0.0.0:9444
+      ORDERER_OPERATIONS_TLS_ENABLED: 'true'
+      ORDERER_OPERATIONS_TLS_CERTIFICATE: /identity/tls/server.crt
+      ORDERER_OPERATIONS_TLS_PRIVATEKEY: /identity/tls/server.key
+      ORDERER_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
+      ORDERER_FILELEDGER_LOCATION: /var/hyperledger/production/orderer
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/orderer
+      target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - orderer-ledger:/var/hyperledger/production/orderer
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-orderer
+    networks:
+    - fabric
+    profiles:
+    - foundation
+    ports:
+    - 127.0.0.1:7050:7050
+    - 127.0.0.1:7053:7053
+    - 127.0.0.1:9444:9444
+  peer1:
+    image: ghcr.io/hyperledger/fabric-peer:${FABRIC_VERSION:?Set FABRIC_VERSION}@sha256:58979b65744b5e7f775d5c65af3831d9beb344d8294c6aa82cbae59e7f7760d6
+    restart: unless-stopped
+    user: 0:0
+    cap_drop:
+    - NET_RAW
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: 1.0
+    environment:
+      FABRIC_LOGGING_SPEC: info
+      CORE_PEER_ID: peer1
+      CORE_PEER_LOCALMSPID: Org1MSP
+      CORE_PEER_ADDRESS: peer1:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer1:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_MSPCONFIGPATH: /identity/msp
+      CORE_PEER_TLS_ENABLED: 'true'
+      CORE_PEER_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /identity/tls/ca.crt
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer2:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer1:7051
+      CORE_PEER_GOSSIP_USELEADERELECTION: 'false'
+      CORE_PEER_GOSSIP_ORGLEADER: 'true'
+      CORE_PEER_GOSSIP_STATE_ENABLED: 'false'
+      CORE_PEER_DELIVERYCLIENT_BLOCKGOSSIPENABLED: 'false'
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_LEDGER_HISTORY_ENABLEHISTORYDATABASE: 'true'
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+      CORE_OPERATIONS_TLS_ENABLED: 'true'
+      CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
+      CORE_VM_ENDPOINT: ''
+      CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
+      CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor1"}'
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node1/peer
+      target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - peer1-ledger:/var/hyperledger/production
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-peer1
+    networks:
+    - fabric
+    profiles:
+    - foundation
+    ports:
+    - 127.0.0.1:7051:7051
+    - 127.0.0.1:9443:9443
+  anchor1:
+    profiles:
+    - chaincode
+    image: rhu-labchain-anchor:1.0.0
+    user: ${FABRIC_RUN_UID:-1000}:${FABRIC_RUN_GID:-1000}
+    build:
+      context: ../../chaincode/labchain-anchor
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 384m
+    cpus: 0.5
+    tmpfs:
+    - /tmp:size=16m,mode=1777
+    env_file:
+    - path: ../runtime/single-vps/node1/chaincode.env
+      required: false
+    environment:
+      CORE_CHAINCODE_ADDRESS: 0.0.0.0:9999
+      CORE_CHAINCODE_TLS_CERT_FILE: /tls/server.crt
+      CORE_CHAINCODE_TLS_KEY_FILE: /tls/server.key
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node1/chaincode/tls
+      target: /tls
+      read_only: true
+      bind:
+        create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-anchor1
+    networks:
+    - fabric
+  peer2:
+    image: ghcr.io/hyperledger/fabric-peer:${FABRIC_VERSION:?Set FABRIC_VERSION}@sha256:58979b65744b5e7f775d5c65af3831d9beb344d8294c6aa82cbae59e7f7760d6
+    restart: unless-stopped
+    user: 0:0
+    cap_drop:
+    - NET_RAW
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: 1.0
+    environment:
+      FABRIC_LOGGING_SPEC: info
+      CORE_PEER_ID: peer2
+      CORE_PEER_LOCALMSPID: Org1MSP
+      CORE_PEER_ADDRESS: peer2:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer2:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_MSPCONFIGPATH: /identity/msp
+      CORE_PEER_TLS_ENABLED: 'true'
+      CORE_PEER_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /identity/tls/ca.crt
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer1:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer2:7051
+      CORE_PEER_GOSSIP_USELEADERELECTION: 'false'
+      CORE_PEER_GOSSIP_ORGLEADER: 'true'
+      CORE_PEER_GOSSIP_STATE_ENABLED: 'false'
+      CORE_PEER_DELIVERYCLIENT_BLOCKGOSSIPENABLED: 'false'
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_LEDGER_HISTORY_ENABLEHISTORYDATABASE: 'true'
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+      CORE_OPERATIONS_TLS_ENABLED: 'true'
+      CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
+      CORE_VM_ENDPOINT: ''
+      CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
+      CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor2"}'
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node2/peer
+      target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - peer2-ledger:/var/hyperledger/production
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-peer2
+    networks:
+    - fabric
+    profiles:
+    - peer2
+    ports:
+    - 127.0.0.1:8051:7051
+    - 127.0.0.1:9445:9443
+  anchor2:
+    profiles:
+    - chaincode
+    image: rhu-labchain-anchor:1.0.0
+    user: ${FABRIC_RUN_UID:-1000}:${FABRIC_RUN_GID:-1000}
+    build:
+      context: ../../chaincode/labchain-anchor
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 384m
+    cpus: 0.5
+    tmpfs:
+    - /tmp:size=16m,mode=1777
+    env_file:
+    - path: ../runtime/single-vps/node2/chaincode.env
+      required: false
+    environment:
+      CORE_CHAINCODE_ADDRESS: 0.0.0.0:9999
+      CORE_CHAINCODE_TLS_CERT_FILE: /tls/server.crt
+      CORE_CHAINCODE_TLS_KEY_FILE: /tls/server.key
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node2/chaincode/tls
+      target: /tls
+      read_only: true
+      bind:
+        create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-anchor2
+    networks:
+    - fabric
+  peer3:
+    image: ghcr.io/hyperledger/fabric-peer:${FABRIC_VERSION:?Set FABRIC_VERSION}@sha256:58979b65744b5e7f775d5c65af3831d9beb344d8294c6aa82cbae59e7f7760d6
+    restart: unless-stopped
+    user: 0:0
+    cap_drop:
+    - NET_RAW
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: 1.0
+    environment:
+      FABRIC_LOGGING_SPEC: info
+      CORE_PEER_ID: peer3
+      CORE_PEER_LOCALMSPID: Org2MSP
+      CORE_PEER_ADDRESS: peer3:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer3:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_MSPCONFIGPATH: /identity/msp
+      CORE_PEER_TLS_ENABLED: 'true'
+      CORE_PEER_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /identity/tls/ca.crt
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer4:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer3:7051
+      CORE_PEER_GOSSIP_USELEADERELECTION: 'false'
+      CORE_PEER_GOSSIP_ORGLEADER: 'true'
+      CORE_PEER_GOSSIP_STATE_ENABLED: 'false'
+      CORE_PEER_DELIVERYCLIENT_BLOCKGOSSIPENABLED: 'false'
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_LEDGER_HISTORY_ENABLEHISTORYDATABASE: 'true'
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+      CORE_OPERATIONS_TLS_ENABLED: 'true'
+      CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
+      CORE_VM_ENDPOINT: ''
+      CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
+      CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor3"}'
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node3/peer
+      target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - peer3-ledger:/var/hyperledger/production
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-peer3
+    networks:
+    - fabric
+    profiles:
+    - peer3
+    ports:
+    - 127.0.0.1:9051:7051
+    - 127.0.0.1:9446:9443
+  anchor3:
+    profiles:
+    - chaincode
+    image: rhu-labchain-anchor:1.0.0
+    user: ${FABRIC_RUN_UID:-1000}:${FABRIC_RUN_GID:-1000}
+    build:
+      context: ../../chaincode/labchain-anchor
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 384m
+    cpus: 0.5
+    tmpfs:
+    - /tmp:size=16m,mode=1777
+    env_file:
+    - path: ../runtime/single-vps/node3/chaincode.env
+      required: false
+    environment:
+      CORE_CHAINCODE_ADDRESS: 0.0.0.0:9999
+      CORE_CHAINCODE_TLS_CERT_FILE: /tls/server.crt
+      CORE_CHAINCODE_TLS_KEY_FILE: /tls/server.key
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node3/chaincode/tls
+      target: /tls
+      read_only: true
+      bind:
+        create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-anchor3
+    networks:
+    - fabric
+  peer4:
+    image: ghcr.io/hyperledger/fabric-peer:${FABRIC_VERSION:?Set FABRIC_VERSION}@sha256:58979b65744b5e7f775d5c65af3831d9beb344d8294c6aa82cbae59e7f7760d6
+    restart: unless-stopped
+    user: 0:0
+    cap_drop:
+    - NET_RAW
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 1536m
+    cpus: 1.0
+    environment:
+      FABRIC_LOGGING_SPEC: info
+      CORE_PEER_ID: peer4
+      CORE_PEER_LOCALMSPID: Org2MSP
+      CORE_PEER_ADDRESS: peer4:7051
+      CORE_PEER_LISTENADDRESS: 0.0.0.0:7051
+      CORE_PEER_CHAINCODEADDRESS: peer4:7052
+      CORE_PEER_CHAINCODELISTENADDRESS: 0.0.0.0:7052
+      CORE_PEER_MSPCONFIGPATH: /identity/msp
+      CORE_PEER_TLS_ENABLED: 'true'
+      CORE_PEER_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_PEER_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_PEER_TLS_ROOTCERT_FILE: /identity/tls/ca.crt
+      CORE_PEER_GOSSIP_BOOTSTRAP: peer3:7051
+      CORE_PEER_GOSSIP_EXTERNALENDPOINT: peer4:7051
+      CORE_PEER_GOSSIP_USELEADERELECTION: 'false'
+      CORE_PEER_GOSSIP_ORGLEADER: 'true'
+      CORE_PEER_GOSSIP_STATE_ENABLED: 'false'
+      CORE_PEER_DELIVERYCLIENT_BLOCKGOSSIPENABLED: 'false'
+      CORE_LEDGER_STATE_STATEDATABASE: goleveldb
+      CORE_LEDGER_HISTORY_ENABLEHISTORYDATABASE: 'true'
+      CORE_OPERATIONS_LISTENADDRESS: 0.0.0.0:9443
+      CORE_OPERATIONS_TLS_ENABLED: 'true'
+      CORE_OPERATIONS_TLS_CERT_FILE: /identity/tls/server.crt
+      CORE_OPERATIONS_TLS_KEY_FILE: /identity/tls/server.key
+      CORE_OPERATIONS_TLS_CLIENTAUTHREQUIRED: 'false'
+      CORE_VM_ENDPOINT: ''
+      CORE_CHAINCODE_EXTERNALBUILDERS: '[{"name":"ccaas_builder","path":"/opt/hyperledger/ccaas_builder","propagateEnvironment":["CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG"]}]'
+      CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG: '{"address":"anchor4"}'
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node4/peer
+      target: /identity
+      read_only: true
+      bind:
+        create_host_path: false
+    - peer4-ledger:/var/hyperledger/production
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-peer4
+    networks:
+    - fabric
+    profiles:
+    - peer4
+    ports:
+    - 127.0.0.1:10051:7051
+    - 127.0.0.1:9447:9443
+  anchor4:
+    profiles:
+    - chaincode
+    image: rhu-labchain-anchor:1.0.0
+    user: ${FABRIC_RUN_UID:-1000}:${FABRIC_RUN_GID:-1000}
+    build:
+      context: ../../chaincode/labchain-anchor
+    restart: unless-stopped
+    read_only: true
+    cap_drop:
+    - ALL
+    security_opt:
+    - no-new-privileges:true
+    mem_limit: 384m
+    cpus: 0.5
+    tmpfs:
+    - /tmp:size=16m,mode=1777
+    env_file:
+    - path: ../runtime/single-vps/node4/chaincode.env
+      required: false
+    environment:
+      CORE_CHAINCODE_ADDRESS: 0.0.0.0:9999
+      CORE_CHAINCODE_TLS_CERT_FILE: /tls/server.crt
+      CORE_CHAINCODE_TLS_KEY_FILE: /tls/server.key
+    volumes:
+    - type: bind
+      source: ../runtime/single-vps/node4/chaincode/tls
+      target: /tls
+      read_only: true
+      bind:
+        create_host_path: false
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    container_name: labchain-anchor4
+    networks:
+    - fabric
+networks:
+  fabric:
+    name: labchain-fabric
+    driver: bridge
+    internal: true
+volumes:
+  peer1-ledger:
+    name: labchain-peer1-ledger
+  peer2-ledger:
+    name: labchain-peer2-ledger
+  peer3-ledger:
+    name: labchain-peer3-ledger
+  peer4-ledger:
+    name: labchain-peer4-ledger
+  orderer-ledger:
+    name: labchain-orderer-ledger

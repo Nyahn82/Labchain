@@ -1,6 +1,7 @@
 .env
 .env.*
 !.env.example
+!blockchain/network/.env.single-vps.example
 .venv/
 __pycache__/
 *.py[cod]

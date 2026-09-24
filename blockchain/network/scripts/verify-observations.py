@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 
-def verify(directory, anchor_id=''):
+def verify(directory, anchor_id='', single_vps=False):
     states=[]
     records=[]
     print('Node\tPeer\tChannel\tHeight\tCurrent block hash (base64)\tPrevious block hash (base64)')
@@ -15,7 +15,8 @@ def verify(directory, anchor_id=''):
         if int(info['height'])<1:
             raise ValueError('Peer has no channel block.')
         states.append(state)
-        print(f'{node}\t{node}.labchain.internal:7051\tlabchain-channel\t'+ '\t'.join(map(str,state)))
+        address = f'peer{number}:7051' if single_vps else f'{node}.labchain.internal:7051'
+        print(f'{node}\t{address}\tlabchain-channel\t'+ '\t'.join(map(str,state)))
         if anchor_id:
             record=json.loads((directory/f'{node}.record').read_text())
             if record['anchor_id']!=anchor_id or not record.get('transaction_id'):
@@ -29,6 +30,6 @@ def verify(directory, anchor_id=''):
 
 if __name__=='__main__':
     try:
-        verify(Path(sys.argv[1]),sys.argv[2] if len(sys.argv)>2 else '')
+        verify(Path(sys.argv[1]),sys.argv[2] if len(sys.argv)>2 else '', '--single-vps' in sys.argv[3:])
     except (ValueError,KeyError,OSError) as error:
         sys.exit(str(error))

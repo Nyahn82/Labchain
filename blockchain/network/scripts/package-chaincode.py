@@ -18,11 +18,11 @@ def archive(files):
                 tar.addfile(entry, io.BytesIO(content))
     return result.getvalue()
 
-def package(public):
+def package(public, address="localhost:9999"):
     roots = ''.join((public / f'org{i}-tls-ca.crt').read_text() for i in (1,2))
     if 'PRIVATE KEY' in roots:
         raise ValueError('Private material is forbidden in a chaincode package.')
-    connection = {'address':'localhost:9999','dial_timeout':'10s','tls_required':True,
+    connection = {'address':address,'dial_timeout':'10s','tls_required':True,
                   'client_auth_required':False,'root_cert':roots}
     code = archive({'connection.json':json.dumps(connection, sort_keys=True).encode()})
     metadata = json.dumps({'path':'','type':'ccaas','label':'labchain-anchor_1.0'}, sort_keys=True).encode()

@@ -1,19 +1,17 @@
 # RHU LabChain Fabric foundation — Phase 8A
 
-This directory contains infrastructure for **four separate Linux VPS hosts**, two Fabric peer organizations, one Raft orderer, and an append-only integrity-anchor contract. It does not connect FastAPI to Fabric and does not anchor production reports.
+The deployment target is **one Ubuntu VPS** running the existing FastAPI/MySQL/Nginx stack plus four real Fabric peer containers, two peer organizations, one Raft orderer and four external anchor services. Each peer has separate identities and persistent ledger storage. This academic prototype is **not physically decentralized**: one VPS failure takes down the whole Fabric network, and its single orderer is an availability point. Future production deployment should distribute organizations and orderers across independent hosts.
 
-**Status:** repository artifacts and offline tests are available. A live four-VPS deployment and cross-peer commit/convergence evidence are still required before claiming that the network is operational. No Docker daemon or four-host access was available during repository validation.
+Start with the [single-VPS deployment guide](../docs/PHASE_8A_BLOCKCHAIN_NETWORK.md) and [operator reference](docs/OPERATIONS.md). Bring-up explicitly starts orderer + peer1, verifies them, then adds/verifies peer2, peer3 and peer4 individually before channel and chaincode deployment.
 
-Start with [the Phase 8A deployment guide](../docs/PHASE_8A_BLOCKCHAIN_NETWORK.md). It contains prerequisites, exact node-by-node commands, firewall rules, identity distribution, lifecycle steps, acceptance checks, backup and recovery procedures.
+- [`network/compose/docker-compose.single-vps.yml`](network/compose/docker-compose.single-vps.yml): isolated `labchain-fabric` Docker bridge, loopback-only host CLI/health ports, five distinct ledger volumes.
+- [`network/.env.single-vps.example`](network/.env.single-vps.example): shared configuration, no per-host node/IP inventory.
+- [`network/config/`](network/config/): separate single-VPS cryptogen/channel templates alongside preserved legacy templates.
+- [`network/scripts/`](network/scripts/): explicit `single-vps` preparation, staged startup, status, channel/lifecycle and synthetic checks.
+- [`network/versions.json`](network/versions.json): unchanged reviewed Fabric 2.5.16 and image/tool pins.
+- [`network/tests/`](network/tests/): offline topology, configuration, crypto, package and guarded-command tests.
+- [`chaincode/labchain-anchor/`](chaincode/labchain-anchor/): unchanged append-only synthetic integrity contract and unit tests.
 
-- [`network/compose/`](network/compose/): one Compose definition per VPS; never combine them on one host.
-- [`network/config/`](network/config/): cryptogen prototype and channel configuration templates.
-- [`network/scripts/`](network/scripts/): validated configuration, bootstrap, node operations, lifecycle and synthetic smoke tests.
-- [`network/versions.json`](network/versions.json): pinned versions, image digests and CLI archive checksum.
-- [`chaincode/labchain-anchor/`](chaincode/labchain-anchor/): JavaScript contract, dependency lock, pinned Node runtime and unit tests.
-- [`network/tests/`](network/tests/): offline configuration, identity, packaging and verification tests.
-- [`docs/OPERATIONS.md`](docs/OPERATIONS.md): operator command reference.
+Legacy per-node Compose files/scripts target separate VPSs and must not be used for the single-VPS deployment. Generated crypto, runtime identities/admin keys, bundles and local configuration remain Git-ignored.
 
-Generated `network/runtime/`, `network/generated/`, identity bundles, local tools and private key material are ignored by Git. Never distribute the entire bootstrap directory to a VPS.
-
-MySQL remains the operational source of truth. The database's existing blockchain-support tables are unchanged and are not themselves a blockchain. Automatic anchoring belongs to Phase 8B.
+Only offline validation has been performed; no Fabric services were started during the topology change. Live commitment and persistence still need explicit administrator acceptance. There is no application integration, migration or production report anchoring; MySQL remains the operational source of truth. Phase 8B is outside this work.
