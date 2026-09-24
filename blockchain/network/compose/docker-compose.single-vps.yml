@@ -459,7 +459,7 @@ networks:
   fabric:
     name: labchain-fabric
     driver: bridge
-    internal: true
+    internal: false
 volumes:
   peer1-ledger:
     name: labchain-peer1-ledger

@@ -152,8 +152,8 @@ def validate_compose(config, network=NETWORK):
     if set(services) != expected or config['name'] != 'labchain-single-vps':
         raise ValueError('Unexpected single-VPS services/project.')
     net = config['networks']['fabric']
-    if net.get('name') != 'labchain-fabric' or net.get('driver') != 'bridge' or not net.get('internal'):
-        raise ValueError('The isolated labchain-fabric bridge is required.')
+    if net.get('name') != 'labchain-fabric' or net.get('driver') != 'bridge' or net.get('internal'):
+        raise ValueError('The labchain-fabric network must be a non-internal bridge for loopback-published host access.')
     versions = json.loads((network/'versions.json').read_text())
     for name, service in services.items():
         if service.get('network_mode') or set(service.get('networks', {})) != {'fabric'} or service.get('privileged'):

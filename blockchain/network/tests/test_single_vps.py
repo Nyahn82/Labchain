@@ -57,6 +57,11 @@ class SingleComposeTests(unittest.TestCase):
 
     def test_reviewed_topology_has_unique_loopback_ports_identities_and_ledgers(self):
         single.validate_compose(self.config)
+        self.assertFalse(self.config['networks']['fabric'].get('internal', False))
+        self.assertEqual(
+            {p['host_ip'] for s in self.config['services'].values() for p in s.get('ports', [])},
+            {'127.0.0.1'},
+        )
         ports = [p['published'] for s in self.config['services'].values() for p in s.get('ports', [])]
         self.assertEqual(len(ports), len(set(ports)))
         self.assertEqual(len(self.config['volumes']), 5)
@@ -81,7 +86,7 @@ class SingleComposeTests(unittest.TestCase):
             if mutation == 'dns': peer['environment']['CORE_PEER_GOSSIP_BOOTSTRAP'] = '192.0.2.11:7051'
             if mutation == 'image': peer['image'] = 'fabric-peer:latest'
             if mutation == 'dependency': peer['depends_on'] = {'peer3': {}}
-            if mutation == 'network': config['networks']['fabric']['internal'] = False
+            if mutation == 'network': config['networks']['fabric']['internal'] = True
             if mutation == 'tmpfs': config['services']['anchor1']['tmpfs'] = ['/tmp:size=16m', 'mode=1777']
             with self.subTest(mutation=mutation), self.assertRaises(ValueError):
                 single.validate_compose(config)

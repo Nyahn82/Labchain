@@ -10,7 +10,7 @@ The old `docker-compose.node1.yml` through `node4.yml`, `.env.example`, and per-
 
 ## Topology and ports
 
-Use `blockchain/network/compose/docker-compose.single-vps.yml`. All services join one user-defined, internal Docker **bridge** named `labchain-fabric`. None uses host networking. No Docker socket is mounted. No public Fabric ports or UFW changes are required; the public host surface remains SSH 22 and web 80/443.
+Use `blockchain/network/compose/docker-compose.single-vps.yml`. All services join one user-defined Docker **bridge** named `labchain-fabric`, with `internal: false`. A normal, non-internal bridge supports the loopback-published ports used by the host CLI/status scripts on the deployed Docker Engine. None uses host networking. No Docker socket is mounted. Every published Fabric port binds only to `127.0.0.1`; no Fabric port is published on the VPS public interfaces and no UFW Fabric rules are required. Containers may have normal bridge egress; inbound Fabric access from outside the VPS remains unavailable through the reviewed port mappings. The public host surface remains SSH 22 and web 80/443.
 
 | Service | Container | Organization | Internal ports | Host mappings, all bound to `127.0.0.1` |
 |---|---|---|---|---|
@@ -23,7 +23,7 @@ Use `blockchain/network/compose/docker-compose.single-vps.yml`. All services joi
 
 The loopback mappings support native host Fabric CLI, osnadmin and curl commands in the supplied scripts. They are enabled in this implementation, not required by Fabric itself. Removing them would require replacing the host CLI/health workflow. There is no optional public mapping. Do not publish 7052 or 9999. Check for host port conflicts before bring-up.
 
-Containers use `peer1:7051` through `peer4:7051` and `orderer:7050`. Gossip bootstrap pairs are peer1↔peer2 and peer3↔peer4; external endpoints use each peer's service DNS. Channel anchor peers are peer1 and peer3. Each peer directly receives ordering blocks. No fake public IPs, host DNS entries or `/etc/hosts` edits are needed. TLS SANs cover the actual service names; peer/orderer certificates also support loopback host administration.
+Fabric service-to-service communication uses Docker DNS. Containers use `peer1:7051` through `peer4:7051` and `orderer:7050`. Gossip bootstrap pairs are peer1↔peer2 and peer3↔peer4; external endpoints use each peer's service DNS. Channel anchor peers are peer1 and peer3. Each peer directly receives ordering blocks. No fake public IPs, host DNS entries or `/etc/hosts` edits are needed. TLS SANs cover the actual service names; peer/orderer certificates also support loopback host administration.
 
 Fabric remains **2.5.16**, using the reviewed peer/orderer image digests and tool archive checksum in `network/versions.json`. Chaincode stays JavaScript with the existing pinned Node 22.23.2 image and locked Fabric libraries 2.5.8. No version pins or application dependencies changed.
 
@@ -61,7 +61,7 @@ Separate named persistent volumes are:
 
 Normal scripts only stop/restart containers and never delete these volumes. Keep the same deployment path, Compose project, volume names and identities on restart. All peers use LevelDB with history enabled.
 
-All four peers install the same deterministic `labchain-anchor` CCAAS package. Its address is `{{.address}}:9999`; per-peer `CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG` resolves that to `anchor1:9999` through `anchor4:9999`. This uses [Fabric's supported multi-peer CCAAS templates](https://hyperledger-fabric.readthedocs.io/en/release-2.5/cc_basic.html#running-with-multiple-peers), keeping the package ID consistent within each organization while using separate services. TLS is required and verifies each anchor's DNS name against its organization TLS CA. The package contains public roots only, with no private client key. Anchor services publish no host port and are available only inside the isolated Fabric bridge. Treat membership in this bridge as trusted operator access; the prototype uses server-authenticated CCAAS TLS, not client mutual TLS.
+All four peers install the same deterministic `labchain-anchor` CCAAS package. Its address is `{{.address}}:9999`; per-peer `CHAINCODE_AS_A_SERVICE_BUILDER_CONFIG` resolves that to `anchor1:9999` through `anchor4:9999`. This uses [Fabric's supported multi-peer CCAAS templates](https://hyperledger-fabric.readthedocs.io/en/release-2.5/cc_basic.html#running-with-multiple-peers), keeping the package ID consistent within each organization while using separate services. TLS is required and verifies each anchor's DNS name against its organization TLS CA. The package contains public roots only, with no private client key. Anchor services publish no host port; peers reach them over the Fabric bridge using Docker DNS. Treat membership in this bridge as trusted operator access; the prototype uses server-authenticated CCAAS TLS, not client mutual TLS.
 
 Channel `labchain-channel`, chaincode `labchain-anchor`, version `1.0.0`, sequence `1` and the policy `AND('Org1MSP.peer','Org2MSP.peer')` are unchanged. Org1 and Org2 must both approve and endorse. Commit/invoke explicitly target peer1 and peer3; automatic endpoint failover is outside this phase. CCAAS package IDs identify connection metadata, not JavaScript image contents: use the reviewed image/source and do not rebuild changed contract code under an approved version.
 
@@ -87,7 +87,7 @@ scripts/install-tools.sh
 scripts/prepare-single-vps.sh
 ```
 
-Preparation validates Compose publication/isolation, generates the separate identities, channel block and shared package, checks native package ID/TLS material, and records **one fingerprint for the complete deployment**. It does not build images, start containers, modify firewall rules or touch the application. It checks Docker volumes read-only and refuses fresh identities when any single-VPS ledger already exists without runtime. Repeating preparation preserves completed artifacts; incomplete state or modified artifacts fail closed. A preparation lock prevents concurrent generation.
+Preparation validates the non-internal bridge and loopback-only port publishing, generates the separate identities, channel block and shared package, checks native package ID/TLS material, and records **one fingerprint for the complete deployment**. It does not build images, start containers, modify firewall rules or touch the application. It checks Docker volumes read-only and refuses fresh identities when any single-VPS ledger already exists without runtime. Repeating preparation preserves completed artifacts; incomplete state or modified artifacts fail closed. A preparation lock prevents concurrent generation.
 
 Signing CAs are created under ignored `generated/single-vps/crypto-config/`, never mounted into containers or included in public artifacts. Protect that directory with encrypted offline custody before startup; it is not needed by normal start/status/lifecycle scripts. Never commit generated identities or keys. `.gitignore` covers generated crypto, runtime bundles, private keys, admin material and local configuration while allowing the new example template.
 
