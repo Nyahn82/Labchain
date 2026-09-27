@@ -25,7 +25,8 @@ PHASE_2C = "20260914_03"
 PHASE_2D = "20260914_04"
 PHASE_3A = "20260915_01"
 PHASE_6A = "20260916_01"
-HEAD = "20260920_01"
+PHASE_6B = "20260920_01"
+HEAD = "20260924_01"
 
 
 def config(buffer=None):
@@ -110,7 +111,8 @@ def test_frozen_migration_matches_model_metadata(monkeypatch, revision_id):
         )
 
     for name in expected:
-        model = Base.metadata.tables[name]
+        from phase8b_schema import before_outbox_metadata
+        model = before_outbox_metadata().tables[name]
         if name == 'auth_session':
             model = model.to_metadata(sa.MetaData(naming_convention=Base.metadata.naming_convention))
             model._columns.remove(model.c.mfa_verified_at)

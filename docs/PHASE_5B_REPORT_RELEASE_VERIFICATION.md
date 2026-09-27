@@ -140,7 +140,9 @@ After rendering the final QR-bearing PDF, SHA-256 of those exact bytes is stored
 as 64 lowercase hexadecimal characters in `report_verification.report_hash`.
 The verification starts AUTHENTIC with the release timestamp and no revocation
 time. Release sets only release lifecycle fields; generation/approval provenance
-is retained. No `blockchain_event` is populated.
+is retained. Phase 5B itself did not populate `blockchain_event`.
+[Phase 8B-1](PHASE_8B_TRANSACTIONAL_OUTBOX.md) subsequently adds forward-only
+outbox capture in this same release transaction, without Fabric calls.
 
 ## Routes and permissions
 

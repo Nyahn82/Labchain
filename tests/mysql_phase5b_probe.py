@@ -44,6 +44,9 @@ def main(socket, scenario):
     settings.public_base_url = 'https://synthetic.example.test'
     try:
         Base.metadata.create_all(engine)
+        from app.cli.bootstrap_blockchain_nodes import ensure_blockchain_nodes
+        with factory.begin() as db:
+            ensure_blockchain_nodes(db)
         now = datetime(2026, 9, 16, 12)
         with factory.begin() as db:
             db.add(UserAccount(user_id=1, username='synthetic', password_hash='not-a-login-hash', account_status='ACTIVE'))

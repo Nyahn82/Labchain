@@ -61,7 +61,9 @@ def test_new_head_offline_mysql_upgrade_and_downgrade():
 
 def test_upgrade_constraints_and_downgrade_preserve_previous_data():
     engine = sa.create_engine("sqlite://")
-    tables = Base.metadata.tables
+    from phase8b_schema import before_outbox_metadata
+    # This fixture deliberately upgrades only the historical Phase 2D/3A schema.
+    tables = before_outbox_metadata().tables
     with engine.connect() as connection:
         connection.exec_driver_sql("PRAGMA foreign_keys=ON")
         scripts = ScriptDirectory.from_config(config())

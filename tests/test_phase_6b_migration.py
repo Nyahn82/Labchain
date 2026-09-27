@@ -11,14 +11,15 @@ from alembic.operations import Operations
 from alembic.script import ScriptDirectory
 import sqlalchemy as sa
 from app.models import Base
-from test_phase_2a_migration import config, revision, HEAD, PHASE_6A
+from test_phase_2a_migration import config, revision, PHASE_6B as HEAD, PHASE_6A, HEAD as CURRENT_HEAD
 
 NEW_TABLES = {'user_totp_mfa', 'mfa_recovery_code', 'mfa_challenge'}
 
 
 def test_mfa_head_and_offline_scope():
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD] == ['20260920_01']
+    assert scripts.get_heads() == [CURRENT_HEAD]
+    assert HEAD == '20260920_01'
     assert scripts.get_revision(HEAD).down_revision == PHASE_6A == '20260916_01'
     output = StringIO()
     command.upgrade(config(output), f'{PHASE_6A}:{HEAD}', sql=True)

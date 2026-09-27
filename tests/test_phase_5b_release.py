@@ -24,6 +24,9 @@ from test_phase_5a_reports import test_auth_rbac_csrf_every_operation as check_a
 
 @pytest.fixture
 def api(admin, tmp_path, monkeypatch):
+    from app.cli.bootstrap_blockchain_nodes import ensure_blockchain_nodes
+    with admin.factory.begin() as db:
+        ensure_blockchain_nodes(db)
     root = tmp_path / 'reports'
     root.mkdir(mode=0o700)
     monkeypatch.setattr(settings, 'report_storage_dir', root)

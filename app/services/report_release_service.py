@@ -15,6 +15,7 @@ from app.config import settings
 from app.models import FacilityProfile, LabOrder, LabReport, PrintLog, ReportVerification
 from app.schemas import reporting as s
 from app.services import report_pdf, report_storage, reporting_service as snapshots
+from app.services import blockchain_outbox_service as outbox
 from app.services.auth_service import utc_now
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import retry_deadlocks
@@ -125,6 +126,10 @@ def release_report(db, report_id, actor_id, ip_address):
                       new={'superseded_by_report_id': report_id})
             audit(db, actor_id, 'REPORT_RELEASE', 'lab_report', report_id, ip_address,
                   old={'status': 'APPROVED'}, new={'status': 'RELEASED', 'version_no': report.version_no})
+            outbox.capture_release(db, report, digest, now, actor_id)
+            if old is not None:
+                outbox.capture_lifecycle(db, old, 'REPORT_SUPERSEDED', now, actor_id,
+                    superseding_report=report)
             db.flush()
             response = snapshots.report_detail(db, report_id, lock=True)
         return response
@@ -223,7 +228,9 @@ def revoke_report(db, report_id, payload, actor_id, ip_address):
         _, report, _ = locked_order_reports(db, report_id)
         if report.report_status != 'RELEASED':
             raise HTTPException(409, 'Only RELEASED reports can be revoked.')
-        revoke_record(db, report, actor_id, ip_address, payload.reason, utc_now())
+        now = utc_now()
+        revoke_record(db, report, actor_id, ip_address, payload.reason, now)
+        outbox.capture_lifecycle(db, report, 'REPORT_REVOKED', now, actor_id)
         db.flush()
         response = snapshots.report_detail(db, report_id, lock=True)
     return response

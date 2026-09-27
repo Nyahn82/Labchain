@@ -4,6 +4,7 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy.orm import configure_mappers
 
 from app.models import Base
+from phase8b_schema import EVENT_ADDITIONS, EXTRA_INDEXES, STATUSES
 from test_phase_2a_models import TABLES as PHASE_2A_TABLES
 from test_phase_2b_models import TABLES as PHASE_2B_TABLES
 from test_phase_2c_models import TABLES as PHASE_2C_TABLES
@@ -63,7 +64,9 @@ def test_exact_metadata_snapshots_and_existing_application():
 @pytest.mark.parametrize("name", sorted(TABLES))
 def test_exact_workbook_columns_types_nullability_keys_and_defaults(name, contract):
     table = Base.metadata.tables[name]
-    assert list(table.c.keys()) == [row[0] for row in contract[name]]
+    additions = EVENT_ADDITIONS if name == 'blockchain_event' else {'blockchain_entity_uuid'} if name == 'lab_report' else set()
+    assert set(table.c.keys()) == {row[0] for row in contract[name]} | additions
+    assert [key for key in table.c.keys() if key not in additions] == [row[0] for row in contract[name]]
     expected_fks = set()
     types = {"BIGINT": sa.BigInteger, "INT": sa.Integer, "VARCHAR": sa.String, "CHAR": sa.CHAR,
              "TEXT": sa.Text, "DATE": sa.Date, "DATETIME": sa.DateTime, "ENUM": sa.Enum,
@@ -82,16 +85,18 @@ def test_exact_workbook_columns_types_nullability_keys_and_defaults(name, contra
         if kind in {"VARCHAR", "CHAR"}:
             assert column.type.length == int(size)
         elif kind == "ENUM":
-            assert column.type.enums == size.split(",")
+            assert column.type.enums == (STATUSES if name == 'blockchain_event' else size.split(','))
         elif kind == "JSON":
             assert column.type.none_as_null is True
         default = "CURRENT_TIMESTAMP" if column_name == "created_at" else "1" if column_name == "is_active" else None
+        if name == 'blockchain_event' and column_name == 'event_status': default = "'PENDING'"
         assert (str(column.server_default.arg) if column.server_default is not None else None) == default
         assert column.default is None and column.onupdate is None and column.server_onupdate is None
+    if name == 'blockchain_event': expected_fks.add((('predecessor_event_id', 'blockchain_event.event_id'),))
     assert {tuple((e.parent.name, e.target_fullname) for e in fk.elements)
             for fk in table.foreign_key_constraints} == expected_fks
     assert {tuple(c.columns.keys()) for c in table.constraints
-            if isinstance(c, sa.UniqueConstraint)} == UNIQUES.get(name, set())
+            if isinstance(c, sa.UniqueConstraint)} == UNIQUES.get(name, set()) | ({('deduplication_key',)} if name == 'blockchain_event' else {('blockchain_entity_uuid',)} if name == 'lab_report' else set())
     assert len(table.primary_key.columns) == 1
 
 
@@ -105,6 +110,7 @@ def test_mysql_storage_indexes_and_restrictive_foreign_keys(name):
     # Every FK gets its own index except the snapshot's existing primary key.
     indexed = {tuple(i.columns.keys()) for i in table.indexes}
     expected = {(fk.parent.name,) for fk in table.foreign_keys if not fk.parent.primary_key}
+    if name == 'blockchain_event': expected |= EXTRA_INDEXES
     assert indexed == expected
     assert all(not i.unique for i in table.indexes)
     for fk in table.foreign_key_constraints:
@@ -116,6 +122,7 @@ def test_mysql_storage_indexes_and_restrictive_foreign_keys(name):
 @pytest.mark.parametrize("table,column,values", ENUMS)
 def test_canonical_native_mysql_enums(table, column, values):
     enum = Base.metadata.tables[table].c[column].type
+    if table == 'blockchain_event': values = STATUSES
     assert enum.enums == values
     assert str(enum.compile(dialect=mysql.dialect())) == "ENUM(" + ",".join(repr(v) for v in values) + ")"
 
@@ -123,6 +130,9 @@ def test_canonical_native_mysql_enums(table, column, values):
 def test_attachment_inclusive_parent_check():
     checks = [(name, c) for name in TABLES for c in Base.metadata.tables[name].constraints
               if isinstance(c, sa.CheckConstraint)]
+    outbox_checks = [c for name, c in checks if name == 'blockchain_event']
+    assert len(outbox_checks) == 4
+    checks = [(name, c) for name, c in checks if name != 'blockchain_event']
     assert len(checks) == 1
     name, check = checks[0]
     assert name == "attachment"

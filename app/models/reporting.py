@@ -4,11 +4,13 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger, Boolean, CHAR, CheckConstraint, Date, DateTime, Enum, ForeignKey,
-    Integer, String, Text, text,
+    Integer, String, Text, text, event,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
+from app.models.outbox_types import UUID_TYPE
+from sqlalchemy.orm.attributes import NO_VALUE
 
 
 class ReportTemplate(Base):
@@ -30,6 +32,7 @@ class LabReport(Base):
     __tablename__ = "lab_report"
 
     report_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    blockchain_entity_uuid: Mapped[str | None] = mapped_column(UUID_TYPE, unique=True)
     report_code: Mapped[str] = mapped_column(String(30), unique=True)
     order_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lab_order.order_id"), index=True)
     facility_id: Mapped[int] = mapped_column(
@@ -154,3 +157,14 @@ class Attachment(Base):
         BigInteger, ForeignKey("user_account.user_id"), index=True
     )
     uploaded_at: Mapped[datetime] = mapped_column(DateTime)
+
+
+@event.listens_for(LabReport.blockchain_entity_uuid, 'set', retval=True, active_history=True)
+def protect_blockchain_entity_uuid(target, value, oldvalue, initiator):
+    from app.models.blockchain import OutboxIntegrityError
+    from app.services.blockchain_outbox_service import require_uuid
+    if oldvalue is not NO_VALUE and oldvalue is not None and value != oldvalue:
+        raise OutboxIntegrityError('Report blockchain identity is immutable.')
+    if value is not None:
+        require_uuid(value)
+    return value

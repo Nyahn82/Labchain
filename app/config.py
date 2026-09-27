@@ -14,6 +14,16 @@ class Settings(BaseSettings):
     node_id: str
     node_name: str
     node_port: int = 5001
+    blockchain_source_node: Literal['node1', 'node2', 'node3', 'node4'] = 'node1'
+    blockchain_source_msp: Literal['Org1MSP', 'Org2MSP'] = 'Org1MSP'
+
+    @model_validator(mode='after')
+    def validate_blockchain_source(self):
+        expected = 'Org1MSP' if self.blockchain_source_node in {'node1', 'node2'} else 'Org2MSP'
+        if self.blockchain_source_msp != expected:
+            raise ValueError('Blockchain source node and MSP do not match.')
+        return self
+
 
     db_host: str
     db_port: int = 3306

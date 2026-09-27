@@ -12,6 +12,8 @@ import pytest
 import sqlalchemy as sa
 
 from app.models import Base
+from phase8b_schema import before_outbox_metadata
+HISTORICAL_METADATA = before_outbox_metadata()
 from test_phase_2a_migration import config, revision, REVISION, PHASE_2B, PHASE_2C, PHASE_2D as HEAD, HEAD as CURRENT_HEAD
 from test_phase_2d_models import TABLES, PREVIOUS_TABLES, UNIQUES, ENUMS
 
@@ -88,7 +90,7 @@ def test_single_head_and_offline_mysql_scope(monkeypatch):
     assert "INSERT INTO" not in sql and "DELETE FROM" not in sql
     assert "ALTER TABLE" not in sql and "synthetic-test-only" not in sql
     for name in ORDER:
-        for fk in Base.metadata.tables[name].foreign_keys:
+        for fk in HISTORICAL_METADATA.tables[name].foreign_keys:
             if fk.column.table.name in TABLES:
                 # Self-reference is defined inside lab_report's CREATE TABLE.
                 assert ORDER.index(fk.column.table.name) <= ORDER.index(name)
@@ -101,7 +103,7 @@ def test_single_head_and_offline_mysql_scope(monkeypatch):
 @pytest.fixture
 def reporting_connection():
     engine = sa.create_engine("sqlite://")
-    t = Base.metadata.tables
+    t = HISTORICAL_METADATA.tables
     try:
         with engine.connect() as c:
             c.exec_driver_sql("PRAGMA foreign_keys=ON")
@@ -148,7 +150,7 @@ def reporting_connection():
 def test_all_foreign_keys_and_required_values(reporting_connection):
     c = reporting_connection
     for name in ORDER:
-        table = Base.metadata.tables[name]
+        table = HISTORICAL_METADATA.tables[name]
         for fk in table.foreign_key_constraints:
             with c.begin_nested(), pytest.raises(sa.exc.IntegrityError):
                 c.execute(table.update().values(**{col.name: 999 for col in fk.columns}))
@@ -161,14 +163,14 @@ def test_all_foreign_keys_and_required_values(reporting_connection):
                  "lab_order", "lab_result_item", "facility_profile", "staff", "user_account"):
         # report_template is optional: explicitly link it before checking deletion.
         if name == "report_template":
-            c.execute(Base.metadata.tables["lab_report"].update().values(template_id=1))
+            c.execute(HISTORICAL_METADATA.tables["lab_report"].update().values(template_id=1))
         with c.begin_nested(), pytest.raises(sa.exc.IntegrityError):
-            c.execute(Base.metadata.tables[name].delete())
+            c.execute(HISTORICAL_METADATA.tables[name].delete())
 
 
 def test_uniqueness_snapshot_key_and_allowed_multiplicity(reporting_connection):
     c = reporting_connection
-    t = Base.metadata.tables
+    t = HISTORICAL_METADATA.tables
     for name, uniques in UNIQUES.items():
         table = t[name]
         pk = next(iter(table.primary_key.columns)).name
@@ -195,7 +197,7 @@ def test_uniqueness_snapshot_key_and_allowed_multiplicity(reporting_connection):
 
 def test_attachment_accepts_either_or_both_parents_but_never_neither(reporting_connection):
     c = reporting_connection
-    table = Base.metadata.tables["attachment"]
+    table = HISTORICAL_METADATA.tables["attachment"]
     for attachment_id, order_id, report_id in [(2, 1, None), (3, None, 1), (4, 1, 1)]:
         c.execute(table.insert().values(**{
             **ROWS["attachment"], "attachment_id": attachment_id, "order_id": order_id, "report_id": report_id,
@@ -208,7 +210,7 @@ def test_attachment_accepts_either_or_both_parents_but_never_neither(reporting_c
 
 def test_report_version_link_and_stored_snapshots(reporting_connection):
     c = reporting_connection
-    t = Base.metadata.tables
+    t = HISTORICAL_METADATA.tables
     c.execute(t["lab_report"].update().values(report_status="RELEASED", released_by_user_id=1, released_at=NOW))
     c.execute(t["lab_report"].insert().values(**{
         **ROWS["lab_report"], "report_id": 2, "report_code": "SYNTH-2", "version_no": 2, "supersedes_report_id": 1,
@@ -242,7 +244,7 @@ def test_report_version_link_and_stored_snapshots(reporting_connection):
 
 def test_json_optional_log_references_and_defaults(reporting_connection):
     c = reporting_connection
-    t = Base.metadata.tables
+    t = HISTORICAL_METADATA.tables
     row = c.execute(sa.select(t["audit_log"])).one()
     assert row.old_value is None and row.new_value == {"status": "GENERATED"}
     assert row.user_id is None and row.ip_address == "2001:db8::1"

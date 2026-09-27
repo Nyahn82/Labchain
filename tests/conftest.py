@@ -27,6 +27,8 @@ os.environ.update({
     "REPORT_SIGNATURE_DIR": "/tmp/rhu-test-signatures-unconfigured",
     "APP_NAME": "RHU LabChain Test",
     "ENVIRONMENT": "test",
+    "BLOCKCHAIN_SOURCE_NODE": "node1",
+    "BLOCKCHAIN_SOURCE_MSP": "Org1MSP",
     "NODE_ID": "test-node",
     "NODE_NAME": "Test Node",
     "NODE_PORT": "5001",
