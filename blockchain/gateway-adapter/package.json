@@ -1,0 +1,17 @@
+{
+  "name": "rhu-labchain-gateway-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check src/cli.js && node --check src/adapter.js && node --check src/protocol.js && node --check src/connection.js"
+  },
+  "dependencies": {
+    "@grpc/grpc-js": "1.14.5",
+    "@hyperledger/fabric-gateway": "1.12.0"
+  }
+}
