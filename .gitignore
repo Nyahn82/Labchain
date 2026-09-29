@@ -34,3 +34,7 @@ blockchain/**/*.pfx
 blockchain/**/keystore/
 blockchain/**/*.tar.gz
 blockchain/**/*.tgz
+
+# Worker production environment is external; reject accidental local copies.
+blockchain-worker.env
+!deploy/blockchain-worker.env.example
