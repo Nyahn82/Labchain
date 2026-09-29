@@ -2,6 +2,8 @@
 
 import os
 import socket
+from pathlib import Path
+import json
 
 import pytest
 
@@ -27,6 +29,22 @@ os.environ.update({
     "REPORT_SIGNATURE_DIR": "/tmp/rhu-test-signatures-unconfigured",
     "APP_NAME": "RHU LabChain Test",
     "ENVIRONMENT": "test",
+    "BLOCKCHAIN_DELIVERY_ENABLED": "false",
+    "BLOCKCHAIN_GATEWAY_ENDPOINT": "127.0.0.1:7051",
+    "BLOCKCHAIN_GATEWAY_TLS_CA_PATH": "/tmp/rhu-test-unconfigured/tls-ca.crt",
+    "BLOCKCHAIN_CLIENT_MSP_ID": "Org1MSP",
+    "BLOCKCHAIN_CLIENT_CERT_PATH": "/tmp/rhu-test-unconfigured/client.crt",
+    "BLOCKCHAIN_CLIENT_KEY_PATH": "/tmp/rhu-test-unconfigured/client.key",
+    "BLOCKCHAIN_CHANNEL": "labchain-channel",
+    "BLOCKCHAIN_CHAINCODE": "labchain-anchor",
+    "BLOCKCHAIN_ADAPTER_COMMAND": json.dumps(['/usr/bin/node', str(Path(__file__).resolve().parents[1] / 'blockchain/gateway-adapter/src/cli.js')]),
+    "BLOCKCHAIN_WORKER_POLL_SECONDS": "2",
+    "BLOCKCHAIN_WORKER_BATCH_SIZE": "1",
+    "BLOCKCHAIN_WORKER_MAX_ATTEMPTS": "8",
+    "BLOCKCHAIN_WORKER_RETRY_BASE_SECONDS": "15",
+    "BLOCKCHAIN_WORKER_RETRY_MAX_SECONDS": "900",
+    "BLOCKCHAIN_WORKER_LEASE_SECONDS": "120",
+    "BLOCKCHAIN_ADAPTER_TIMEOUT_SECONDS": "90",
     "BLOCKCHAIN_SOURCE_NODE": "node1",
     "BLOCKCHAIN_SOURCE_MSP": "Org1MSP",
     "NODE_ID": "test-node",

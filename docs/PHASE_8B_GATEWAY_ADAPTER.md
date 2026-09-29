@@ -1,5 +1,8 @@
 # Phase 8B-2: dedicated client identity and local Gateway adapter
 
+For asynchronous outbox consumption, leases and reconciliation, see the
+[Phase 8B-3 worker guide](PHASE_8B_DELIVERY_WORKER.md).
+
 Phase 8B-1 transactional capture remains unchanged. This phase adds a dedicated
 Org1 CLIENT and a local Node Gateway adapter. It does not deliver outbox rows,
 create migrations, change FastAPI routes/readiness, deploy a worker, change

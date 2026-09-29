@@ -1,5 +1,8 @@
 # Phase 8B-1: transactional report lifecycle capture
 
+Delivery is now implemented separately in [Phase 8B-3](PHASE_8B_DELIVERY_WORKER.md).
+This document describes capture and its original Phase 8B-1 boundary.
+
 Phase 8B-1 adds source code, one migration, a registry bootstrap CLI, and tests.
 It does not deploy a Fabric client or worker. `PENDING` means recorded in MySQL;
 it does **not** mean blockchain anchored. The existing single-VPS prototype and

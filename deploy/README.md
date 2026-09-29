@@ -1,3 +1,5 @@
+> **Phase 8B-3 worker:** the source-only `rhu-labchain-blockchain-worker.service` is disabled by configuration until separate controlled deployment. Follow the [worker guide](../docs/PHASE_8B_DELIVERY_WORKER.md), including dedicated account preparation and the external worker environment; `--once` can write to Fabric.
+
 > **Phase 7A frontend deployment supersedes the legacy frontend instructions below.** Serve compiled Vite assets from `/var/www/rhu-labchain` and follow [the Phase 7A deployment guide](../docs/PHASE_7A_STAFF_FRONTEND.md#hostinger-deployment). Preserve the installed HTTPS/Certbot configuration. The historical `/opt/rhu-labchain/frontend` static root is no longer the production portal root.
 
 # RHU LabChain Phase 1 deployment

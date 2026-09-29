@@ -1,0 +1,44 @@
+[Unit]
+Description=RHU LabChain durable blockchain outbox delivery
+After=network.target mysql.service
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=rhu-labchain-worker
+Group=rhu-labchain-worker
+WorkingDirectory=/opt/rhu-labchain
+EnvironmentFile=/etc/rhu-labchain/blockchain-worker.env
+ExecStart=/opt/rhu-labchain/.venv/bin/python -m app.cli.blockchain_worker
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=110
+KillMode=mixed
+UMask=0077
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+# Do not add SupplementaryGroups=docker. CLI refuses inherited Docker membership.
+InaccessiblePaths=-/run/docker.sock -/var/run/docker.sock -/run/containerd -/run/user
+# Defense in depth: no web secrets, operator MSPs, or peer/orderer administration identities.
+InaccessiblePaths=-/opt/rhu-labchain/.env -/opt/rhu-labchain/blockchain/network/runtime
+InaccessiblePaths=-/opt/rhu-labchain/blockchain/network/generated -/opt/rhu-labchain/blockchain/network/tools
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -56,3 +56,17 @@ test('symlink and oversized credential files are refused', () => {
   const huge = path.join(root, 'huge'); fs.writeFileSync(huge, Buffer.alloc(65537));
   assert.throws(() => credentials({ ...config, cert: huge }), { code: 'CREDENTIAL_INVALID' });
 });
+
+test('offline startup checker validates client and rejects malformed keys without a Gateway', () => {
+  const command = path.resolve('src/check-credentials.js');
+  const env = { PATH: '/usr/bin:/bin', BLOCKCHAIN_GATEWAY_TLS_CA_PATH: config.tlsCA,
+    BLOCKCHAIN_CLIENT_CERT_PATH: config.cert, BLOCKCHAIN_CLIENT_KEY_PATH: config.key };
+  assert.deepEqual(JSON.parse(execFileSync(process.execPath, [command], { env, encoding: 'utf8' })), { ok: true });
+  const original = fs.readFileSync(config.key);
+  try {
+    fs.writeFileSync(config.key, 'SYNTHETIC_PRIVATE_KEY_INVALID');
+    assert.throws(() => execFileSync(process.execPath, [command], { env, stdio: 'pipe' }),
+      (error) => error.status === 1 && error.stdout.toString().trim() === '{"ok":false,"code":"CREDENTIAL_INVALID"}' &&
+        !error.stderr.toString().includes('SYNTHETIC_PRIVATE'));
+  } finally { fs.writeFileSync(config.key, original, { mode: 0o600 }); }
+});
