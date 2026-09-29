@@ -10,6 +10,7 @@ import grp
 import os
 from pathlib import Path
 import pwd
+import re
 import stat
 import subprocess
 import tempfile
@@ -151,10 +152,15 @@ class Host:
                 'Worker has supplementary groups; preparation will not remove or bypass them.')
         password = run(['passwd', '-S', ACCOUNT]).stdout.decode().split()
         require(len(password) >= 2 and password[1] == 'L', 'Worker password must be locked.')
-        # Exit 0 means sudo found privileges; failure is fail-closed unless it
-        # explicitly states that the account is not allowed to use sudo.
-        result = run(['sudo', '-n', '-l', '-U', ACCOUNT], allowed=(0, 1))
-        require(result.returncode == 1 and b'not allowed' in result.stderr + result.stdout,
+        # Both permitted listing exit codes can accompany an explicit denial.
+        # Accept only the complete denial for this account: extra diagnostics or
+        # command listings are ambiguous and must fail closed.
+        result = run(['sudo', '-n', '-l', '-U', ACCOUNT], allowed=(0, 1),
+                     env={**BASE_ENV, 'LANG': 'C', 'LC_ALL': 'C'})
+        policy_output = b' '.join((result.stdout + b'\n' + result.stderr).lower().split())
+        denial = (rb'user ' + re.escape(ACCOUNT.encode('ascii')) +
+                  rb' is not allowed to run sudo on [a-z0-9_][a-z0-9_.-]*\.')
+        require(re.fullmatch(denial, policy_output) is not None,
                 'Worker must have no sudo privileges; verify sudo policy.')
         require(run(['pgrep', '-u', str(user.pw_uid)], allowed=(0, 1)).returncode == 1,
                 'Worker account still has running processes; stop them before preparation.')

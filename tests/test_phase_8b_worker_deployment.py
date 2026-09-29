@@ -304,7 +304,7 @@ def test_real_host_never_mutates_services_other_than_reload(monkeypatch):
         ['systemctl', 'is-enabled', '--quiet', prep.UNIT], ['systemctl', 'daemon-reload']]
 
 
-def account_mocks(monkeypatch, paths, *, groups=None, uid=987, shell='/usr/sbin/nologin', sudo_allowed=False, running=False):
+def account_mocks(monkeypatch, paths, *, groups=None, uid=987, shell='/usr/sbin/nologin', sudo_allowed=False, running=False, sudo_result=None):
     group = SimpleNamespace(gr_gid=987)
     user = SimpleNamespace(pw_uid=uid, pw_gid=987, pw_shell=shell, pw_dir=str(paths.runtime))
     monkeypatch.setattr(prep.grp, 'getgrnam', lambda _: group)
@@ -318,10 +318,57 @@ def account_mocks(monkeypatch, paths, *, groups=None, uid=987, shell='/usr/sbin/
         if argv[0] == 'pgrep':
             return SimpleNamespace(returncode=0 if running else 1, stdout=b'', stderr=b'')
         if argv[0] == 'sudo':
-            return SimpleNamespace(returncode=0 if sudo_allowed else 1, stdout=b'' if sudo_allowed else b'User is not allowed to run sudo', stderr=b'')
+            assert argv == ['sudo', '-n', '-l', '-U', prep.ACCOUNT]
+            assert kwargs['allowed'] == (0, 1)
+            assert kwargs['env'] == {**prep.BASE_ENV, 'LANG': 'C', 'LC_ALL': 'C'}
+            if sudo_result is not None:
+                return sudo_result
+            return SimpleNamespace(returncode=0 if sudo_allowed else 1,
+                stdout=b'' if sudo_allowed else b'User rhu-labchain-worker is not allowed to run sudo on host.', stderr=b'')
         return SimpleNamespace(returncode=0, stdout=b'', stderr=b'')
     monkeypatch.setattr(prep, 'run', command)
     return commands, group, user
+
+
+@pytest.mark.parametrize('returncode', [1, 0])
+@pytest.mark.parametrize(('stdout', 'stderr'), [
+    (b'User rhu-labchain-worker is not allowed to run sudo on host.', b''),
+    (b'', b'User rhu-labchain-worker is not allowed to run sudo on host.'),
+    (b'  USER RHU-LABCHAIN-WORKER\tIS NOT ALLOWED ', b' TO RUN SUDO ON SRV1970421.EXAMPLE.\n'),
+], ids=['stdout', 'stderr', 'normalized_combined'])
+def test_sudo_policy_explicit_denial_accepts_either_listing_exit(monkeypatch, tmp_path, returncode, stdout, stderr):
+    paths = prep.Paths(state_parent=tmp_path)
+    result = SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
+    commands, _, _ = account_mocks(monkeypatch, paths, sudo_result=result)
+    assert prep.Host().account(paths) == (987, 987)
+    assert commands == [['passwd', '-S', prep.ACCOUNT],
+        ['sudo', '-n', '-l', '-U', prep.ACCOUNT], ['pgrep', '-u', '987']]
+
+
+@pytest.mark.parametrize('returncode', [0, 1])
+@pytest.mark.parametrize(('stdout', 'stderr'), [
+    (b'User rhu-labchain-worker may run the following commands on host:\n    (root) /usr/bin/id', b''),
+    (b'User rhu-labchain-worker may run the following commands on host:\n    (ALL) NOPASSWD: ALL', b''),
+    (b'User rhu-labchain-worker may run the following commands on host:\n    (ALL : ALL) ALL', b''),
+    (b'', b''),
+    (b'Policy listing completed.', b''),
+    (b'', b'sudo: operation not allowed by configuration'),
+    (b'User another-account is not allowed to run sudo on host.', b''),
+    (b'', b'sudo: /etc/sudoers: syntax error'),
+    (b'User rhu-labchain-worker is not allowed to run sudo on host.', b'sudo: /etc/sudoers: syntax error'),
+    (b'User rhu-labchain-worker is not allowed to run sudo on host.', b'(ALL) NOPASSWD: ALL'),
+    (b'Example: User rhu-labchain-worker is not allowed to run sudo on host.', b''),
+    (b'User rhu-labchain-worker is not allowed to run sudo on host. Policy unknown.', b''),
+], ids=['command_listing', 'nopasswd', 'all_privileges', 'empty', 'unknown',
+        'unrelated_not_allowed', 'other_account', 'configuration_error',
+        'denial_with_error', 'denial_with_privileges', 'quoted_denial', 'ambiguous_denial'])
+def test_sudo_policy_rejects_privileges_and_ambiguous_output(monkeypatch, tmp_path, returncode, stdout, stderr):
+    paths = prep.Paths(state_parent=tmp_path)
+    result = SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
+    commands, _, _ = account_mocks(monkeypatch, paths, sudo_result=result)
+    with pytest.raises(prep.PreparationError, match='Worker must have no sudo privileges'):
+        prep.Host().account(paths)
+    assert commands == [['passwd', '-S', prep.ACCOUNT], ['sudo', '-n', '-l', '-U', prep.ACCOUNT]]
 
 
 @pytest.mark.parametrize('bad', ['root', 'interactive', 'supplementary_docker', 'sudo', 'running_process'])
