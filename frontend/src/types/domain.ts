@@ -1,3 +1,4 @@
+import type { ReportAnchoring } from "./blockchain";
 export type Row = Record<string, unknown>;
 export interface Page<T = Row> {
   items: T[];
@@ -42,6 +43,7 @@ export interface Result extends Row {
   test: Row;
 }
 export interface Report extends Row {
+  anchoring?: ReportAnchoring | null;
   report_id: number;
   report_code: string;
   order_id: number;

@@ -1,3 +1,4 @@
+import type { PatientBlockchainVerification, SafeAnchoringStatus } from "./blockchain";
 import type { Row } from "./domain";
 export interface PatientSecurity {
   mfa_required: boolean;
@@ -15,6 +16,7 @@ export interface PatientReportSummary extends Row {
   verification_status: "AUTHENTIC" | "REVOKED" | null;
 }
 export interface PatientReport extends PatientReportSummary {
+  blockchain_verification?: PatientBlockchainVerification | null;
   report_status: "RELEASED";
   generated_at: string;
   facility: Row;
@@ -32,6 +34,8 @@ export interface PatientResult extends Row {
   sort_order: number;
 }
 export interface PublicVerification {
+  blockchain_status?: SafeAnchoringStatus | null;
+  blockchain_confirmed_at?: string | null;
   status: "VERIFIED" | "REVOKED" | "ALTERED" | "NOT_FOUND";
   issuing_facility?: string;
   report_date?: string;

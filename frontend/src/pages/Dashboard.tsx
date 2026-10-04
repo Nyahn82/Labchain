@@ -1,3 +1,4 @@
+import { BlockchainQueue } from "../components/BlockchainQueue";
 import { Link } from "react-router-dom";
 import { ArrowUpRight, Users, ClipboardList, FileText } from "lucide-react";
 import { useAuth } from "../auth/Auth";
@@ -84,6 +85,7 @@ export function Dashboard() {
           />
         )}
       </div>
+      {can("BLOCKCHAIN_STATUS_VIEW") && <BlockchainQueue />}
       <section className="card">
         <div className="section-heading">
           <h2>Quick actions</h2>

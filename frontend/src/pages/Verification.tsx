@@ -1,3 +1,4 @@
+import { SafeReportAnchoring, isSafeAnchoringStatus } from "../components/BlockchainAnchoring";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ShieldCheck, ShieldAlert, CircleHelp } from "lucide-react";
@@ -138,6 +139,13 @@ export function Verification() {
                   </div>
                 )}
               </dl>
+            )}
+            {data.status !== "NOT_FOUND" && isSafeAnchoringStatus(data.blockchain_status) && (
+              <SafeReportAnchoring
+                audience="public"
+                status={data.blockchain_status}
+                confirmedAt={data.blockchain_confirmed_at}
+              />
             )}
           </section>
         )}

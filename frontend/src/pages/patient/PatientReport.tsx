@@ -1,3 +1,4 @@
+import { SafeReportAnchoring } from "../../components/BlockchainAnchoring";
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../../api/client";
@@ -119,6 +120,11 @@ export function PatientReport() {
                   : "Integrity information is not available. Contact the laboratory if you need help."}
               </p>
             </section>
+            <SafeReportAnchoring
+              audience="patient"
+              status={state.data.blockchain_verification?.status}
+              confirmedAt={state.data.blockchain_verification?.confirmed_at}
+            />
           </>
         )
       )}

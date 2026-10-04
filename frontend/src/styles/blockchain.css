@@ -1,0 +1,65 @@
+/* Scoped additions retain the existing card, badge and details styles. */
+.anchoring-state .badge {
+  white-space: normal;
+  font-size: 12px;
+}
+.anchoring-state.tone-neutral .badge {
+  background: #e1e9ee;
+  color: #405e71;
+}
+.anchoring-state.tone-info .badge {
+  background: #e0edf6;
+  color: #25577b;
+}
+.anchoring-state.tone-success .badge {
+  background: #dcefe7;
+  color: #22614a;
+}
+.anchoring-state.tone-warning .badge {
+  background: #fff0cd;
+  color: #805715;
+}
+.anchoring-state.tone-danger .badge {
+  background: #f6dfe1;
+  color: #95282f;
+}
+.anchoring-lifecycles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 20px;
+}
+.anchoring-lifecycle {
+  min-width: 0;
+  border-top: 1px solid var(--line);
+}
+.anchoring-lifecycle h3 {
+  font-size: 15px;
+}
+.anchoring-receipt {
+  font-size: 12px;
+}
+.anchoring-receipt dt {
+  color: var(--muted);
+  margin-top: 12px;
+}
+.anchoring-receipt dd {
+  margin: 4px 0 0;
+  overflow-wrap: anywhere;
+}
+.anchoring-receipt code {
+  font-family: ui-monospace, monospace;
+}
+.anchoring-counts {
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  margin-bottom: 16px;
+}
+.anchoring-counts dd {
+  font-size: 20px;
+  font-weight: 650;
+}
+.anchoring-public {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 24px;
+  color: var(--text);
+}

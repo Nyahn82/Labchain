@@ -1,3 +1,4 @@
+import { StaffReportAnchoring } from "../components/BlockchainAnchoring";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, pdf } from "../api/client";
@@ -234,6 +235,7 @@ function ReportContent() {
           {["RELEASED", "REVOKED"].includes(state.data.report_status) && (
             <Verification id={id!} />
           )}
+          <StaffReportAnchoring anchoring={state.data.anchoring} />
         </>
       )}
     </>
