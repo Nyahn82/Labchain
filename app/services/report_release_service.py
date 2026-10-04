@@ -17,6 +17,7 @@ from app.schemas import reporting as s
 from app.services import report_pdf, report_storage, reporting_service as snapshots
 from app.services import blockchain_outbox_service as outbox
 from app.services.auth_service import utc_now
+from app.services.blockchain_status_service import report_anchoring, safe_verification
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import retry_deadlocks
 
@@ -217,7 +218,9 @@ def public_verification(db, token, ip_address):
         else:
             status, message = 'VERIFIED', 'The released report matches the stored integrity record.'
         facility = get_record(db, FacilityProfile, report.facility_id)
+        anchoring = safe_verification(report_anchoring(db, report, revoked=status == 'REVOKED'))
         response = s.PublicVerificationResponse(status=status, message=message, issuing_facility=facility.facility_name,
+            blockchain_status=anchoring.status, blockchain_confirmed_at=anchoring.confirmed_at,
             report_date=report.released_at.date() if report.released_at else None, version=report.version_no)
     return response
 

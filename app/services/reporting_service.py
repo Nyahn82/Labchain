@@ -13,6 +13,7 @@ from app.models import (
 )
 from app.schemas import reporting as s
 from app.services.auth_service import utc_now
+from app.services.blockchain_status_service import report_anchoring
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import related, retry_deadlocks
 from app.services.report_formatting import full_years, printable_name, printable_range
@@ -127,6 +128,7 @@ def report_detail(db, report_id, *, lock=False):
     lines = list(db.scalars(current(select(ReportResultItem).where(ReportResultItem.report_id == report_id)
                                    .order_by(ReportResultItem.sort_order, ReportResultItem.report_result_item_id), lock)))
     return s.ReportDetail(**fields(report), **version_metadata(db, report),
+        anchoring=report_anchoring(db, report),
         facility=s.FacilityResponse.model_validate(get_record(db, FacilityProfile, report.facility_id, lock=lock)),
         template=s.TemplateResponse.model_validate(get_record(db, ReportTemplate, report.template_id, lock=lock))
                  if report.template_id is not None else None,

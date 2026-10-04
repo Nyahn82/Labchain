@@ -7,6 +7,7 @@ from pydantic import Field, SecretStr, model_validator
 from app.schemas.auth import Username
 from app.schemas.identity import Input, Sex
 from app.schemas.laboratory import Output
+from app.schemas.blockchain import PatientBlockchainVerification, EVIDENCE_DESCRIPTION
 
 
 class ActivationRequest(Input):
@@ -112,6 +113,7 @@ class Signatory(Output):
 
 
 class ReportDetail(ReportSummary):
+    blockchain_verification: PatientBlockchainVerification = Field(description=EVIDENCE_DESCRIPTION)
     report_status: Literal['RELEASED']
     generated_at: datetime
     facility: Facility

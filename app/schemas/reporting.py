@@ -5,6 +5,7 @@ from pydantic import Field
 
 from app.schemas.identity import Address, Contact, Email, Identifier, Input, text_field
 from app.schemas.laboratory import Output, Partial, SortOrder
+from app.schemas.blockchain import ReportAnchoring, SafeAnchoringStatus, EVIDENCE_DESCRIPTION
 
 ReportStatus = Literal['GENERATED', 'APPROVED', 'RELEASED', 'REVOKED']
 SignatoryType = Literal['LAB_IN_CHARGE', 'MEDICAL_TECHNOLOGIST', 'PATHOLOGIST']
@@ -153,6 +154,7 @@ class ReportResponse(Output):
 
 
 class ReportDetail(ReportResponse):
+    anchoring: ReportAnchoring = Field(description=EVIDENCE_DESCRIPTION)
     facility: FacilityResponse
     template: TemplateResponse | None
     patient_snapshot: PatientSnapshot | None
@@ -177,6 +179,8 @@ class VerificationResponse(Output):
 
 
 class PublicVerificationResponse(Output):
+    blockchain_status: SafeAnchoringStatus | None = Field(default=None, description=EVIDENCE_DESCRIPTION)
+    blockchain_confirmed_at: datetime | None = Field(default=None, description="UTC; all relevant lifecycle evidence confirmed.")
     status: Literal['VERIFIED', 'REVOKED', 'ALTERED', 'NOT_FOUND']
     issuing_facility: str | None = None
     report_date: date | None = None

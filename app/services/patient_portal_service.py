@@ -11,6 +11,7 @@ from app.schemas import patient_portal as s
 from app.services import report_release_service as artifacts, reporting_service as snapshots
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import retry_deadlocks
+from app.services.blockchain_status_service import safe_verification
 
 PATIENT_ACTIONS = ('PATIENT_REPORT_VIEW', 'PATIENT_REPORT_DOWNLOAD')
 
@@ -66,7 +67,7 @@ def report_detail(db, context, report_id, ip_address):
         if detail.patient_snapshot is None:
             raise HTTPException(409, 'Report content is unavailable.')
         order = get_record(db, LabOrder, report.order_id)
-        result = s.ReportDetail(report_id=report_id, report_code=report.report_code, version_no=report.version_no,
+        result = s.ReportDetail(blockchain_verification=safe_verification(detail.anchoring), report_id=report_id, report_code=report.report_code, version_no=report.version_no,
             report_status='RELEASED', released_at=report.released_at, generated_at=report.generated_at,
             order_code=order.order_code, issuing_facility=detail.facility.facility_name,
             verification_status=detail.verification_status, facility=s.Facility.model_validate(detail.facility),

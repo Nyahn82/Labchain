@@ -403,12 +403,13 @@ def test_bootstrap_idempotent_preserves_metadata_and_assignments(api, capsys):
         permission.permission_name = 'Custom metadata'
         permission.description = 'Preserve me'
         assert ensure_permissions(db) == []
-        db.delete(db.scalar(select(Permission).where(Permission.permission_code == 'ROLE_ASSIGN')))
+        db.delete(db.scalar(select(Permission).where(Permission.permission_code == 'BLOCKCHAIN_STATUS_VIEW')))
     bootstrap_permissions.main()
     bootstrap_permissions.main()
     assert 'created 1 permission(s)' in capsys.readouterr().out
     with api.factory() as db:
         assert count(db, Permission) == len(PERMISSION_CATALOG) + 1 and count(db, RolePermission) == 1
+        assert db.scalar(select(Permission).where(Permission.permission_code == 'BLOCKCHAIN_STATUS_VIEW')) is not None
         permission = db.scalar(select(Permission).where(Permission.permission_code == 'PATIENT_READ'))
         assert permission.permission_name == 'Custom metadata' and permission.description == 'Preserve me'
 

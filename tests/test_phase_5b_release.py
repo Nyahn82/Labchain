@@ -129,7 +129,8 @@ def test_release_snapshots_pdf_qr_hash_and_download(api, monkeypatch):
     public = verify(api)
     assert public.status_code == 200 and public.json()['status'] == 'VERIFIED'
     assert public.headers['cache-control'] == 'no-store'
-    assert set(public.json()) == {'status', 'issuing_facility', 'report_date', 'version', 'message'}
+    assert set(public.json()) == {'status', 'issuing_facility', 'report_date', 'version', 'message', 'blockchain_status'}
+    assert public.json()['blockchain_status'] == 'PENDING'
     for secret in (original['patient_snapshot']['patient_name'], original['patient_snapshot']['patient_code'], str(settings.report_storage_dir)):
         assert secret not in public.text
     assert call(api, 'POST', '/reports/1/release').status_code == 409
