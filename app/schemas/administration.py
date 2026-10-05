@@ -3,12 +3,12 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, field_validator, model_validator
 
 from app.schemas.auth import PatientIdentity, StaffIdentity, Username
 from app.schemas.identity import Input, text_field
 
-AccountStatus = Literal['ACTIVE', 'INACTIVE', 'LOCKED']
+AccountStatus = Literal['ACTIVE', 'INACTIVE', 'LOCKED', 'SUSPENDED', 'DISABLED']
 
 
 class RoleReplacement(Input):
@@ -27,12 +27,30 @@ class StaffAccountCreate(RoleReplacement):
 
 class StatusUpdate(Input):
     account_status: AccountStatus
+    reason: text_field(500) | None = None
+    revoke_sessions: Literal[True] = True
+
+    @model_validator(mode='after')
+    def suspension_reason_required(self):
+        if self.account_status == 'SUSPENDED' and not self.reason:
+            raise ValueError('A suspension reason is required.')
+        if self.account_status != 'SUSPENDED' and self.reason is not None:
+            raise ValueError('Reason is only accepted for suspension.')
+        return self
+
+
+class SuspendRequest(Input):
+    reason: text_field(500)
+    revoke_sessions: Literal[True] = True
 
 
 class AccountResponse(BaseModel):
     user_id: int
     username: str
     account_status: AccountStatus
+    suspended_at: datetime | None = None
+    suspended_by_user_id: int | None = None
+    suspension_reason: str | None = None
     last_login_at: datetime | None
     created_at: datetime
     roles: list[str]

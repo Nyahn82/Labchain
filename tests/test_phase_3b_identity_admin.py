@@ -301,7 +301,7 @@ def test_disable_revokes_all_sessions_and_reactivation_does_not_restore_them(adm
         sessions = list(db.scalars(select(AuthSession).where(AuthSession.user_id == 2)))
         assert len(sessions) == 2 and all(row.revoked_at for row in sessions)
         assert db.scalar(select(AuthSession).where(AuthSession.user_id == 1)).revoked_at is None
-        log = db.scalar(select(AuditLog).where(AuditLog.action == 'ACCOUNT_STATUS_UPDATE'))
+        log = db.scalar(select(AuditLog).where(AuditLog.action == ('ACCOUNT_LOCKED' if status == 'LOCKED' else 'ACCOUNT_STATUS_UPDATE')))
         assert log.old_value == {'account_status': 'ACTIVE'} and log.new_value == {'account_status': status}
     assert request(admin, 'PATCH', '/users/2/status', {'account_status': 'ACTIVE'}).status_code == 200
     admin.client.cookies.clear()
@@ -325,7 +325,7 @@ def test_role_discovery_replacement_assignment_and_live_auth(admin):
     assert request(admin, 'PUT', '/users/2/roles', {'role_codes': []}).json()['roles'] == []
     assert request(admin, 'PUT', '/users/999/roles', {'role_codes': []}).status_code == 404
     assert request(admin, 'PATCH', '/users/999/status', {'account_status': 'ACTIVE'}).status_code == 404
-    assert request(admin, 'PATCH', '/users/2/status', {'account_status': 'DISABLED'}).status_code == 422
+    assert request(admin, 'PATCH', '/users/2/status', {'account_status': 'UNKNOWN'}).status_code == 422
 
 
 @pytest.mark.parametrize('operation', ['disable', 'lock', 'remove'])
@@ -339,8 +339,9 @@ def test_last_active_admin_protection(admin, operation):
     assert request(admin, method, path, payload).status_code == 409
     with admin.factory.begin() as db:
         db.get(UserAccount, 2).account_status = 'ACTIVE'
-    assert request(admin, method, path, payload).status_code == 200
-    assert admin.client.get(BASE + '/auth/me').status_code == (200 if operation == 'remove' else 401)
+    # Phase 10 forbids self-deactivation even when another admin exists.
+    assert request(admin, method, path, payload).status_code == (200 if operation == 'remove' else 409)
+    assert admin.client.get(BASE + '/auth/me').status_code == 200
     if operation == 'remove':
         assert request(admin, 'GET', '/users').status_code == 403
 
@@ -455,7 +456,7 @@ def test_openapi_contract_and_migration_chain():
     assert 'password_hash' not in json.dumps(schema)
     assert '/api/v1/patients/{patient_id}/account' not in schema['paths']
     assert ScriptDirectory.from_config(config()).get_heads() == [HEAD]
-    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 8
+    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 9
 
 
 def test_account_patient_summary_is_read_only_and_minimal(admin):

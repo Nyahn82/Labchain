@@ -23,6 +23,8 @@ PERMISSION_CATALOG = (
     ('REFERRING_FACILITY_UPDATE', 'Update referring facilities', 'Update referring facility records.'),
     ('ACCOUNT_READ', 'Read accounts', 'View safe account metadata and linked identity summaries.'),
     ('ACCOUNT_CREATE', 'Create staff accounts', 'Create login accounts for active staff.'),
+    ('AUTH_ACTIVITY_VIEW', 'View authentication activity', 'Read private account authentication history and sessions.'),
+    ('SESSION_MANAGE', 'Manage account sessions', 'Read and revoke account sessions.'),
     ('ACCOUNT_STATUS_UPDATE', 'Update account status', 'Activate, deactivate or lock accounts and revoke sessions.'),
     ('ROLE_READ', 'Read roles and permissions', 'Discover role and permission metadata.'),
     ('ROLE_ASSIGN', 'Assign user roles', 'Replace user role assignments within the actor authority.'),

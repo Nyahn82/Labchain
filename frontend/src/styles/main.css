@@ -3,3 +3,5 @@
 @import url("./patient.css");
 @import url("./blockchain.css");
 @import url("./monitor.css");
+
+.auth-user-agent { display: block; max-width: 24rem; overflow-wrap: anywhere; white-space: pre-wrap; }

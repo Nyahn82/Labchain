@@ -25,6 +25,8 @@ def account_response(user):
     return AccountResponse(
         user_id=user.user_id, username=user.username, account_status=user.account_status,
         last_login_at=user.last_login_at, created_at=user.created_at,
+        suspended_at=user.suspended_at, suspended_by_user_id=user.suspended_by_user_id,
+        suspension_reason=user.suspension_reason,
         roles=sorted(assignment.role.role_code for assignment in user.user_roles),
         staff=user.staff_link.staff if user.staff_link else None,
         patient=user.patient_link.patient if user.patient_link else None,
@@ -134,11 +136,30 @@ def create_staff_account(db, staff_id, payload, actor_id, ip_address):
     return result
 
 
-def update_status(db, user_id, payload, actor_id, ip_address):
+# INACTIVE remains a legacy state; no existing data is reinterpreted.
+STATUS_TRANSITIONS = {
+    'ACTIVE': {'SUSPENDED', 'LOCKED', 'DISABLED', 'INACTIVE'},
+    'SUSPENDED': {'ACTIVE', 'DISABLED'},
+    'LOCKED': {'ACTIVE', 'DISABLED'},  # explicit existing status/unlock operation
+    'DISABLED': {'ACTIVE'},  # explicit enable; not the reactivate endpoint
+    'INACTIVE': {'ACTIVE', 'DISABLED'},
+}
+
+
+def update_status(db, user_id, payload, actor_id, ip_address, *, expected_status=None):
     with mutation(db):
         admin_role = lock_administration(db)
         admin, _ = actor_authority(db, actor_id, 'ACCOUNT_STATUS_UPDATE')
         user = get_record(db, UserAccount, user_id, lock=True)
+        from app.services.rbac_service import get_user_roles
+        if 'PATIENT' in get_user_roles(db, actor_id) or db.scalar(select(PatientAccountLink.user_id).where(PatientAccountLink.user_id == actor_id)) is not None:
+            raise HTTPException(403, 'Staff administration access required.')
+        if expected_status is not None and user.account_status != expected_status:
+            raise HTTPException(409, 'Invalid account status transition.')
+        if payload.account_status not in STATUS_TRANSITIONS.get(user.account_status, set()):
+            raise HTTPException(409, 'Invalid account status transition.')
+        if user_id == actor_id:
+            raise HTTPException(409, 'You cannot change your own account status.')
         roles = current_roles(db, user_id)
         if not admin and any(role.role_code == SYSTEM_ADMIN_ROLE_CODE for role in roles):
             raise HTTPException(403, 'Only SYSTEM_ADMIN may manage administrator accounts.')
@@ -147,14 +168,29 @@ def update_status(db, user_id, payload, actor_id, ip_address):
         old_status = user.account_status
         user.account_status = payload.account_status
         user.updated_at = utc_now()
-        if payload.account_status in {'INACTIVE', 'LOCKED'}:
+        if payload.account_status == 'SUSPENDED':
+            user.suspended_at = user.updated_at
+            user.suspended_by_user_id = actor_id
+            user.suspension_reason = payload.reason
+        else:
+            user.suspended_at = user.suspended_by_user_id = user.suspension_reason = None
+        if payload.account_status != 'ACTIVE':
             from app.services.mfa_service import revoke_challenges
             revoke_challenges(db, user_id, user.updated_at)
             db.execute(update(AuthSession).where(AuthSession.user_id == user_id,
                                                 AuthSession.revoked_at.is_(None))
                        .values(revoked_at=user.updated_at))
-        audit(db, actor_id, 'ACCOUNT_STATUS_UPDATE', 'user_account', user_id, ip_address,
-              old={'account_status': old_status}, new={'account_status': payload.account_status})
+            audit(db, actor_id, 'AUTH_ALL_SESSIONS_REVOKED', 'user_account', user_id, ip_address,
+                  new={'cause': 'account_status_change'})
+        action = {'SUSPENDED': 'ACCOUNT_SUSPENDED', 'LOCKED': 'ACCOUNT_LOCKED',
+                  'DISABLED': 'ACCOUNT_DISABLED'}.get(payload.account_status, 'ACCOUNT_STATUS_UPDATE')
+        if old_status == 'SUSPENDED' and payload.account_status == 'ACTIVE':
+            action = 'ACCOUNT_REACTIVATED'
+        values = {'account_status': payload.account_status}
+        if payload.account_status == 'SUSPENDED':
+            values['reason'] = payload.reason
+        audit(db, actor_id, action, 'user_account', user_id, ip_address,
+              old={'account_status': old_status}, new=values)
         db.flush()
         result = account_response(user)
     return result

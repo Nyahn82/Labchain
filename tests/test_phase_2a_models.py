@@ -22,6 +22,7 @@ UNIQUES = {
     "role_permission": {("role_id", "permission_id")},
 }
 FOREIGN_KEYS = {
+    ("user_account", "suspended_by_user_id", "user_account.user_id"),
     ("requesting_physician", "referring_facility_id", "referring_facility.referring_facility_id"),
     ("staff_account_link", "staff_id", "staff.staff_id"),
     ("staff_account_link", "user_id", "user_account.user_id"),
@@ -96,7 +97,7 @@ def test_one_to_one_and_assignment_relationships():
 
 def test_enum_values_defaults_and_patient_name_index():
     assert Patient.__table__.c.sex.type.enums == ["M", "F", "Other"]
-    assert UserAccount.__table__.c.account_status.type.enums == ["ACTIVE", "INACTIVE", "LOCKED"]
+    assert UserAccount.__table__.c.account_status.type.enums == ["ACTIVE", "INACTIVE", "LOCKED", "SUSPENDED", "DISABLED"]
     assert Patient.__table__.c.sex.nullable
     assert not UserAccount.__table__.c.account_status.nullable
     for name in TABLES:

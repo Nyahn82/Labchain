@@ -5,7 +5,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.api import administration, laboratory, patients, physicians, referring_facilities, staff, workflow, results, reporting
-from app.api import patient_activation, patient_portal, mfa, blockchain, blockchain_monitor
+from app.api import auth_activity, patient_activation, patient_portal, mfa, blockchain, blockchain_monitor
 from app.api.auth import router as auth_router
 from app.api.health import router as health_router
 from app.api.verification import router as verification_router
@@ -83,3 +83,5 @@ app.include_router(patient_portal.router, prefix="/api/v1")
 app.include_router(mfa.router, prefix="/api/v1")
 app.include_router(blockchain.router, prefix="/api/v1")
 app.include_router(blockchain_monitor.router, prefix="/api/v1")
+
+app.include_router(auth_activity.router, prefix="/api/v1")

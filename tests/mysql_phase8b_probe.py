@@ -47,7 +47,7 @@ def main(socket):
             with engine.begin() as db:
                 db.execute(sa.text("INSERT INTO blockchain_event (event_uuid,origin_node_id,entity_type,entity_id,event_type,record_hash,event_status) VALUES (:uuid,1,'REPORT',1,'REPORT_RELEASED',:hash,:status)"), {'uuid':str(uuid4()), 'hash':'a'*64, 'status':status})
             try:
-                command.upgrade(cfg, 'head')
+                command.upgrade(cfg, '20260924_01')
                 raise AssertionError('Nonempty migration should abort')
             except RuntimeError as exc:
                 assert 'Manual review' in str(exc)
@@ -64,7 +64,7 @@ def main(socket):
             db.exec_driver_sql("INSERT INTO lab_order (order_code,patient_id,order_date,priority,status) VALUES ('SYNTH',1,NOW(),'ROUTINE','REQUESTED')")
             for number in (1, 2):
                 db.execute(sa.text("INSERT INTO lab_report (report_code,order_id,facility_id,version_no,report_status,generated_by_user_id,generated_at) VALUES (:code,1,1,:version,'RELEASED',1,NOW())"), {'code':f'SYNTH-{number}', 'version':number})
-        command.upgrade(cfg, 'head')
+        command.upgrade(cfg, '20260924_01')
         assert_outbox_schema(engine)
         with engine.connect() as db:
             inspector = sa.inspect(db)
@@ -141,7 +141,7 @@ def main(socket):
         except RuntimeError as exc: assert 'identities exist' in str(exc)
         with engine.begin() as db: db.exec_driver_sql('UPDATE lab_report SET blockchain_entity_uuid=NULL')
         command.downgrade(cfg, '20260920_01')
-        command.upgrade(cfg, 'head')
+        command.upgrade(cfg, '20260924_01')
         assert_outbox_schema(engine)
         print('Phase 8B MySQL migration checks passed')
     finally:

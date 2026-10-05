@@ -20,6 +20,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/Auth";
 import { Alert } from "../components/UI";
 export const navigation = [
+  { to: "/administration/activity", label: "Authentication Activity", icon: Shield, permission: "AUTH_ACTIVITY_VIEW" },
   {
     to: "/administration/blockchain",
     label: "Blockchain Monitor",
@@ -117,6 +118,7 @@ export function Shell() {
   const visible = (n: (typeof navigation)[number]) =>
     !n.permission ||
     can(n.permission) ||
+    (n.to === "/administration/activity" && can("SESSION_MANAGE")) ||
     (n.to === "/administration" && can("ROLE_READ")) ||
     (n.to === "/laboratory" && can("REJECTION_REASON_MANAGE"));
   const staffAccess = navigation.some((n) => n.permission && visible(n));

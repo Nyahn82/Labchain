@@ -23,6 +23,9 @@ def before_outbox_metadata():
     for source in Base.metadata.sorted_tables:
         table = source.to_metadata(metadata)
         removed = EVENT_ADDITIONS if table.name == 'blockchain_event' else {'blockchain_entity_uuid'} if table.name == 'lab_report' else set()
+        if table.name == 'user_account':
+            removed = {'suspended_at', 'suspended_by_user_id', 'suspension_reason'}
+            table.c.account_status.type = sa.Enum('ACTIVE', 'INACTIVE', 'LOCKED', name='account_status')
         for constraint in list(table.constraints):
             if set(constraint.columns.keys()) & removed or (table.name == 'blockchain_event' and isinstance(constraint, sa.CheckConstraint)):
                 table.constraints.remove(constraint)

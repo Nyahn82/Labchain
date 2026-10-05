@@ -16,6 +16,7 @@ import { Details } from "../components/Details";
 import type { Row, Page } from "../types/domain";
 import { field, resources } from "./resources";
 import { person } from "../utils/display";
+import { ActivityList, SessionList, SuspensionActions } from "./AuthActivity";
 export function PersonDetail({ kind }: { kind: "patients" | "staff" }) {
   return (
     <PermissionGuard permission={resources[kind].read}>
@@ -48,7 +49,7 @@ function PersonContent({ kind }: { kind: "patients" | "staff" }) {
           </section>
           {kind === "patients" &&
             (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ")) && (
-              <Activation id={id!} />
+              <><Activation id={id!} />{can("ACCOUNT_READ") && <StaffAccountAssociation id={id!} kind="patients" />}</>
             )}{" "}
           {kind === "staff" && <StaffAccounts id={id!} />}
         </>
@@ -112,7 +113,7 @@ function StaffAccounts({ id }: { id: string }) {
     </section>
   );
 }
-function StaffAccountAssociation({ id }: { id: string }) {
+function StaffAccountAssociation({ id, kind = "staff" }: { id: string; kind?: "staff" | "patients" }) {
   const [account, setAccount] = useState<Row>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error>();
@@ -120,23 +121,8 @@ function StaffAccountAssociation({ id }: { id: string }) {
     const controller = new AbortController();
     async function find() {
       try {
-        let pageNumber = 1;
-        while (!controller.signal.aborted) {
-          const records = await api<Page>(
-            `/users?page=${pageNumber}&page_size=100`,
-            { signal: controller.signal },
-          );
-          if (controller.signal.aborted) return;
-          const match = records.items.find(
-            (r) => (r.staff as Row | null)?.staff_id === Number(id),
-          );
-          if (match) {
-            setAccount(match);
-            break;
-          }
-          if (pageNumber * 100 >= records.total) break;
-          pageNumber++;
-        }
+        const records = await api<Page>(`/users?${kind === "staff" ? "staff_id" : "patient_id"}=${id}&page_size=1`, { signal: controller.signal });
+        if (!controller.signal.aborted) setAccount(records.items[0]);
       } catch (e) {
         if (!controller.signal.aborted) setError(e as Error);
       } finally {
@@ -145,7 +131,7 @@ function StaffAccountAssociation({ id }: { id: string }) {
     }
     void find();
     return () => controller.abort();
-  }, [id]);
+  }, [id, kind]);
   return (
     <>
       <State loading={loading} error={error} />
@@ -279,7 +265,7 @@ function Accounts() {
               }}
             >
               <option value="">All</option>
-              {["ACTIVE", "INACTIVE", "LOCKED"].map((v) => (
+              {["ACTIVE", "SUSPENDED", "LOCKED", "DISABLED", "INACTIVE"].map((v) => (
                 <option key={v}>{v}</option>
               ))}
             </select>
@@ -297,6 +283,7 @@ function Accounts() {
               columns={[
                 { key: "username", label: "Username" },
                 { key: "staff", label: "Staff association" },
+                { key: "patient", label: "Patient portal association" },
                 { key: "account_status", label: "Status", badge: true },
                 {
                   key: "roles",
@@ -387,7 +374,10 @@ export function AccountEditor({
   done: () => void;
   can: (p: string) => boolean;
 }) {
+  const { user } = useAuth();
   const [status, setStatus] = useState(String(account.account_status));
+  const [activityVersion, setActivityVersion] = useState(0);
+  const transitions: Record<string, string[]> = { ACTIVE: ["LOCKED", "DISABLED"], SUSPENDED: ["DISABLED"], LOCKED: ["ACTIVE", "DISABLED"], DISABLED: ["ACTIVE"], INACTIVE: ["ACTIVE", "DISABLED"] };
   const [selected, setSelected] = useState(account.roles as string[]);
   const roles = useResource<Row[]>(can("ROLE_READ") ? "/roles" : null);
   const path = `/users/${account.user_id}`;
@@ -400,11 +390,16 @@ export function AccountEditor({
             "username",
             "account_status",
             "staff",
+            "patient",
+            "suspended_at",
+            "suspended_by_user_id",
+            "suspension_reason",
             "created_at",
             "last_login_at",
           ]}
         />
-        {can("ACCOUNT_STATUS_UPDATE") && (
+        {can("ACCOUNT_STATUS_UPDATE") && <SuspensionActions account={account} done={done} />}
+        {can("ACCOUNT_STATUS_UPDATE") && user?.user_id !== account.user_id && (
           <div className="actions">
             <label>
               New account status
@@ -412,7 +407,7 @@ export function AccountEditor({
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
               >
-                {choices("ACTIVE", "INACTIVE", "LOCKED").map((c) => (
+                {choices(String(account.account_status), ...(transitions[String(account.account_status)] || [])).map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
                   </option>
@@ -420,7 +415,7 @@ export function AccountEditor({
               </select>
             </label>
             <Action
-              label="Update account status"
+              label={account.account_status === "LOCKED" && status === "ACTIVE" ? "Unlock Account" : (account.account_status === "DISABLED" || account.account_status === "INACTIVE") && status === "ACTIVE" ? "Enable Account" : "Update account status"}
               description={`Change ${account.username} to ${status}. Disabling or locking may end access.`}
               valid={status !== account.account_status}
               run={() =>
@@ -434,6 +429,8 @@ export function AccountEditor({
           </div>
         )}
       </section>
+      {(can("AUTH_ACTIVITY_VIEW") || can("SESSION_MANAGE")) && <SessionList userId={Number(account.user_id)} onChanged={() => setActivityVersion(v => v + 1)} />}
+      {can("AUTH_ACTIVITY_VIEW") && <ActivityList key={activityVersion} userId={Number(account.user_id)} />}
       {can("ROLE_ASSIGN") && (
         <section className="card">
           <h2>Role assignment</h2>

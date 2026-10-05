@@ -23,6 +23,7 @@ import { PatientReport } from "./pages/patient/PatientReport";
 import { MfaSetup, PatientSecurityPage } from "./pages/patient/Security";
 import { Verification } from "./pages/Verification";
 import { BlockchainMonitor } from "./pages/BlockchainMonitor";
+import { AuthenticationActivity } from "./pages/AuthActivity";
 export function AppRoutes() {
   return (
     <Routes>
@@ -104,6 +105,7 @@ export function AppRoutes() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetail />} />
           <Route path="administration" element={<Administration />} />
+          <Route path="administration/activity" element={<AuthenticationActivity />} />
           <Route path="administration/blockchain" element={<BlockchainMonitor />} />
           <Route path="administration/:id" element={<AccountDetail />} />
           <Route

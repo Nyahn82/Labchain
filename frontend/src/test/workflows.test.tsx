@@ -523,7 +523,7 @@ describe("administration and dialogs", () => {
             { role_code: "STAFF", role_name: "Staff", is_active: true },
             { role_code: "REVIEWER", role_name: "Reviewer", is_active: true },
           ])
-        : respond({}),
+        : respond(page([])),
     );
     renderAuth(
       <AccountEditor account={account} done={() => {}} can={() => true} />,
@@ -536,18 +536,18 @@ describe("administration and dialogs", () => {
     );
   });
   it("confirms account disable", async () => {
-    const fetch = mockFetch(() => respond([]));
+    const fetch = mockFetch(p => respond(p.endsWith("/roles") ? [] : page([])));
     renderAuth(
       <AccountEditor account={account} done={() => {}} can={() => true} />,
     );
     await userEvent.selectOptions(
       screen.getByLabelText("New account status"),
-      "INACTIVE",
+      "DISABLED",
     );
     await confirm("Update account status");
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/users/2/status",
-      expect.objectContaining({ body: '{"account_status":"INACTIVE"}' }),
+      expect.objectContaining({ body: '{"account_status":"DISABLED"}' }),
     );
   });
   it("hides unauthorized MFA reset", () => {
@@ -560,7 +560,7 @@ describe("administration and dialogs", () => {
     ).not.toBeInTheDocument();
   });
   it("confirms authorized MFA reset in labeled dialog", async () => {
-    const fetch = mockFetch(() => respond([]));
+    const fetch = mockFetch(p => respond(p.endsWith("/roles") ? [] : page([])));
     renderAuth(
       <AccountEditor account={account} done={() => {}} can={() => true} />,
     );
@@ -579,7 +579,7 @@ describe("administration and dialogs", () => {
     );
   });
   it("supports keyboard activation and restores focus on dialog close", async () => {
-    mockFetch(() => respond([]));
+    mockFetch(p => respond(p.endsWith("/roles") ? [] : page([])));
     renderAuth(
       <AccountEditor
         account={account}

@@ -10,14 +10,15 @@ from alembic.script import ScriptDirectory
 import pytest
 from sqlalchemy.dialects import mysql
 from app.models import Base
-from test_phase_2a_migration import config, revision, HEAD, PHASE_6B
+from test_phase_2a_migration import config, revision, PHASE_8B as HEAD, HEAD as CURRENT_HEAD, PHASE_6B
 from test_phase_3b_mysql import disposable_mysql
 from phase8b_schema import EVENT_ADDITIONS, STATUSES
 
 
 def test_revision_import_schema_types_and_head():
     scripts = ScriptDirectory.from_config(config())
-    assert scripts.get_heads() == [HEAD] == ['20260924_01']
+    assert scripts.get_heads() == [CURRENT_HEAD]
+    assert HEAD == '20260924_01'
     migration = revision(HEAD)
     assert migration.down_revision == PHASE_6B == '20260920_01'
     assert set(migration.NEW_COLUMNS) == EVENT_ADDITIONS

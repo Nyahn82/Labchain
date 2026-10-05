@@ -24,8 +24,13 @@ class UserAccount(Base):
     username: Mapped[str] = mapped_column(String(60), unique=True)
     password_hash: Mapped[str] = mapped_column(String(255))
     account_status: Mapped[str] = mapped_column(
-        Enum('ACTIVE', 'INACTIVE', 'LOCKED', name="account_status")
+        Enum('ACTIVE', 'INACTIVE', 'LOCKED', 'SUSPENDED', 'DISABLED', name="account_status")
     )
+    suspended_at: Mapped[datetime | None] = mapped_column(DateTime)
+    suspended_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("user_account.user_id", ondelete="SET NULL"), index=True
+    )
+    suspension_reason: Mapped[str | None] = mapped_column(String(500))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=text("CURRENT_TIMESTAMP"))
     updated_at: Mapped[datetime | None] = mapped_column(DateTime)

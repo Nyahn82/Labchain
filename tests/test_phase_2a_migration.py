@@ -26,7 +26,8 @@ PHASE_2D = "20260914_04"
 PHASE_3A = "20260915_01"
 PHASE_6A = "20260916_01"
 PHASE_6B = "20260920_01"
-HEAD = "20260924_01"
+PHASE_8B = "20260924_01"
+HEAD = "20261005_01"
 
 
 def config(buffer=None):
@@ -60,6 +61,8 @@ def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
     for name in TABLES:
         table = Base.metadata.tables[name]
         for fk in table.foreign_keys:
+            if fk.parent.name == "suspended_by_user_id":
+                continue  # Added by Phase 10, not the frozen Phase 2A migration.
             assert created.index(fk.column.table.name) < created.index(table.name)
     downgrade = StringIO()
     command.downgrade(config(downgrade), f"{REVISION}:base", sql=True)
