@@ -20,6 +20,7 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/Auth";
 import { Alert } from "../components/UI";
 export const navigation = [
+  { to: "/administration/analytics", label: "Analytics", icon: Activity, permission: "ANALYTICS_VIEW" },
   { to: "/administration/activity", label: "Authentication Activity", icon: Shield, permission: "AUTH_ACTIVITY_VIEW" },
   {
     to: "/administration/blockchain",
