@@ -1,0 +1,43 @@
+[Unit]
+Description=RHU LabChain read-only Fabric monitor
+After=network.target
+
+[Service]
+Type=simple
+User=rhu-labchain-monitor
+Group=rhu-labchain-monitor
+WorkingDirectory=/opt/rhu-labchain/blockchain/gateway-adapter
+EnvironmentFile=/etc/rhu-labchain/blockchain-monitor.env
+ExecStart=/usr/bin/node /opt/rhu-labchain/blockchain/gateway-adapter/src/monitor-server.js
+RuntimeDirectory=rhu-labchain-monitor
+RuntimeDirectoryMode=0750
+UMask=0007
+Restart=on-failure
+RestartSec=10
+NoNewPrivileges=true
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+RestrictRealtime=true
+LockPersonality=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+IPAddressDeny=any
+IPAddressAllow=localhost
+InaccessiblePaths=-/run/docker.sock -/var/run/docker.sock -/run/containerd
+InaccessiblePaths=-/opt/rhu-labchain/.env -/opt/rhu-labchain/blockchain/network/runtime
+InaccessiblePaths=-/opt/rhu-labchain/blockchain/network/generated
+ReadOnlyPaths=/etc/rhu-labchain/monitor-identity
+MemoryMax=256M
+TasksMax=64
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

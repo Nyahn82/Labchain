@@ -21,6 +21,12 @@ import { useAuth } from "../auth/Auth";
 import { Alert } from "../components/UI";
 export const navigation = [
   {
+    to: "/administration/blockchain",
+    label: "Blockchain Monitor",
+    icon: Activity,
+    permission: "BLOCKCHAIN_EXPLORER_VIEW",
+  },
+  {
     to: "/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
@@ -94,7 +100,7 @@ export function Shell() {
   const [error, setError] = useState<Error>();
   const location = useLocation();
   const title =
-    [...navigation].reverse().find((n) => location.pathname.startsWith(n.to))
+    [...navigation].sort((a, b) => b.to.length - a.to.length).find((n) => location.pathname.startsWith(n.to))
       ?.label || "Staff workspace";
   async function logout() {
     setBusy(true);

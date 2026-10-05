@@ -40,6 +40,8 @@ class Settings(BlockchainSettings):
     patient_activation_ttl_minutes: int = Field(default=30, ge=1, le=1440)
 
     report_storage_dir: Path | None = None
+    # Only a local sanitized query socket; API never receives Fabric keys.
+    blockchain_monitor_socket: Literal['/run/rhu-labchain-monitor/monitor.sock'] | None = None
     public_base_url: str | None = None
     report_signature_dir: Path | None = None
 

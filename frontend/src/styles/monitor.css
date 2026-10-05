@@ -1,0 +1,19 @@
+.blockchain-monitor { display: grid; gap: 1rem; }
+.monitor-note { border-left: 4px solid var(--primary, #156f65); }
+.monitor-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; }
+.monitor-cards strong { font-size: 1.8rem; font-variant-numeric: tabular-nums; }
+.monitor-cards h2, .monitor-cards h3 { font-size: 1rem; }
+.monitor-filters { display: flex; flex-wrap: wrap; gap: .8rem; align-items: end; margin-block: 1rem; }
+.monitor-filters label { display: grid; gap: .35rem; min-width: 160px; flex: 1; }
+.monitor-filters input, .monitor-filters select { width: 100%; }
+.monitor-nav button[aria-pressed="true"] { background: #156f65; color: white; }
+.monitor-facts dt { font-weight: 600; }
+.monitor-facts dd { margin: .25rem 0 1rem; overflow-wrap: anywhere; }
+.hash-value { display: flex; flex-wrap: wrap; gap: .4rem; align-items: baseline; max-width: 26rem; }
+.hash-value code { font-family: ui-monospace, monospace; }
+.hash-value button, .hash-value summary { font-size: .8rem; }
+.hash-value details[open] { flex-basis: 100%; }
+.hash-full { display: block; overflow-wrap: anywhere; white-space: normal; }
+.hash-notice { font-size: .8rem; }
+.monitor-transactions { list-style: none; padding: 0; }
+.monitor-transactions li { display: flex; flex-wrap: wrap; gap: .7rem; padding-block: 1rem; border-bottom: 1px solid #d8e4df; }

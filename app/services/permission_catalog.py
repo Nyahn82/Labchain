@@ -4,6 +4,8 @@ from sqlalchemy import select
 from app.models import Permission
 
 PERMISSION_CATALOG = (
+    ('BLOCKCHAIN_EXPLORER_VIEW', 'View administrative blockchain explorer', 'Read sanitized Fabric probes, ledger metadata and application anchors.'),
+    ('BLOCKCHAIN_INTEGRITY_VERIFY', 'Verify released artifact integrity', 'Read-only comparison of immutable PDF hashes with live ledger evidence.'),
     ('BLOCKCHAIN_STATUS_VIEW', 'View blockchain anchoring status', 'Read application outbox counts and evidence delivery status; no live Fabric health.'),
     ('ACCOUNT_MFA_RESET', 'Reset account MFA', 'Reset MFA after controlled identity verification.'),
     ('PATIENT_ACCOUNT_ACTIVATE', 'Activate patient accounts', 'Issue activation tokens and read patient activation status.'),

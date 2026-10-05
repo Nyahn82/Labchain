@@ -30,6 +30,7 @@ os.environ.update({
     "APP_NAME": "RHU LabChain Test",
     "ENVIRONMENT": "test",
     "BLOCKCHAIN_DELIVERY_ENABLED": "false",
+    "BLOCKCHAIN_MONITOR_SOCKET": "/run/rhu-labchain-monitor/monitor.sock",
     "BLOCKCHAIN_GATEWAY_ENDPOINT": "127.0.0.1:7051",
     "BLOCKCHAIN_GATEWAY_TLS_CA_PATH": "/tmp/rhu-test-unconfigured/tls-ca.crt",
     "BLOCKCHAIN_CLIENT_MSP_ID": "Org1MSP",
