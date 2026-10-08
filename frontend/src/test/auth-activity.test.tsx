@@ -26,11 +26,11 @@ describe("Phase 10 account access administration", () => {
   });
   it("filters staff, patients and failed logins", async () => {
     const fetch = mockFetch(standard); const user = userEvent.setup(); open();
-    await user.click(await screen.findByRole("button", { name: /^Staff$/ }));
+    await user.click(await screen.findByRole("tab", { name: /^Staff$/ }));
     expect(fetch.mock.calls.some(([p]) => p.includes("account_type=STAFF"))).toBe(true);
-    await user.click(screen.getByRole("button", { name: /^Patients$/ }));
+    await user.click(screen.getByRole("tab", { name: /^Patients$/ }));
     expect(fetch.mock.calls.some(([p]) => p.includes("account_type=PATIENT"))).toBe(true);
-    await user.click(screen.getByRole("button", { name: "Failed Logins" }));
+    await user.click(screen.getByRole("tab", { name: "Failed Logins" }));
     expect(fetch.mock.calls.some(([p]) => p.includes("activity_type=LOGIN_FAILED"))).toBe(true);
     expect(screen.getByLabelText("Activity")).toBeDisabled();
   });
@@ -44,7 +44,7 @@ describe("Phase 10 account access administration", () => {
   });
   it("shows sessions, escaped user-agent and a CSRF-protected revoke action", async () => {
     const fetch = mockFetch(standard); const user = userEvent.setup(); open();
-    await user.click(await screen.findByRole("button", { name: "Active Sessions" }));
+    await user.click(await screen.findByRole("tab", { name: "Active Sessions" }));
     await user.click(await screen.findByText("User-agent details"));
     expect(screen.getByText("Synthetic UA <script>text</script>")).toBeVisible();
     expect(document.body).not.toHaveTextContent("NEVER-RENDER");
@@ -97,14 +97,14 @@ describe("Phase 10 account access administration", () => {
   });
   it("allows view permission without mutation controls", async () => {
     mockFetch(standard, { ...admin, roles: ["LAB_STAFF"], permissions: ["AUTH_ACTIVITY_VIEW"] }); const user = userEvent.setup(); open();
-    await user.click(await screen.findByRole("button", { name: "Active Sessions" }));
+    await user.click(await screen.findByRole("tab", { name: "Active Sessions" }));
     expect(await screen.findByText("portal-user")).toBeVisible();
     expect(screen.queryByRole("button", { name: "Revoke Session" })).not.toBeInTheDocument();
   });
   it("allows session-only administrators without fetching activity", async () => {
     const fetch = mockFetch(standard, { ...admin, roles: ["LAB_STAFF"], permissions: ["SESSION_MANAGE"] }); open();
     expect(await screen.findByRole("heading", { name: "Account sessions" })).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Failed Logins" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Failed Logins" })).not.toBeInTheDocument();
     expect(fetch.mock.calls.some(([p]) => p.includes("/auth-activity?"))).toBe(false);
   });
   it("redirects patient routes without fetching admin data", async () => {

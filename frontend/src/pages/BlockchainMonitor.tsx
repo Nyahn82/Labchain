@@ -1,36 +1,66 @@
 import { useState, type FormEvent } from "react";
 import { PermissionGuard, useAuth } from "../auth/Auth";
 import { useResource } from "../api/useResource";
-import { Badge, State, Title } from "../components/UI";
+import { Info, CheckCircle2, XCircle, CircleHelp } from "lucide-react";
+import { Tabs } from "../components/Tabs";
+import { Badge, State, Title, statusTone } from "../components/UI";
 import { HashValue } from "../components/HashValue";
 import { timestamp } from "../utils/display";
 import type { BlockchainStatusResponse } from "../types/blockchain";
-import type { AnchorPage, BlockDetail, IntegrityResult, LedgerPage, NetworkOverview, TransactionDetail } from "../types/monitor";
+import type { AnchorPage, BlockDetail, IntegrityResult, LedgerPage, MonitorNode, NetworkOverview, NodeState, TransactionDetail } from "../types/monitor";
 
 const BASE = "/admin/blockchain";
 function Scroll({ label, children }: { label: string; children: React.ReactNode }) {
   return <div className="table-scroll" role="region" aria-label={label} tabIndex={0}>{children}</div>;
+}
+function Health({ status, name }: { status: NodeState; name: string }) {
+  return <span className={`health-status status-${statusTone(status)}`} aria-label={`${name}: ${status}`}>
+    <span className="status-dot" aria-hidden="true" />{status}
+  </span>;
+}
+function PeerCard({ peer }: { peer: MonitorNode }) {
+  return <article className={`card peer-card health-${statusTone(peer.status)}`} aria-label={peer.name}>
+    <header className="node-heading"><div><h3>{peer.name}</h3><p>{peer.msp}</p></div><Health name={peer.name} status={peer.status} /></header>
+    <dl className="node-facts">
+      <div><dt>Ledger height</dt><dd>{peer.height ?? "Unknown"}</dd></div>
+      <div><dt>Channel member</dt><dd>{peer.channel_member === null ? "Unknown" : peer.channel_member ? "Yes" : "No"}</dd></div>
+    </dl>
+    <details className="node-details"><summary>Observation details & hashes</summary>
+      <p>Last check: {timestamp(peer.checked_at)}<br />Last success: {timestamp(peer.last_success_at)}</p>
+      <p>Current block</p><HashValue value={peer.current_block_hash} label={`${peer.name} current block hash`} />
+      <p>Previous block</p><HashValue value={peer.previous_block_hash} label={`${peer.name} previous block hash`} />
+    </details>
+  </article>;
 }
 function Network() {
   const network = useResource<NetworkOverview>(`${BASE}/overview`);
   const queue = useResource<BlockchainStatusResponse>(`${BASE}/queue`);
   const n = network.data;
   return <>
-    <div className="actions"><button onClick={() => { network.reload(); queue.reload(); }}>Refresh network and queue</button></div>
+    <div className="section-heading monitor-refresh"><p className="muted">{n ? `Observed ${timestamp(n.checked_at)}` : "Current Fabric observations"}</p><button onClick={() => { network.reload(); queue.reload(); }}>Refresh network and queue</button></div>
     <State loading={network.loading} error={network.error} />
     {n && <>
-      <section aria-label="Fabric network overview" className="monitor-cards">
-        <article className="card"><h2>Network status</h2><Badge>{n.status}</Badge><p>Observed {timestamp(n.checked_at)}</p></article>
-        <article className="card"><h2>Peers online</h2><strong>{n.nodes.filter(p => p.status === "ONLINE").length} / {n.nodes.length}</strong><p>Successful channel queries at the highest observed height.</p></article>
-        <article className="card"><h2>Ledger height</h2><strong>{n.ledger_height ?? "Unknown"}</strong><p>Highest observed block count, including genesis.</p></article>
+      <section aria-label="Fabric network overview" className="monitor-summary card-grid">
+        <article className="card"><h2>Network health</h2><Health name="Network" status={n.status} /></article>
+        <article className="card"><h2>Peers online</h2><strong>{n.nodes.filter(p => p.status === "ONLINE").length} / {n.nodes.length}</strong><small>Online peers</small></article>
+        <article className="card"><h2>Ledger height</h2><strong>{n.ledger_height ?? "Unknown"}</strong><small>Highest observed block count</small></article>
+        <article className="card"><h2>Orderer</h2><Health name="Orderer summary" status={n.orderer.status} /></article>
+        <article className="card"><h2>Chaincode</h2><p className="chaincode-summary">{n.chaincode ? <>{n.chaincode.name}<small>Version {n.chaincode.version}</small></> : "Unavailable"}</p></article>
       </section>
-      <section className="card"><h2>Node status</h2>
-        <p>Channel: <strong>{n.channel}</strong>. A successful channel query confirms membership. Unknown is not offline.</p>
-        <Scroll label="Fabric nodes"><table><caption className="sr-only">Fabric peer observations</caption><thead><tr>{["Peer", "Organization", "Status", "Height", "Last check", "Last success", "Block hashes"].map(x => <th key={x} scope="col">{x}</th>)}</tr></thead>
-          <tbody>{n.nodes.map(p => <tr key={p.name}><th scope="row">{p.name}</th><td>{p.msp}</td><td><Badge>{p.status}</Badge></td><td>{p.height ?? "Unknown"}</td><td>{timestamp(p.checked_at)}</td><td>{timestamp(p.last_success_at)}</td><td><HashValue value={p.current_block_hash} label={`${p.name} current block hash`} /><HashValue value={p.previous_block_hash} label={`${p.name} previous block hash`} /></td></tr>)}</tbody></table></Scroll>
-        <p>Orderer: <Badge>{n.orderer.status}</Badge> · {n.orderer.signal}. This does not prove ordering consensus or write availability. No orderer ledger height is inferred.</p>
+      <section aria-label="Fabric nodes" className="peer-section">
+        <div className="section-heading"><h2>Peer health</h2><span className="muted">Channel: {n.channel}</span></div>
+        <p className="muted">Successful channel queries confirm membership. Unknown is not offline.</p>
+        <div className="peer-grid">{n.nodes.map(peer => <PeerCard key={peer.name} peer={peer} />)}</div>
+        {n.nodes.length === 0 && <p className="empty-state">No peer observations available.</p>}
       </section>
-      <section className="card"><h2>Committed chaincode</h2>{n.chaincode ? <dl className="monitor-facts"><dt>Name</dt><dd>{n.chaincode.name}</dd><dt>Version</dt><dd>{n.chaincode.version}</dd><dt>Sequence</dt><dd>{n.chaincode.sequence}</dd><dt>Endorsement policy</dt><dd>{n.chaincode.endorsement_policy}</dd></dl> : <p>Committed definition unavailable. A configured name is not proof of a committed chaincode.</p>}</section>
+      <section className={`card orderer-card health-${statusTone(n.orderer.status)}`} aria-label="Orderer health">
+        <header className="node-heading"><div><h2>Orderer</h2><p>{n.orderer.name}</p></div><Health name={n.orderer.name} status={n.orderer.status} /></header>
+        <p>Health signal: <strong>{n.orderer.signal}</strong></p>
+        <p className="muted">This observation does not prove ordering consensus or write availability.</p>
+      </section>
+      <section className="card"><h2>Channel & committed chaincode</h2><p>Channel: <strong>{n.channel}</strong></p>
+        {n.chaincode ? <dl className="monitor-facts"><div><dt>Name</dt><dd>{n.chaincode.name}</dd></div><div><dt>Version</dt><dd>{n.chaincode.version}</dd></div><div><dt>Sequence</dt><dd>{n.chaincode.sequence}</dd></div><div><dt>Endorsement policy</dt><dd>{n.chaincode.endorsement_policy}</dd></div></dl> : <p>Committed definition unavailable. A configured name is not proof of a committed chaincode.</p>}
+      </section>
     </>}
     <section className="card" aria-label="Application outbox status"><h2>Application outbox status</h2>
       <p>MySQL delivery records, separate from Fabric ledger confirmation. Worker activity does not establish network health.</p>
@@ -86,16 +116,20 @@ function Integrity() {
   const result = useResource<IntegrityResult>(id ? `${BASE}/reports/${id}/integrity` : null);
   return <section className="card"><h2>Report integrity</h2><p>Read-only comparison of the released PDF, stored verification hash, immutable event and live Fabric evidence. No report content is returned.</p>
     <form className="monitor-filters" onSubmit={e => { e.preventDefault(); setId(input); result.reload(); }}><label>Report ID<input type="number" required min="1" value={input} onChange={e => setInput(e.target.value)} /></label><button>Verify integrity</button></form>
-    <State loading={result.loading} error={result.error} />{result.data && <div role="status"><h3><Badge>{result.data.status}</Badge></h3><p>Checked {timestamp(result.data.checked_at)}. VERIFIED describes artifact integrity, not clinical accuracy.</p>{result.data.status === "UNKNOWN" && <p>Evidence is unavailable or incomplete; integrity could not be established.</p>}<dl className="monitor-facts">{[["PDF SHA-256", result.data.artifact_sha256], ["Stored report hash", result.data.report_hash], ["Event record hash", result.data.record_hash], ["Ledger content hash", result.data.ledger_content_hash]].map(([label, value]) => <div key={label!}><dt>{label}</dt><dd><HashValue value={value} label={label!} /></dd></div>)}</dl></div>}
+    <State loading={result.loading} error={result.error} />{result.data && <div role="status" className={`integrity-result health-${statusTone(result.data.status)}`}><h3 className="integrity-heading">
+      {result.data.status === "VERIFIED" ? <CheckCircle2 aria-hidden="true" /> : result.data.status === "MISMATCH" ? <XCircle aria-hidden="true" /> : <CircleHelp aria-hidden="true" />}
+      <Badge>{result.data.status}</Badge><span>{result.data.status === "VERIFIED" ? "Verified / Match" : result.data.status === "MISMATCH" ? "Mismatch" : "Unable to verify"}</span></h3><p>Checked {timestamp(result.data.checked_at)}. VERIFIED describes artifact integrity, not clinical accuracy.</p>{result.data.status === "UNKNOWN" && <p>Evidence is unavailable or incomplete; integrity could not be established.</p>}<dl className="monitor-facts">{[["PDF SHA-256", result.data.artifact_sha256], ["Stored report hash", result.data.report_hash], ["Event record hash", result.data.record_hash], ["Ledger content hash", result.data.ledger_content_hash]].map(([label, value]) => <div key={label!}><dt>{label}</dt><dd><HashValue value={value} label={label!} /></dd></div>)}</dl></div>}
   </section>;
 }
 function MonitorContent() {
   const { can } = useAuth(); const [view, setView] = useState("Network");
   const views = ["Network", "Ledger", "Anchors", ...(can("BLOCKCHAIN_INTEGRITY_VERIFY") ? ["Integrity"] : [])];
-  return <div className="blockchain-monitor"><Title title="Blockchain Monitor" eyebrow="ADMINISTRATION" />
-    <p className="card monitor-note">This deployment uses four Fabric peers across two organizations on one VPS. The peers share a single-host fault domain; this is not four physically decentralized servers.</p>
-    <nav className="actions monitor-nav" aria-label="Monitor sections">{views.map(v => <button key={v} aria-pressed={view === v} onClick={() => setView(v)}>{v}</button>)}</nav>
-    {view === "Network" && <Network />}{view === "Ledger" && <Ledger />}{view === "Anchors" && <Anchors />}{view === "Integrity" && can("BLOCKCHAIN_INTEGRITY_VERIFY") && <Integrity />}
+  return <div className="blockchain-monitor page-shell"><Title title="Blockchain Monitor" eyebrow="ADMINISTRATION"
+    description="Monitor Fabric network health, ledger activity, report anchors, and integrity." />
+    <aside className="monitor-note"><Info size={20} aria-hidden="true" /><div><strong>Single-host Fabric deployment</strong><p>Four Fabric peers across two organizations share one VPS and a single-host fault domain. Ledger replication does not provide physical infrastructure decentralization.</p></div></aside>
+    <Tabs label="Monitor sections" items={views} value={view} onChange={setView}>
+      {view === "Network" && <Network />}{view === "Ledger" && <Ledger />}{view === "Anchors" && <Anchors />}{view === "Integrity" && can("BLOCKCHAIN_INTEGRITY_VERIFY") && <Integrity />}
+    </Tabs>
   </div>;
 }
 export function BlockchainMonitor() {

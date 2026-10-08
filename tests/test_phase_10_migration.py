@@ -71,6 +71,9 @@ def test_sqlite_preserves_legacy_and_refuses_lossy_downgrade(monkeypatch):
     with engine.begin() as db:
         db.execute(sa.text("INSERT INTO user_account (user_id,username,password_hash,account_status) VALUES (1,'legacy','synthetic','INACTIVE')"))
     command.upgrade(cfg, HEAD)
+    assert {"suspended_at", "suspended_by_user_id", "suspension_reason"} <= {
+        column["name"] for column in sa.inspect(engine).get_columns("user_account")
+    }
     with engine.begin() as db:
         assert db.scalar(sa.text('SELECT account_status FROM user_account')) == 'INACTIVE'
         db.execute(sa.text("UPDATE user_account SET account_status='SUSPENDED', suspension_reason='preserve history'"))

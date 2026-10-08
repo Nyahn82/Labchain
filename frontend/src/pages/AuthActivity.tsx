@@ -1,3 +1,4 @@
+import { Tabs } from "../components/Tabs";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../auth/Auth";
@@ -16,14 +17,12 @@ export function AuthenticationActivity() {
   const sessionAccess = readable || can("SESSION_MANAGE");
   const [tab, setTab] = useState(readable ? "All" : "Active Sessions");
   if (!sessionAccess) return <section className="card"><h1>Permission required</h1><p>You do not have access to this section.</p></section>;
-  return <>
-    <Title title="Authentication Activity" />
-    <nav className="actions" aria-label="Authentication activity views">
-      {(readable ? ["All", "Staff", "Patients", "Failed Logins", "Active Sessions"] : ["Active Sessions"]).map(value =>
-        <button key={value} aria-pressed={tab === value} onClick={() => setTab(value)}>{value}</button>)}
-    </nav>
-    {tab === "Active Sessions" ? <SessionList /> : <ActivityList key={tab} accountType={tab === "Staff" ? "STAFF" : tab === "Patients" ? "PATIENT" : ""} failed={tab === "Failed Logins"} />}
-  </>;
+  return <div className="auth-activity page-shell">
+    <Title title="Authentication Activity" eyebrow="ADMINISTRATION" description="Review sign-in activity and manage authorized account sessions." />
+    <Tabs label="Authentication activity views" items={readable ? ["All", "Staff", "Patients", "Failed Logins", "Active Sessions"] : ["Active Sessions"]} value={tab} onChange={setTab}>
+      {tab === "Active Sessions" ? <SessionList /> : <ActivityList key={tab} accountType={tab === "Staff" ? "STAFF" : tab === "Patients" ? "PATIENT" : ""} failed={tab === "Failed Logins"} />}
+    </Tabs>
+  </div>;
 }
 
 export function ActivityList({ userId, accountType = "", failed = false }: { userId?: number; accountType?: string; failed?: boolean }) {

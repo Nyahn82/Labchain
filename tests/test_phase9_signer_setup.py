@@ -294,3 +294,13 @@ def test_unexpected_failure_withholds_secret_details(api, monkeypatch, capsys):
     assert setup.main([]) == 1
     assert SECRET not in capsys.readouterr().out
     assert not writes(api)
+
+
+def test_trusted_initial_signer_is_valid_evidence_but_cannot_be_reprovisioned(api):
+    api.inventory.append(deepcopy(CREATED))
+    verifier = Identity(CREATED)
+    evidence = setup.verify_role(api, verifier, OPERATOR['user_id'], setup.roles_and_permissions(api))
+    assert evidence['role_code'] == 'LAB_SIGNER' and evidence['permissions'] == ['REPORT_SIGN']
+    assert evidence['verifier_id'] == CREATED['user_id']
+    assert not setup.preflight(api, verifier)[0]  # Username/staff already occupied.
+    assert not writes(api)

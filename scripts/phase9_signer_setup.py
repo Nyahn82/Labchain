@@ -140,7 +140,10 @@ def verify_role(client, verifier, operator_id, roles):
     account = client.get(f"/users/{uid}")
     e2e.matches(account, user_id=uid, account_status="ACTIVE", roles=[code])
     # AccountResponse includes inactive role assignments too; do not hide any.
-    e2e.require(canonical_username(account.get("username")) != USERNAME, "p9signer already exists; reconcile instead of creating.")
+    canonical_username(account.get("username"))  # Preserve account-shape validation.
+    # An existing p9signer may prove its role after trusted Phase 12 bootstrap.
+    # available_target still refuses an occupied username/staff link, and
+    # check_new_account still requires a new identity distinct from the witness.
     return {"role_code": code, "role_id": roles[code]["role_id"], "verifier_id": uid,
             "permissions": sorted(MINIMUM)}
 

@@ -41,8 +41,8 @@ export function Dashboard() {
     can("LAB_ORDER_READ") ? "/lab-orders?page=1&page_size=5" : null,
   );
   return (
-    <>
-      <Title title="Laboratory overview" />
+    <div className="dashboard-page page-shell">
+      <Title title="Laboratory overview" eyebrow="DASHBOARD" description="Your starting point for daily laboratory work." />
       <section className="welcome">
         <div>
           <p className="eyebrow">A CLEAR VIEW OF YOUR DAY</p>
@@ -85,7 +85,6 @@ export function Dashboard() {
           />
         )}
       </div>
-      {can("BLOCKCHAIN_STATUS_VIEW") && <BlockchainQueue />}
       <section className="card">
         <div className="section-heading">
           <h2>Quick actions</h2>
@@ -108,6 +107,7 @@ export function Dashboard() {
             ))}
         </div>
       </section>
+      {can("BLOCKCHAIN_STATUS_VIEW") && <BlockchainQueue />}
       {can("LAB_ORDER_READ") && (
         <section className="card">
           <div className="section-heading">
@@ -136,6 +136,6 @@ export function Dashboard() {
           )}
         </section>
       )}
-    </>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { AppRoutes } from "../App";
@@ -78,6 +78,7 @@ describe("Phase 11 analytics", () => {
     mockFetch(p => route(p) === "overview" ? new Promise<Response>(r => { resolve = r; }) : standard(p)); open();
     await screen.findByRole("heading", { name: "Laboratory Analytics" });
     expect(screen.getAllByText("Loading records…").length).toBeGreaterThan(0);
+    await waitFor(() => expect(resolve).toBeTypeOf("function"));
     resolve(respond(data.overview)); expect(await screen.findByRole("article", { name: "Orders created" })).toBeVisible();
   });
   it("renders deliberate empty states and never NaN or Infinity", async () => {

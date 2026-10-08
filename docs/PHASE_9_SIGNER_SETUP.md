@@ -179,3 +179,23 @@ git diff --check
 All new files also receive a separate trailing-whitespace/EOF check because
 `git diff --check` does not cover untracked files. No commit, push, deployment,
 service restart, SQL mutation, or production provisioning execution is included.
+
+## Phase 12B follow-up: trusted first signer
+
+Phase 12B adds a separate local-evidence utility; it was not available during
+the historical Phase 9 preflight above. See [Phase 12B RBAC matrix and initial
+signer procedure](PHASE_12B_RBAC_MATRIX.md). The approved permanent LAB_SIGNER
+role grants exactly REPORT_SIGN, independently verified from the local database
+and bound to the live API deployment before any account creation.
+
+`phase12_initial_signer_setup.py` defaults to preflight and uses hidden prompts,
+an exclusive intent and the existing staff-account POST only. Its production
+execution requires separate authorization. It does not weaken the API-only
+helper's exact-role/effective-permission checks or the E2E runner's signer checks.
+
+An existing verified p9signer may prove role membership through
+`--role-verifier-login`. The old helper still refuses to provision another
+p9signer or reuse occupied staff 1; its overall provisioning preflight therefore
+refuses the occupied target after first-signer creation. Use the existing account
+with E2E `--signer-login` instead, and disable the synthetic account through the
+supported status API after validation. Preserve the permanent role and receipts.

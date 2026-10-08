@@ -55,6 +55,7 @@ def ensure_core_roles(db: Session) -> list[str]:
         ("LAB_STAFF", "Laboratory Staff", "Laboratory operations and specimen handling."),
         ("LAB_SUPERVISOR", "Laboratory Supervisor", "Lab oversight and review."),
         ("DOCTOR", "Doctor", "Clinical ordering and patient access."),
+        ("LAB_SIGNER", "Laboratory Signer", "Identity-bound laboratory report signing capability."),
         ("PATIENT", "Patient", "Patient-facing access."),
     ]
     created = []

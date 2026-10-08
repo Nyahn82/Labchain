@@ -73,7 +73,7 @@ def test_single_head_parent_and_offline_mysql_migration(monkeypatch):
 @pytest.fixture
 def workflow_connection():
     engine = sa.create_engine("sqlite://")
-    t = Base.metadata.tables
+    t = dict(Base.metadata.tables)
     previous = PHASE_2A_TABLES | PHASE_2B_TABLES
     try:
         with engine.connect() as c:
@@ -81,6 +81,13 @@ def workflow_connection():
             with Operations.context(MigrationContext.configure(c)):
                 revision(REVISION).upgrade()
                 revision(PHASE_2B).upgrade()
+            # These frozen revisions predate Phase 10 suspension fields. Reflect
+            # the historical account table rather than selecting future columns
+            # from the current ORM metadata during seed/snapshot comparisons.
+            t["user_account"] = sa.Table("user_account", sa.MetaData(), autoload_with=c)
+            assert {"suspended_at", "suspended_by_user_id", "suspension_reason"}.isdisjoint(
+                t["user_account"].c.keys()
+            )
             c.execute(t["patient"].insert().values(patient_id=1, patient_code="SYNTH", first_name="Test", last_name="Only"))
             c.execute(t["user_account"].insert().values(user_id=1, username="synthetic", password_hash="synthetic-only", account_status="ACTIVE"))
             c.execute(t["lab_department"].insert().values(department_id=1, department_code="SYNTH", department_name="Synthetic"))
@@ -93,6 +100,9 @@ def workflow_connection():
             with Operations.context(MigrationContext.configure(c)):
                 revision(HEAD).upgrade()
             assert set(sa.inspect(c).get_table_names()) == previous | TABLES
+            assert {column["name"] for column in sa.inspect(c).get_columns("user_account")} == set(
+                t["user_account"].c.keys()
+            )  # Phase 2C must still have the historical account schema.
             for name in ORDER:
                 assert c.scalar(sa.select(sa.func.count()).select_from(t[name])) == 0
                 c.execute(t[name].insert().values(**ROWS[name]))

@@ -12,10 +12,17 @@ export function Alert({ error }: { error?: Error | null }) {
     </div>
   ) : null;
 }
+export function statusTone(value: string): "success" | "warning" | "danger" | "neutral" {
+  value = value.toUpperCase().replaceAll(" ", "_");
+  if (["ONLINE", "NORMAL", "RELEASED", "VERIFIED", "COMPLETED", "ACTIVE", "RECEIVED", "PAID", "AUTHENTIC", "SUCCESS", "CONFIRMED", "VALID", "PROCESSED"].includes(value)) return "success";
+  if (["DEGRADED", "PENDING", "PROCESSING", "REQUESTED", "HIGH", "LOW", "ABNORMAL", "COLLECTED", "IN_PROGRESS", "REVIEWED", "APPROVED"].includes(value)) return "warning";
+  if (["OFFLINE", "FAILED", "DEAD", "MISMATCH", "CRITICAL_HIGH", "CRITICAL_LOW", "REJECTED", "REVOKED", "CANCELLED", "LOCKED", "SUSPENDED", "DISABLED"].includes(value)) return "danger";
+  return "neutral";
+}
 export function Badge({ children }: { children: unknown }) {
   const text = display(children);
   return (
-    <span className={"badge " + text.toLowerCase().replaceAll("_", "-")}>
+    <span className={"badge status-badge status-" + statusTone(text) + " " + text.toLowerCase().replaceAll("_", "-")}>
       {text.replaceAll("_", " ")}
     </span>
   );
@@ -24,18 +31,21 @@ export function Title({
   title,
   eyebrow = "STAFF WORKSPACE",
   children,
+  description,
 }: {
   title: string;
+  description?: string;
   eyebrow?: string;
   children?: ReactNode;
 }) {
   return (
-    <div className="page-heading">
+    <div className="page-heading page-header">
       <div>
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>
+        {description && <p className="page-description">{description}</p>}
       </div>
-      <div className="actions">{children}</div>
+      <div className="actions page-actions">{children}</div>
     </div>
   );
 }
@@ -49,13 +59,13 @@ export function State({
   empty?: boolean;
 }) {
   return loading ? (
-    <p role="status" className="empty">
+    <p role="status" className="empty empty-state">
       Loading records…
     </p>
   ) : error ? (
     <Alert error={error} />
   ) : empty ? (
-    <p className="empty">No records found.</p>
+    <p className="empty empty-state">No records found.</p>
   ) : null;
 }
 export interface Column {

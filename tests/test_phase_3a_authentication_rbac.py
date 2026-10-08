@@ -409,7 +409,7 @@ def test_bootstrap_admin_atomic_and_hashed(env):
         assert user.password_hash.startswith("$argon2id$")
         assert user.staff_link is None and user.last_login_at is None
         assert {assignment.role.role_code for assignment in user.user_roles} == {"SYSTEM_ADMIN"}
-        assert count(db, Role) == 5
+        assert count(db, Role) == 6
         assert db.scalar(select(AuditLog)).action == "AUTH_BOOTSTRAP_ADMIN"
     with env.factory() as db, pytest.raises(ValueError, match="already exists"):
         bootstrap_admin.create_admin(db, "first-admin", "Another-password-123")
@@ -446,11 +446,11 @@ def test_core_roles_idempotent_preserves_existing_roles(env):
         role = db.get(Role, 1)
         role.role_name = "Custom name"
         role.is_active = False
-        assert len(ensure_core_roles(db)) == 4
+        assert len(ensure_core_roles(db)) == 5
         assert ensure_core_roles(db) == []
     bootstrap_roles.main()
     with env.factory() as db:
-        assert count(db, Role) == 5 and count(db, UserRole) == 1
+        assert count(db, Role) == 6 and count(db, UserRole) == 1
         assert db.get(Role, 1).role_name == "Custom name" and not db.get(Role, 1).is_active
 
 

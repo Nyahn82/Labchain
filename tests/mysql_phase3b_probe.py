@@ -62,12 +62,23 @@ def main(socket, scenario):
                         update_status(db, number, StatusUpdate(account_status='INACTIVE'), number, None)
                     return 200
                 except HTTPException as exc:
+                    if scenario == 'disable' or (scenario == 'mixed' and number == 1):
+                        # Phase 10 intentionally rejects every self-status mutation,
+                        # even when another active administrator exists.
+                        assert exc.status_code == 409
+                        assert exc.detail == 'You cannot change your own account status.'
+                    elif scenario == 'roles':
+                        assert exc.detail == 'The last active SYSTEM_ADMIN must remain usable.'
                     return exc.status_code
 
         if scenario != 'login_disable':
             with ThreadPoolExecutor(max_workers=2) as pool:
                 results = list(pool.map(mutate, (1, 2)))
-            assert sorted(results) == [200, 409], results
+            # Both disable contenders target themselves; role removal separately
+            # exercises serialized last-active-administrator protection.
+            assert sorted(results) == ([409, 409] if scenario == 'disable' else [200, 409]), results
+            if scenario == 'mixed':
+                assert results == [409, 200], results  # self-disable denied; own-role removal allowed
             with factory() as db:
                 if scenario == 'account':
                     assert db.scalar(select(func.count()).select_from(UserAccount)) == 3
@@ -76,7 +87,11 @@ def main(socket, scenario):
                     remaining = db.scalar(select(func.count()).select_from(UserAccount)
                                           .join(UserRole, UserRole.user_id == UserAccount.user_id)
                                           .where(UserRole.role_id == 1, UserAccount.account_status == 'ACTIVE'))
-                    assert remaining == 1
+                    assert remaining == (2 if scenario == 'disable' else 1)
+                    # Self-disable never changes either account's status. Roles
+                    # and mixed scenarios change role membership, not status.
+                    assert list(db.execute(select(UserAccount.user_id, UserAccount.account_status)
+                                           .order_by(UserAccount.user_id))) == [(1, 'ACTIVE'), (2, 'ACTIVE')]
         else:
             # Hold login just after acquiring its account lock, then start a
             # disabling transaction. Disable must wait and revoke that session.

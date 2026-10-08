@@ -20,14 +20,6 @@ import { api } from "../api/client";
 import { useAuth } from "../auth/Auth";
 import { Alert } from "../components/UI";
 export const navigation = [
-  { to: "/administration/analytics", label: "Analytics", icon: Activity, permission: "ANALYTICS_VIEW" },
-  { to: "/administration/activity", label: "Authentication Activity", icon: Shield, permission: "AUTH_ACTIVITY_VIEW" },
-  {
-    to: "/administration/blockchain",
-    label: "Blockchain Monitor",
-    icon: Activity,
-    permission: "BLOCKCHAIN_EXPLORER_VIEW",
-  },
   {
     to: "/dashboard",
     label: "Dashboard",
@@ -64,6 +56,14 @@ export const navigation = [
     icon: FileText,
     permission: "REPORT_READ",
   },
+  { to: "/administration/analytics", label: "Analytics", icon: Activity, permission: "ANALYTICS_VIEW" },
+  { to: "/administration/activity", label: "Authentication Activity", icon: Shield, permission: "AUTH_ACTIVITY_VIEW" },
+  {
+    to: "/administration/blockchain",
+    label: "Blockchain Monitor",
+    icon: Activity,
+    permission: "BLOCKCHAIN_EXPLORER_VIEW",
+  },
   {
     to: "/laboratory",
     label: "Laboratory setup",
@@ -90,10 +90,15 @@ export const navigation = [
   },
   {
     to: "/administration",
-    label: "Administration",
+    label: "Accounts and roles",
     icon: Shield,
     permission: "ACCOUNT_READ",
   },
+];
+export const navigationSections = [
+  { label: "Overview", items: navigation.slice(0, 1) },
+  { label: "Laboratory", items: navigation.slice(1, 6) },
+  { label: "Administration", items: navigation.slice(6) },
 ];
 export function Shell() {
   const { user, can, clear } = useAuth();
@@ -147,17 +152,21 @@ export function Shell() {
         <div className="brand">
           <Activity /> RHU LabChain
         </div>
-        <p className="eyebrow">LABORATORY WORKSPACE</p>
-        <nav aria-label="Main navigation">
-          {navigation.filter(visible).map((n) => (
-            <NavLink key={n.to} to={n.to} onClick={() => setOpen(false)}>
-              <n.icon size={19} />
-              {n.label}
-            </NavLink>
-          ))}
+        <nav aria-label="Main navigation" id="staff-navigation">
+          {navigationSections.map(section => {
+            const items = section.items.filter(visible);
+            return items.length > 0 && <section className="nav-section" key={section.label} aria-label={section.label}>
+              <h2 className="nav-section-title">{section.label}</h2>
+              {items.map(n => <NavLink key={n.to} to={n.to}
+                end={n.to === "/administration"}
+                onClick={() => setOpen(false)}>
+                <n.icon size={19} aria-hidden="true" />{n.label}
+              </NavLink>)}
+            </section>;
+          })}
         </nav>
         <div className="sidebar-footer">
-          <span className="status-dot" /> Staff portal
+          <span className="status-dot" aria-hidden="true" /> Staff portal
         </div>
       </aside>
       {open && (
@@ -173,6 +182,7 @@ export function Shell() {
             className="mobile-menu"
             aria-label="Toggle navigation"
             aria-expanded={open}
+            aria-controls="staff-navigation"
             onClick={() => setOpen(!open)}
           >
             <Menu />

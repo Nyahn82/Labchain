@@ -45,11 +45,11 @@ describe("administrative blockchain monitor", () => {
     expect(await screen.findByText("4 / 4")).toBeVisible();
     expect(screen.getByText(/single-host fault domain/)).toBeVisible();
     expect(screen.getByRole("region", { name: "Fabric nodes" })).toHaveTextContent("peer4");
-    expect(screen.getByText("labchain-anchor")).toBeVisible();
+    expect(screen.getAllByText("labchain-anchor")).toHaveLength(2);
     const outbox = screen.getByRole("region", { name: "Application outbox status" });
     expect(within(outbox).getByText("IDLE")).toBeVisible();
     expect(within(outbox).getByText(/separate from Fabric ledger confirmation/)).toBeVisible();
-    expect(screen.getByRole("navigation", { name: "Monitor sections" })).toBeVisible();
+    expect(screen.getByRole("tablist", { name: "Monitor sections" })).toBeVisible();
   });
   it("blocks normal staff without issuing monitor requests", async () => {
     const fetch = mockFetch(standard, { ...admin, roles: ["LAB_STAFF"], permissions: ["BLOCKCHAIN_STATUS_VIEW", "REPORT_READ"] });
@@ -60,7 +60,7 @@ describe("administrative blockchain monitor", () => {
   it("allows explicit explorer permission but hides integrity without its separate grant", async () => {
     mockFetch(standard, { ...admin, roles: ["LAB_STAFF"], permissions: ["BLOCKCHAIN_EXPLORER_VIEW"] });
     await open(); expect(await screen.findByText("4 / 4")).toBeVisible();
-    expect(screen.queryByRole("button", { name: "Integrity" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Integrity" })).not.toBeInTheDocument();
   });
   it("shows loading, then a partial network result without hiding the healthy peers", async () => {
     let resolve!: (value: Response) => void;
@@ -78,7 +78,7 @@ describe("administrative blockchain monitor", () => {
   });
   it("opens block details, transaction validation and bounded older pages", async () => {
     const fetch = mockFetch(standard); const user = userEvent.setup(); await open();
-    await user.click(screen.getByRole("button", { name: "Ledger" }));
+    await user.click(screen.getByRole("tab", { name: "Ledger" }));
     await user.click(await screen.findByRole("button", { name: "Block 2" }));
     expect(await screen.findByText("VALID")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "View transaction" }));
@@ -88,7 +88,7 @@ describe("administrative blockchain monitor", () => {
   });
   it("filters anchors and never renders extra private fields", async () => {
     const fetch = mockFetch(standard); const user = userEvent.setup(); await open();
-    await user.click(screen.getByRole("button", { name: "Anchors" }));
+    await user.click(screen.getByRole("tab", { name: "Anchors" }));
     expect(await screen.findByRole("rowheader", { name: "REPORT_RELEASED" })).toBeVisible();
     await user.selectOptions(screen.getByLabelText("Status"), "CONFIRMED");
     await user.click(screen.getByRole("button", { name: "Apply filters" }));
@@ -99,19 +99,69 @@ describe("administrative blockchain monitor", () => {
     mockFetch(p => p.includes("/blocks?") ? respond({ ...blocks, items: [], next_before: null })
       : p.includes("/anchors?") ? respond({ items: [], next_before: null }) : standard(p));
     const user = userEvent.setup(); await open();
-    await user.click(screen.getByRole("button", { name: "Ledger" }));
+    await user.click(screen.getByRole("tab", { name: "Ledger" }));
     expect(await screen.findByText("No records found.")).toBeVisible();
     expect(screen.getByRole("button", { name: "Older blocks" })).toBeDisabled();
-    await user.click(screen.getByRole("button", { name: "Anchors" }));
+    await user.click(screen.getByRole("tab", { name: "Anchors" }));
     expect(await screen.findByText("No records found.")).toBeVisible();
   });
   it("performs read-only integrity lookup", async () => {
     const fetch = mockFetch(standard); const user = userEvent.setup(); await open();
-    await user.click(screen.getByRole("button", { name: "Integrity" }));
+    await user.click(screen.getByRole("tab", { name: "Integrity" }));
     await user.type(screen.getByLabelText("Report ID"), "1");
     await user.click(screen.getByRole("button", { name: "Verify integrity" }));
     expect(await screen.findByText("VERIFIED")).toBeVisible();
     expect(fetch).toHaveBeenCalledWith(ROOT + "/reports/1/integrity", expect.objectContaining({ method: "GET" }));
+  });
+});
+describe("Phase 12A health presentation", () => {
+  it("shows every reported health state, membership, organization and separate orderer", async () => {
+    const states = ["ONLINE", "DEGRADED", "OFFLINE", "UNKNOWN"] as const;
+    mockFetch(p => p === ROOT + "/overview" ? respond({ ...network, nodes: network.nodes.map((peer, i) => ({ ...peer, status: states[i], channel_member: i === 3 ? null : i !== 2 })) }) : standard(p));
+    await open();
+    const peers = await screen.findByRole("region", { name: "Fabric nodes" });
+    expect(within(peers).getAllByRole("article")).toHaveLength(4);
+    for (const [index, state] of states.entries()) {
+      const card = within(peers).getByRole("article", { name: `peer${index + 1}` });
+      expect(within(card).getByLabelText(`peer${index + 1}: ${state}`)).toHaveTextContent(state);
+      expect(card).toHaveTextContent(index < 2 ? "Org1MSP" : "Org2MSP");
+      expect(card).toHaveClass("peer-card");
+    }
+    expect(within(peers).getByRole("article", { name: "peer3" })).toHaveTextContent("Channel memberNo");
+    expect(within(peers).getByRole("article", { name: "peer4" })).toHaveTextContent("Channel memberUnknown");
+    const orderer = screen.getByRole("region", { name: "Orderer health" });
+    expect(orderer).toHaveTextContent("TLS operations /healthz");
+    expect(orderer).not.toHaveTextContent("Ledger height");
+    expect(orderer).not.toHaveTextContent("Channel member");
+    expect(screen.getByRole("region", { name: "Fabric network overview" })).toHaveTextContent("Version 1.0.0");
+  });
+  it("supports keyboard tab navigation and associated panels", async () => {
+    mockFetch(standard); const user = userEvent.setup(); await open();
+    const networkTab = screen.getByRole("tab", { name: "Network" });
+    networkTab.focus(); await user.keyboard("{ArrowRight}");
+    const ledger = screen.getByRole("tab", { name: "Ledger" });
+    expect(ledger).toHaveFocus(); expect(ledger).toHaveAttribute("aria-selected", "true");
+    expect(networkTab).toHaveAttribute("tabindex", "-1");
+    expect(screen.getByRole("tabpanel", { name: "Ledger" }).id).toBe(ledger.getAttribute("aria-controls"));
+    expect(await screen.findByRole("button", { name: "Block 2" })).toBeVisible();
+    await user.keyboard("{End}"); expect(screen.getByRole("tab", { name: "Integrity" })).toHaveFocus();
+    await user.keyboard("{Home}"); expect(networkTab).toHaveFocus();
+    await user.keyboard("{ArrowLeft}"); expect(screen.getByRole("tab", { name: "Integrity" })).toHaveFocus();
+  });
+  it.each(["MISMATCH", "UNKNOWN"])("labels %s integrity without relying on color", async status => {
+    mockFetch(p => p.endsWith("/integrity") ? respond({ status, checked_at: WHEN }) : standard(p));
+    const user = userEvent.setup(); await open();
+    await user.click(screen.getByRole("tab", { name: "Integrity" }));
+    await user.type(screen.getByLabelText("Report ID"), "1");
+    await user.click(screen.getByRole("button", { name: "Verify integrity" }));
+    expect(await screen.findByRole("status")).toHaveTextContent(status === "MISMATCH" ? "Mismatch" : "Unable to verify");
+  });
+  it("renders unavailable observations without invented height or chaincode", async () => {
+    mockFetch(p => p === ROOT + "/overview" ? respond({ ...network, nodes: [], chaincode: null, ledger_height: null, status: "UNKNOWN" }) : standard(p));
+    await open();
+    expect(await screen.findByText("No peer observations available.")).toBeVisible();
+    expect(screen.getByText(/Committed definition unavailable/)).toBeVisible();
+    expect(screen.getByLabelText("Network: UNKNOWN")).toBeVisible();
   });
 });
 describe("safe hash display", () => {

@@ -35,7 +35,7 @@ function AnalyticsContent() {
   const [applied, setApplied] = useState(() => ({ ...presetRange("Last 30 Days"), grain: "auto" as Grain }));
   const [validation, setValidation] = useState("");
   const query = new URLSearchParams(applied).toString();
-  return <div className="analytics-page">
+  return <div className="analytics-page page-shell">
     <Title title="Laboratory Analytics" eyebrow="ADMINISTRATION · OPERATIONAL INSIGHTS" />
     <section className="card analytics-controls" aria-label="Analytics date range">
       <form onSubmit={e => {
