@@ -3,7 +3,7 @@ from datetime import timedelta
 import secrets
 
 from fastapi import HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.config import settings
 from app.models import Patient, PatientAccountLink, PatientActivationToken, Role, UserAccount, UserRole
@@ -13,6 +13,7 @@ from app.security.tokens import hash_token
 from app.services.auth_service import utc_now
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import retry_deadlocks
+from app.services.rbac_service import get_user_permissions, get_user_roles
 
 INVALID_TOKEN = 'Invalid or expired activation token.'
 
@@ -31,6 +32,8 @@ def issue_token(db, patient_id, actor_id, ip_address):
         patient = get_record(db, Patient, patient_id, lock=True)
         if account_link(db, patient_id) is not None:
             raise HTTPException(409, 'Patient account is already activated.')
+        if has_consumed_token(db, patient_id):
+            raise HTTPException(409, 'Activation history requires administrator review. No invitation was issued.')
         tokens = list(db.scalars(current(select(PatientActivationToken).where(
             PatientActivationToken.patient_id == patient_id,
             PatientActivationToken.used_at.is_(None), PatientActivationToken.revoked_at.is_(None)))))
@@ -49,15 +52,56 @@ def issue_token(db, patient_id, actor_id, ip_address):
     return response
 
 
+def has_consumed_token(db, patient_id):
+    return db.scalar(select(PatientActivationToken.activation_token_id).where(
+        PatientActivationToken.patient_id == patient_id,
+        PatientActivationToken.used_at.is_not(None)).limit(1)) is not None
+
+
+def can_read_status(db, actor_id):
+    roles = get_user_roles(db, actor_id)
+    if 'PATIENT' in roles or db.scalar(select(PatientAccountLink.user_id).where(
+            PatientAccountLink.user_id == actor_id)) is not None:
+        return False
+    return 'SYSTEM_ADMIN' in roles or bool(
+        {'PATIENT_ACCOUNT_ACTIVATE', 'ACCOUNT_READ'} & set(get_user_permissions(db, actor_id)))
+
+
+def activation_states(db, patient_ids):
+    """Bounded directory projection; never load token hashes or account credentials."""
+    ids = list(patient_ids)
+    if not ids:
+        return {}
+    linked = set(db.scalars(select(PatientAccountLink.patient_id).where(
+        PatientAccountLink.patient_id.in_(ids))))
+    consumed = set(db.scalars(select(PatientActivationToken.patient_id).where(
+        PatientActivationToken.patient_id.in_(ids), PatientActivationToken.used_at.is_not(None)).distinct()))
+    latest_ids = select(func.max(PatientActivationToken.activation_token_id)).where(
+        PatientActivationToken.patient_id.in_(ids)).group_by(PatientActivationToken.patient_id)
+    latest = {row.patient_id: row for row in db.execute(select(
+        PatientActivationToken.patient_id, PatientActivationToken.expires_at,
+        PatientActivationToken.revoked_at).where(PatientActivationToken.activation_token_id.in_(latest_ids)))}
+    now = utc_now()
+    states = {}
+    for patient_id in ids:
+        token = latest.get(patient_id)
+        if patient_id in linked:
+            state = 'ACTIVATED'
+        elif patient_id in consumed:
+            state = 'REVIEW_REQUIRED'
+        elif token is None:
+            state = 'NOT_ACTIVATED'
+        elif token.revoked_at is not None:
+            state = 'TOKEN_REVOKED'
+        else:
+            state = 'TOKEN_ACTIVE' if token.expires_at > now else 'TOKEN_EXPIRED'
+        states[patient_id] = state
+    return states
+
+
 def activation_status(db, patient_id):
     get_record(db, Patient, patient_id)
-    if db.scalar(select(PatientAccountLink.patient_id).where(PatientAccountLink.patient_id == patient_id)) is not None:
-        return s.ActivationStatus(status='ACTIVATED')
-    latest = db.scalar(select(PatientActivationToken).where(PatientActivationToken.patient_id == patient_id,
-        PatientActivationToken.used_at.is_(None), PatientActivationToken.revoked_at.is_(None))
-        .order_by(PatientActivationToken.activation_token_id.desc()).limit(1))
-    state = 'NOT_ACTIVATED' if latest is None else ('TOKEN_ACTIVE' if latest.expires_at > utc_now() else 'TOKEN_EXPIRED')
-    return s.ActivationStatus(status=state)
+    return s.ActivationStatus(status=activation_states(db, [patient_id])[patient_id])
 
 
 @retry_deadlocks
@@ -72,7 +116,8 @@ def activate(db, payload, ip_address):
         patient = db.scalar(current(select(Patient).where(Patient.patient_id == candidate.patient_id)))
         token = db.scalar(current(select(PatientActivationToken).where(PatientActivationToken.token_hash == digest)))
         if (patient is None or token is None or token.used_at is not None or token.revoked_at is not None
-                or token.expires_at <= utc_now() or account_link(db, patient.patient_id) is not None):
+                or token.expires_at <= utc_now() or account_link(db, patient.patient_id) is not None
+                or has_consumed_token(db, patient.patient_id)):
             raise HTTPException(400, INVALID_TOKEN)
         role = db.scalar(select(Role).where(Role.role_code == 'PATIENT').with_for_update(read=True)
                          .execution_options(populate_existing=True))

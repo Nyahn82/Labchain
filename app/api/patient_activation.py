@@ -10,6 +10,7 @@ from app.models import UserAccount
 from app.schemas import patient_portal as s
 from app.schemas.identity import Identifier
 from app.services import patient_activation_service as service
+from app.services.auth_activity_service import staff_only
 
 router = APIRouter(tags=['Patient Activation'], route_class=PrivateRoute)
 Db = Annotated[Session, Depends(get_db)]
@@ -19,11 +20,13 @@ StatusReader = Annotated[UserAccount, Depends(require_permission('PATIENT_ACCOUN
 
 @router.post('/patients/{patient_id}/activation-token', response_model=s.TokenIssued, status_code=201)
 def issue_activation_token(patient_id: Identifier, request: Request, db: Db, actor: Issuer):
+    staff_only(db, actor.user_id)
     return service.issue_token(db, patient_id, actor.user_id, get_request_ip(request))
 
 
 @router.get('/patients/{patient_id}/activation-status', response_model=s.ActivationStatus)
 def activation_status(patient_id: Identifier, db: Db, actor: StatusReader):
+    staff_only(db, actor.user_id)
     return service.activation_status(db, patient_id)
 
 

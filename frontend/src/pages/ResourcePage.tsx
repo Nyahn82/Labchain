@@ -6,6 +6,7 @@ import { PermissionGuard, useAuth } from "../auth/Auth";
 import { Form } from "../components/Form";
 import { Dialog, Pagination, State, Table, Title } from "../components/UI";
 import type { Page, Row } from "../types/domain";
+import { activationLabel } from "./PatientActivation";
 import type { Resource } from "./resources";
 export function ResourcePage({
   resource,
@@ -31,7 +32,7 @@ function ResourceContent({
   resource: Resource;
   embedded: boolean;
 }) {
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const [params] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -65,6 +66,7 @@ function ResourceContent({
       )}
       <div className="card">
         <div className="toolbar">
+          {r.path === "/patients" && <button onClick={reload} disabled={loading}>Refresh patients</button>}
           {r.searchable !== false && (
             <label>
               Search {r.title.toLowerCase()}
@@ -108,7 +110,10 @@ function ResourceContent({
           <>
             <Table
               rows={data.items}
-              columns={r.columns}
+              columns={r.path === "/patients" && !user?.patient && !user?.roles.includes("PATIENT") &&
+                (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ"))
+                ? [...r.columns, { key: "activation_status", label: "Portal activation", render: row => activationLabel(row.activation_status) }]
+                : r.columns}
               actions={(row) => (
                 <>
                   {r.detail && (

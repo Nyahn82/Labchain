@@ -124,7 +124,8 @@ def test_identity_lifecycle_and_audit(admin, path, key, prefix, body):
     record_id = created[key]
     name = 'facility_name' if path == 'referring-facilities' else 'first_name'
     assert created[name] == body[name].strip()
-    assert request(admin, 'GET', f'/{path}/{record_id}').json() == created
+    expected_detail = {**created, 'activation_status': 'NOT_ACTIVATED'} if path == 'patients' else created
+    assert request(admin, 'GET', f'/{path}/{record_id}').json() == expected_detail
     update = {name: ' Revised Name ', 'contact_number': ' Synthetic private contact '}
     response = request(admin, 'PATCH', f'/{path}/{record_id}', update)
     assert response.status_code == 200

@@ -5,7 +5,7 @@ from typing import Annotated, Literal
 from pydantic import Field, SecretStr, model_validator
 
 from app.schemas.auth import Username
-from app.schemas.identity import Input, Sex
+from app.schemas.identity import ActivationState, Input, Sex
 from app.schemas.laboratory import Output
 from app.schemas.blockchain import PatientBlockchainVerification, EVIDENCE_DESCRIPTION
 
@@ -23,7 +23,7 @@ class TokenIssued(Output):
 
 
 class ActivationStatus(Output):
-    status: Literal['NOT_ACTIVATED', 'TOKEN_ACTIVE', 'TOKEN_EXPIRED', 'ACTIVATED']
+    status: ActivationState
 
 
 class ActivatedAccount(Output):

@@ -16,17 +16,20 @@ import { Details } from "../components/Details";
 import type { Row, Page } from "../types/domain";
 import { field, resources, resourceDetailFields } from "./resources";
 import { person } from "../utils/display";
+import { PatientActivation } from "./PatientActivation";
 import { ActivityList, SessionList, SuspensionActions } from "./AuthActivity";
 export function PersonDetail({ kind }: { kind: "patients" | "staff" }) {
+  const { id } = useParams();
+  const { user } = useAuth();
   return (
     <PermissionGuard permission={resources[kind].read}>
-      <PersonContent kind={kind} />
+      <PersonContent key={`${kind}:${id}:${user?.user_id}:${user?.roles.join(",")}:${user?.permissions.join(",")}`} kind={kind} />
     </PermissionGuard>
   );
 }
 function PersonContent({ kind }: { kind: "patients" | "staff" }) {
   const { id } = useParams();
-  const { can } = useAuth();
+  const { can, user } = useAuth();
   const r = resources[kind];
   const state = useResource<Row>(`${r.path}/${id}`);
   const [edit, setEdit] = useState(false);
@@ -47,9 +50,9 @@ function PersonContent({ kind }: { kind: "patients" | "staff" }) {
               fields={resourceDetailFields(r)}
             />
           </section>
-          {kind === "patients" &&
+          {kind === "patients" && !user?.patient && !user?.roles.includes("PATIENT") &&
             (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ")) && (
-              <><Activation id={id!} />{can("ACCOUNT_READ") && <StaffAccountAssociation id={id!} kind="patients" />}</>
+              <><PatientActivation id={id!} />{can("ACCOUNT_READ") && <StaffAccountAssociation id={id!} kind="patients" />}</>
             )}{" "}
           {kind === "staff" && <StaffAccounts id={id!} />}
         </>
@@ -68,21 +71,6 @@ function PersonContent({ kind }: { kind: "patients" | "staff" }) {
         </Dialog>
       )}
     </>
-  );
-}
-function Activation({ id }: { id: string }) {
-  const state = useResource<Row>(`/patients/${id}/activation-status`);
-  return (
-    <section className="card">
-      <h2>Patient activation</h2>
-      <State {...state} />
-      {state.data && (
-        <Details
-          row={state.data}
-          fields={Object.keys(state.data).filter((k) => !k.endsWith("_id"))}
-        />
-      )}
-    </section>
   );
 }
 function StaffAccounts({ id }: { id: string }) {

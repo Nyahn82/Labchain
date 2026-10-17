@@ -77,6 +77,17 @@ class PatientResponse(BaseModel):
     updated_at: datetime | None
 
 
+ActivationState = Literal[
+    'NOT_ACTIVATED', 'TOKEN_ACTIVE', 'TOKEN_EXPIRED', 'TOKEN_REVOKED',
+    'ACTIVATED', 'REVIEW_REQUIRED',
+]
+
+
+class PatientDirectoryResponse(PatientResponse):
+    # Included only for staff with existing activation/account-read permission.
+    activation_status: ActivationState | None = None
+
+
 class StaffFields(Input):
     middle_name: Name | None = None
     suffix: Suffix | None = None
