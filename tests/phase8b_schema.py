@@ -22,7 +22,7 @@ def before_outbox_metadata():
     metadata = sa.MetaData(naming_convention=Base.metadata.naming_convention)
     for source in Base.metadata.sorted_tables:
         table = source.to_metadata(metadata)
-        removed = EVENT_ADDITIONS if table.name == 'blockchain_event' else {'blockchain_entity_uuid'} if table.name == 'lab_report' else set()
+        removed = EVENT_ADDITIONS if table.name == 'blockchain_event' else {'blockchain_entity_uuid', 'presentation_snapshot'} if table.name == 'lab_report' else set()
         if table.name == 'user_account':
             removed = {'suspended_at', 'suspended_by_user_id', 'suspension_reason'}
             table.c.account_status.type = sa.Enum('ACTIVE', 'INACTIVE', 'LOCKED', name='account_status')

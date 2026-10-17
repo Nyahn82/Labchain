@@ -26,6 +26,7 @@ os.environ.update({
     "AUTH_COOKIE_SAMESITE": "strict",
     "REPORT_STORAGE_DIR": "/tmp/rhu-test-reports-unconfigured",
     "PUBLIC_BASE_URL": "https://verify.example.test",
+    "REPORT_LOGO_DIR": "/tmp/rhu-test-logos-unconfigured",
     "REPORT_SIGNATURE_DIR": "/tmp/rhu-test-signatures-unconfigured",
     "APP_NAME": "RHU LabChain Test",
     "ENVIRONMENT": "test",

@@ -340,7 +340,9 @@ def test_multipage_renderer_repeats_headers_and_preserves_line_order(api):
     assert len(reader.pages) >= 4
     texts = [page.extract_text() for page in reader.pages]
     for text in texts:
-        if 'Analyte' in text:
+        # V2 also names analytes in separate specimen/methodology notes.
+        # Require column headers on every page containing actual result rows.
+        if re.search(r'^Analyte \d{3}$', text, re.MULTILINE):
             assert 'REFERENCE RANGE' in text and 'TEST' in text
         assert 'Version 1' in text and 'Page ' in text
     combined = '\n'.join(texts)

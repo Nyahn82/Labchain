@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, NavLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useResource } from "../api/useResource";
 import { PermissionGuard, useAuth } from "../auth/Auth";
@@ -22,6 +22,7 @@ import {
   panelsLookup,
   testsLookup,
 } from "./resources";
+import { LaboratoryProgress } from "../components/LaboratoryProgress";
 import { Specimens } from "./Specimens";
 import { Results } from "./Results";
 import { OrderReports } from "./Reports";
@@ -52,12 +53,16 @@ function OrderList({ mode }: { mode: string }) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [priority, setPriority] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const state = useResource<Page>(
-    `/lab-orders?page=${page}&page_size=20&search=${encodeURIComponent(search)}${status ? "&status=" + status : ""}${priority ? "&priority=" + priority : ""}`,
+    `/lab-orders?page=${page}&page_size=20&search=${encodeURIComponent(search)}${status ? "&status=" + status : ""}${priority ? "&priority=" + priority : ""}${dateFrom ? "&date_from=" + dateFrom : ""}${dateTo ? "&date_to=" + dateTo : ""}`,
   );
   return (
     <>
       <Title
+        eyebrow="LABORATORY WORKSPACE"
+        description="Follow authorized requests through specimen handling, testing and report release."
         title={
           mode === "orders"
             ? "Laboratory orders"
@@ -66,6 +71,7 @@ function OrderList({ mode }: { mode: string }) {
               : "Result workspace"
         }
       >
+        <button onClick={state.reload} disabled={state.loading}>Refresh orders</button>
         {can("LAB_ORDER_CREATE") && (
           <Link className="button primary" to="/orders/new">
             New laboratory order
@@ -89,7 +95,7 @@ function OrderList({ mode }: { mode: string }) {
                 setSearch(e.target.value);
                 setPage(1);
               }}
-              placeholder="Order code…"
+              placeholder="Order code, patient code or name…"
             />
           </label>
           <label>
@@ -124,6 +130,9 @@ function OrderList({ mode }: { mode: string }) {
               ))}
             </select>
           </label>
+          <label>Requested from<input type="date" value={dateFrom} max={dateTo || undefined} onChange={e => { setDateFrom(e.target.value); setPage(1); }} /></label>
+          <label>Requested to<input type="date" value={dateTo} min={dateFrom || undefined} onChange={e => { setDateTo(e.target.value); setPage(1); }} /></label>
+          <button onClick={() => { setSearch(""); setStatus(""); setPriority(""); setDateFrom(""); setDateTo(""); setPage(1); }}>Clear filters</button>
         </div>
         <State {...state} empty={!state.data?.items.length} />
         {state.data && (
@@ -179,6 +188,9 @@ export function CreateOrder() {
   );
 }
 function OrderForm() {
+  const [params] = useSearchParams();
+  const candidate = params.get("patient_id") || "";
+  const patientId = /^\d+$/.test(candidate) && Number.isSafeInteger(Number(candidate)) && Number(candidate) > 0 ? Number(candidate) : undefined;
   const navigate = useNavigate();
   return (
     <>
@@ -192,6 +204,7 @@ function OrderForm() {
         </p>
         <Form
           fields={orderFields}
+          initial={patientId ? { patient_id: patientId } : {}}
           submit="Create order"
           onSubmit={async (body) => {
             if (
@@ -215,9 +228,10 @@ export function OrderDetail({
 }: {
   tab?: "overview" | "specimens" | "results" | "reports";
 }) {
+  const { id } = useParams();
   return (
     <PermissionGuard permission="LAB_ORDER_READ">
-      <OrderContent tab={tab} />
+      <OrderContent key={`${id}:${tab}`} tab={tab} />
     </PermissionGuard>
   );
 }
@@ -227,12 +241,16 @@ function OrderContent({ tab }: { tab: string }) {
   const state = useResource<Order>(`/lab-orders/${id}`);
   const order = state.data;
   const [reason, setReason] = useState("");
+  const [notice, setNotice] = useState("");
+  const changed = () => { setNotice("Laboratory record saved. Workspace refreshed."); state.reload(); };
   return (
     <>
       <Title title={order?.order_code || "Order details"}>
         <Link to="/orders">All orders</Link>
+        <button onClick={state.reload} disabled={state.loading}>Refresh workspace</button>
         {order && <Badge>{order.status}</Badge>}
       </Title>
+      {notice && <p role="status" className="success">{notice}</p>}
       <State {...state} />
       {order && (
         <>
@@ -242,18 +260,19 @@ function OrderContent({ tab }: { tab: string }) {
               fields={["patient", "physician", "priority", "order_date"]}
             />
             <nav className="tabs" aria-label="Order workflow">
-              <Link to={`/orders/${id}`}>Overview</Link>
+              <NavLink end to={`/orders/${id}`}>Overview</NavLink>
               {can("SPECIMEN_READ") && (
-                <Link to={`/orders/${id}/specimens`}>Specimens</Link>
+                <NavLink to={`/orders/${id}/specimens`}>Specimens</NavLink>
               )}
               {can("LAB_RESULT_READ") && (
-                <Link to={`/orders/${id}/results`}>Results</Link>
+                <NavLink to={`/orders/${id}/results`}>Results</NavLink>
               )}
               {can("REPORT_READ") && (
-                <Link to={`/orders/${id}/reports`}>Reports</Link>
+                <NavLink to={`/orders/${id}/reports`}>Reports</NavLink>
               )}
             </nav>
           </section>
+          <LaboratoryProgress order={order} />
           {tab === "overview" ? (
             <>
               <section className="card">
@@ -355,11 +374,11 @@ function OrderContent({ tab }: { tab: string }) {
             </>
           ) : tab === "specimens" ? (
             <PermissionGuard permission="SPECIMEN_READ">
-              <Specimens order={order} reload={state.reload} />
+              <Specimens order={order} reload={changed} />
             </PermissionGuard>
           ) : tab === "results" ? (
             <PermissionGuard permission="LAB_RESULT_READ">
-              <Results order={order} reload={state.reload} />
+              <Results order={order} reload={changed} />
             </PermissionGuard>
           ) : (
             <PermissionGuard permission="REPORT_READ">

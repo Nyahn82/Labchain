@@ -1,3 +1,4 @@
+import { ReportPreview } from "../components/ReportPreview";
 import { StaffReportAnchoring } from "../components/BlockchainAnchoring";
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -33,7 +34,7 @@ const generateFields = [
       "template_name",
       "REPORT_TEMPLATE_READ",
     ),
-    help: "Optional. The backend resolves the default template when omitted.",
+    help: "Optional. Leave empty to use the standard report layout.",
   }),
   field("remarks", "Remarks", { type: "textarea" }),
 ];
@@ -255,6 +256,7 @@ export function ReportActions({
   const [copies, setCopies] = useState(1);
   const [error, setError] = useState<Error>();
   const [busy, setBusy] = useState(false);
+  const [preview, setPreview] = useState(false);
   const path = `/reports/${report.report_id}`;
   async function download() {
     setBusy(true);
@@ -273,6 +275,8 @@ export function ReportActions({
   return (
     <>
       <Alert error={error} />
+      <p className="report-workflow-note">{report.report_status === "GENERATED" ? "Review the official snapshot, assign signatories and obtain each authorized signature before approval." : report.report_status === "APPROVED" ? "Approved for release. Only an authorized releaser can publish the official PDF." : report.report_status === "REVOKED" ? "Historical report — revoked. Its original PDF is preserved; consult verification and the current version before use." : "Released report. The stored PDF is immutable; corrections require a revised version and a new approval cycle."}</p>
+      {preview && can("REPORT_DOWNLOAD") && <ReportPreview key={report.report_id} id={report.report_id} onClose={() => setPreview(false)} />}
       <div className="actions">
         {report.report_status === "GENERATED" && (
           <>
@@ -324,6 +328,7 @@ export function ReportActions({
         )}{" "}
         {["RELEASED", "REVOKED"].includes(report.report_status) && (
           <>
+            {can("REPORT_DOWNLOAD") && <button onClick={() => setPreview(true)}>Preview PDF</button>}
             {can("REPORT_DOWNLOAD") && (
               <button disabled={busy} onClick={download}>
                 {busy ? "Downloading…" : "Download PDF"}

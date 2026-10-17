@@ -133,12 +133,14 @@ def report_detail(db, report_id, *, lock=False):
     patient = db.scalar(current(select(ReportPatientSnapshot).where(ReportPatientSnapshot.report_id == report_id), lock))
     lines = list(db.scalars(current(select(ReportResultItem).where(ReportResultItem.report_id == report_id)
                                    .order_by(ReportResultItem.sort_order, ReportResultItem.report_result_item_id), lock)))
-    return s.ReportDetail(**fields(report), **version_metadata(db, report),
+    response = s.ReportDetail(**fields(report), **version_metadata(db, report),
         anchoring=report_anchoring(db, report),
         facility=s.FacilityResponse.model_validate(get_record(db, FacilityProfile, report.facility_id, lock=lock)),
         template=s.TemplateResponse.model_validate(get_record(db, ReportTemplate, report.template_id, lock=lock))
                  if report.template_id is not None else None,
         patient_snapshot=patient, result_snapshots=lines, signatories=report_signatories(db, report_id, lock=lock))
+    response._presentation = report.presentation_snapshot
+    return response
 
 
 def list_reports(db, *, page, page_size, search=None, order_id=None, status=None, date_from=None, date_to=None):
@@ -228,6 +230,9 @@ def create_report_snapshots(db, order, payload, actor_id, *, version_no=1, super
     report = LabReport(report_code=f'RPT-{now:%Y%m%d}-{secrets.token_hex(8).upper()}',
         order_id=order.order_id, facility_id=issuing.facility_id, **payload.model_dump(), version_no=version_no,
         supersedes_report_id=supersedes_report_id, report_status='GENERATED', generated_by_user_id=actor_id, generated_at=now)
+    from app.services.report_presentation import capture_presentation
+    report.presentation_snapshot = capture_presentation(db, order, sources, issuing,
+        related(db, ReportTemplate, payload.template_id) if payload.template_id else None)
     db.add(report)
     db.flush()
     db.add(ReportPatientSnapshot(report_id=report.report_id, patient_code=patient.patient_code,
@@ -288,7 +293,7 @@ def assign_signatory(db, report_id, payload, actor_id, ip_address):
 @retry_deadlocks
 def sign_report(db, report_id, payload, actor_id, ip_address):
     with mutation(db):
-        generated_report(db, report_id)
+        report = generated_report(db, report_id)
         link = get_record(db, ReportSignatory, payload.report_signatory_id, lock=True)
         if link.report_id != report_id:
             raise HTTPException(404, 'Signatory assignment not found in this report.')
@@ -300,6 +305,12 @@ def sign_report(db, report_id, payload, actor_id, ip_address):
         if link.signed_at is not None:
             raise HTTPException(409, 'This assignment is already signed.')
         link.signed_at = utc_now()
+        if report.presentation_snapshot is not None:
+            from app.services.report_presentation import capture_signatory
+            context = dict(report.presentation_snapshot)
+            context['signatories'] = {**context.get('signatories', {}),
+                str(link.report_signatory_id): capture_signatory(db, link, profile)}
+            report.presentation_snapshot = context
         db.flush()
         audit(db, actor_id, 'REPORT_SIGN', 'report_signatory', link.report_signatory_id, ip_address,
               new={'report_id': report_id, 'signatory_id': link.signatory_id})

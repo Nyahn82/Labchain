@@ -64,7 +64,7 @@ def test_exact_metadata_snapshots_and_existing_application():
 @pytest.mark.parametrize("name", sorted(TABLES))
 def test_exact_workbook_columns_types_nullability_keys_and_defaults(name, contract):
     table = Base.metadata.tables[name]
-    additions = EVENT_ADDITIONS if name == 'blockchain_event' else {'blockchain_entity_uuid'} if name == 'lab_report' else set()
+    additions = EVENT_ADDITIONS if name == 'blockchain_event' else {'blockchain_entity_uuid', 'presentation_snapshot'} if name == 'lab_report' else set()
     assert set(table.c.keys()) == {row[0] for row in contract[name]} | additions
     assert [key for key in table.c.keys() if key not in additions] == [row[0] for row in contract[name]]
     expected_fks = set()

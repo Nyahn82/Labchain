@@ -48,7 +48,7 @@ export function Results({
                 { key: "test.test_name", label: "Test" },
                 { key: "specimen.specimen_code", label: "Specimen" },
                 { key: "result_value", label: "Result" },
-                { key: "test.default_unit", label: "Unit" },
+                { key: "unit", label: "Unit", render: r => String((r.reference_range as Row | null)?.unit ?? (r.test as Row).default_unit ?? "—") },
                 {
                   key: "reference_range",
                   label: "Reference",
@@ -64,6 +64,7 @@ export function Results({
                 },
                 { key: "flag", label: "Flag", badge: true },
                 { key: "status", label: "Status", badge: true },
+                { key: "provenance", label: "Review history", render: r => <details><summary>Details & remarks</summary><Details row={r} fields={["remarks", "encoded_at", "reviewed_at", "verified_at"]} /></details> },
               ]}
               actions={(row) =>
                 order.status === "CANCELLED" ? (
@@ -213,7 +214,7 @@ export function ResultForm({
     <>
       <Details
         row={test}
-        fields={["test_name", "result_type", "default_unit"]}
+        fields={["test_name", "result_type", "default_unit", "methodology"]}
       />
       {result && (
         <>

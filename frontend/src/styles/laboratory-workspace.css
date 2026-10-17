@@ -1,0 +1,9 @@
+.laboratory-stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr)); gap: 16px; }
+.laboratory-stages article { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: 16px; background: var(--surface-inset); }
+.laboratory-stages h3 { font-size: 15px; margin: 10px 0; }
+.laboratory-stages p { font-size: 13px; color: var(--muted); }
+.laboratory-followup { margin-top: 18px; }
+.laboratory-followup summary { cursor: pointer; font-weight: 600; }
+.tabs a[aria-current="page"] { border-bottom: 3px solid var(--accent); color: var(--accent); font-weight: 700; }
+.report-pdf-preview { display: block; width: 100%; height: min(68vh, 800px); min-height: 260px; border: 1px solid var(--border-soft); }
+.report-workflow-note { padding: 12px; background: var(--surface-inset); border-left: 3px solid var(--accent); }

@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger, Boolean, CHAR, CheckConstraint, Date, DateTime, Enum, ForeignKey,
-    Integer, String, Text, text, event,
+    Integer, JSON, String, Text, text, event,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -67,6 +67,7 @@ class LabReport(Base):
     revocation_reason: Mapped[str | None] = mapped_column(Text)
     pdf_path: Mapped[str | None] = mapped_column(String(255))
     remarks: Mapped[str | None] = mapped_column(Text)
+    presentation_snapshot: Mapped[dict | None] = mapped_column(JSON(none_as_null=True), nullable=True)
 
 
 class ReportResultItem(Base):

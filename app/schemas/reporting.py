@@ -1,7 +1,7 @@
 """Phase 5A allowlisted inputs and historical report outputs."""
 from datetime import date, datetime
 from typing import Annotated, Literal
-from pydantic import Field
+from pydantic import Field, PrivateAttr
 
 from app.schemas.identity import Address, Contact, Email, Identifier, Input, text_field
 from app.schemas.laboratory import Output, Partial, SortOrder
@@ -153,6 +153,8 @@ class ReportResponse(Output):
 
 
 class ReportDetail(ReportResponse):
+    # Internal rendering context is never serialized in staff/public responses.
+    _presentation: dict | None = PrivateAttr(default=None)
     anchoring: ReportAnchoring = Field(description=EVIDENCE_DESCRIPTION)
     facility: FacilityResponse
     template: TemplateResponse | None

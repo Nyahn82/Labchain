@@ -51,6 +51,16 @@ def signature_image(relative):
 
 
 def render_pdf(report, verification_url, released_at):
+    context = getattr(report, '_presentation', None)
+    if context is None:
+        return render_pdf_v1(report, verification_url, released_at)
+    if context.get('renderer') != 2:
+        raise ValueError('Unsupported report renderer version')
+    from app.services.report_pdf_v2 import render
+    return render(report, verification_url, released_at, context)
+
+
+def render_pdf_v1(report, verification_url, released_at):
     output = BytesIO()
     body = ParagraphStyle('body', fontName='RHU', fontSize=9, leading=13, spaceAfter=4)
     bold = ParagraphStyle('bold', parent=body, fontName='RHU-Bold')
