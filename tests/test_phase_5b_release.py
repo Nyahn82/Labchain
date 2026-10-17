@@ -37,10 +37,14 @@ def api(admin, tmp_path, monkeypatch):
 
 
 def ready(api):
-    template = create(api, '/report-templates', {'template_code': 'GEN', 'template_name': 'General',
+    template = create(api, '/report-templates', {'template_name': 'General',
         'header_title': 'Official laboratory report', 'section_title': 'Examination results',
         'clinical_note': 'Configured clinical note', 'footer_note': 'Configured footer',
         'medico_legal_note': 'Configured disclaimer'})
+    template_code = template['template_code']
+    assert re.fullmatch(r'TMP-[0-9]{3,}', template_code)
+    with api.factory() as db:
+        assert db.get(ReportTemplate, template['template_id']).template_code == template_code
     row = generated(api, template_id=template['template_id'])
     assigned(api)
     assert sign(api).status_code == 200

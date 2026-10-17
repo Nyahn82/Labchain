@@ -46,18 +46,17 @@ class TemplateFields(Input):
 
 
 class TemplateCreate(TemplateFields):
-    template_code: text_field(40)
     template_name: text_field(100)
 
 
 class TemplatePatch(TemplateFields, Partial):
-    nonnull = {'template_code', 'template_name', 'is_active'}
-    template_code: text_field(40) | None = None
+    nonnull = {'template_name', 'is_active'}
     template_name: text_field(100) | None = None
 
 
 class TemplateResponse(TemplateCreate, Output):
     template_id: int
+    template_code: str
 
 
 class SignatoryFields(Input):

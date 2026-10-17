@@ -7,8 +7,9 @@ from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.models import AuditLog, ReferringFacility, RequestingPhysician
+from app.models import AuditLog, Patient, ReferringFacility, RequestingPhysician, Staff
 from app.services.auth_service import utc_now
+from app.services.code_generation_service import allocate_code
 
 
 @contextmanager
@@ -64,11 +65,15 @@ def create_record(db, model, payload, response_schema, actor_id, ip_address, act
     with mutation(db):
         values = payload.model_dump()
         validate_facility(db, model, values)
+        if model is Patient:
+            values['patient_code'] = allocate_code(db, 'PATIENT')
+        elif model is Staff:
+            values['staff_code'] = allocate_code(db, 'STAFF')
         record = model(**values)
         db.add(record)
         db.flush()
         audit(db, actor_id, action, model.__tablename__, inspect(record).identity[0], ip_address,
-              new={'changed_fields': sorted(payload.model_fields_set)})
+              new={'changed_fields': sorted(values)})
         result = response_schema.model_validate(record)
     return result
 

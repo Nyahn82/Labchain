@@ -40,7 +40,6 @@ class PatientFields(Input):
 
 
 class PatientCreate(PatientFields):
-    patient_code: Code
     first_name: Name
     last_name: Name
 
@@ -48,14 +47,13 @@ class PatientCreate(PatientFields):
 class PartialInput(Input):
     @model_validator(mode='after')
     def reject_required_nulls(self):
-        for field in self.model_fields_set & {'patient_code', 'staff_code', 'first_name', 'last_name', 'facility_name', 'is_active'}:
+        for field in self.model_fields_set & {'first_name', 'last_name', 'facility_name', 'is_active'}:
             if getattr(self, field) is None:
                 raise ValueError(f'{field} cannot be null.')
         return self
 
 
 class PatientPatch(PatientFields, PartialInput):
-    patient_code: Code | None = None
     first_name: Name | None = None
     last_name: Name | None = None
 
@@ -89,14 +87,12 @@ class StaffFields(Input):
 
 
 class StaffCreate(StaffFields):
-    staff_code: Code
     first_name: Name
     last_name: Name
     is_active: bool = True
 
 
 class StaffPatch(StaffFields, PartialInput):
-    staff_code: Code | None = None
     first_name: Name | None = None
     last_name: Name | None = None
     is_active: bool | None = None

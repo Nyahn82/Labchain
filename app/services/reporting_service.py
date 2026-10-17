@@ -15,6 +15,7 @@ from app.schemas import reporting as s
 from app.services.auth_service import utc_now
 from app.services.blockchain_status_service import report_anchoring
 from app.services.identity_service import audit, get_record, mutation
+from app.services.code_generation_service import allocate_code
 from app.services.laboratory_service import related, retry_deadlocks
 from app.services.report_formatting import full_years, printable_name, printable_range
 
@@ -92,6 +93,11 @@ def save_configuration(db, model, payload, actor_id, ip_address, *, record_id=No
             if merged['is_active'] and not staff.is_active:
                 raise HTTPException(409, 'An active signatory requires active staff.')
         if record is None:
+            if model is ReportTemplate:
+                values['template_code'] = allocate_code(
+                    db, 'REPORT_TEMPLATE'
+                )
+                changed.add('template_code')
             record = model(**values)
             db.add(record)
         else:

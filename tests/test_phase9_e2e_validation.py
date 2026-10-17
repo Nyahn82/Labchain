@@ -34,6 +34,7 @@ class FakeAPI:
         self.spec = spec
         self.calls = []
         self.fail = None
+        self.generated_patient_code = "PAT-004207"
         self.patient_body = None
         self.order_body = None
         self.specimen_body = None
@@ -105,7 +106,10 @@ class FakeAPI:
         assert self.execute
         assert method == "POST"
         if path == "/patients":
-            self.patient_body = {**payload, "patient_id": 101}
+            assert "patient_code" not in payload
+            p9.validate_payload(payload, self.spec["components"]["schemas"]["PatientCreate"],
+                                self.spec["components"]["schemas"])
+            self.patient_body = {**payload, "patient_id": 101, "patient_code": self.generated_patient_code}
             return deepcopy(self.patient_body)
         if path == "/lab-orders":
             self.order_body = {**payload, "order_id": 102, "status": "REQUESTED", "panels": [],
@@ -350,6 +354,15 @@ def test_complete_baseline_tracks_returned_ids_and_never_revises(run, monkeypatc
     stored = journal.path.read_text()
     assert "PRIVATE" not in stored and "password" not in stored and "verification_url" not in stored
     assert len(runner.run_id) <= 20
+    saved = json.loads(stored)
+    assert saved["version"] == 2
+    assert saved["patient_code"] == runner.patient_code == api.generated_patient_code
+    assert saved["patient_code"] != runner.run_id
+    assert saved["ids"] == runner.ids
+    patient_payload = next(body for method, path, body in api.calls if method == "POST" and path == p9.API + "/patients")
+    assert "patient_code" not in patient_payload
+    assert api.order_body["patient_id"] == saved["ids"]["patient_id"]
+    assert api.report_body["patient_snapshot"]["patient_code"] == saved["patient_code"]
 
 
 def test_failed_post_stops_later_steps_and_records_intent(run):
@@ -360,6 +373,10 @@ def test_failed_post_stops_later_steps_and_records_intent(run):
     writes = [path for method, path, _ in api.calls if method == "POST"]
     assert writes == [p9.API + "/patients", p9.API + "/lab-orders"]
     assert journal.data["pending"] == "Order"
+    saved = json.loads(journal.path.read_text())
+    assert saved["patient_code"] == api.generated_patient_code
+    assert saved["ids"]["patient_id"] == api.patient_body["patient_id"] == 101
+    assert saved["completed"] == ["Patient"]
     with pytest.raises(p9.ValidationError):
         runner.baseline()
     assert [path for method, path, _ in api.calls if method == "POST"] == writes
@@ -583,12 +600,189 @@ def test_patient_portal_success_uses_only_owned_report(run, monkeypatch):
     monkeypatch.setattr(patient, "login", lambda *a, **kw: {"roles": ["PATIENT"], "patient": {"patient_id": 101}})
     patient.masters.update({
         "/patient/security": {"mfa_required": True, "totp_enabled": True, "mfa_verified_for_current_session": True},
-        "/patient/me": {"patient_id": 101, "patient_code": runner.run_id},
+        "/patient/me": {"patient_id": 101, "patient_code": runner.patient_code},
         "/patient/reports/106": {"report_id": 106, "report_status": "RELEASED", "verification_status": "AUTHENTIC",
-                                 "patient_snapshot": {"patient_code": runner.run_id},
+                                 "patient_snapshot": {"patient_code": runner.patient_code},
                                  "blockchain_verification": {"status": "CONFIRMED", "confirmed_at": "2026-10-04T00:00:00"}},
     })
     monkeypatch.setattr(p9, "Client", lambda *a, **kw: patient)
     runner.patient_portal()
     assert [path for _, path, _ in patient.calls] == [p9.API + suffix for suffix in
         ("/patient/security", "/patient/me", "/patient/reports/106")]
+
+
+@pytest.mark.parametrize("code", ["PAT-000019", "PAT-004207", "PAT-9999999999999999"])
+def test_patient_code_is_captured_from_response_not_predicted(run, code):
+    runner, api, journal = run
+    api.generated_patient_code = code
+    masters_before = deepcopy(api.masters)
+    runner.baseline()
+    assert runner.patient_code == code
+    assert json.loads(journal.path.read_text())["patient_code"] == code
+    assert runner.patient()["patient_id"] == 101
+    assert api.report_body["patient_snapshot"]["patient_code"] == code
+    assert api.masters == masters_before  # Seeded legacy master-data codes stay intact.
+    assert not any(method in {"PATCH", "PUT", "DELETE"} for method, _, _ in api.calls)
+
+
+@pytest.mark.parametrize("code", [None, "", 123, "PAT-000000", "PAT-12345", "PAT-10000000000000000", "P9-260101120000-ABC"])
+def test_invalid_creation_code_leaves_pending_intent_without_replay(run, monkeypatch, code):
+    runner, api, journal = run
+    request = api.request
+
+    def malformed(method, path, *args, **kwargs):
+        body = request(method, path, *args, **kwargs)
+        if method == "POST" and path == p9.API + "/patients":
+            body["patient_code"] = code
+        return body
+
+    monkeypatch.setattr(api, "request", malformed)
+    with pytest.raises(p9.ValidationError, match="generated Patient code"):
+        runner.baseline()
+    saved = json.loads(journal.path.read_text())
+    assert saved["pending"] == "Patient" and saved["completed"] == []
+    assert saved["ids"] == {} and saved["patient_code"] is None
+    assert len(api.calls) == 1
+    # The server may have committed despite the invalid response: do not delete it.
+    assert api.patient_body["patient_code"] == api.generated_patient_code
+    with pytest.raises(p9.ValidationError, match="replay refused"):
+        runner.baseline()
+    assert len(api.calls) == 1
+    journal.close()
+    with pytest.raises(p9.ValidationError, match="uncertain write"):
+        p9.Journal(journal.path)
+
+
+def test_failed_patient_request_does_not_capture_or_continue(run):
+    runner, api, journal = run
+    api.fail = ("POST", p9.API + "/patients")
+    with pytest.raises(p9.ValidationError, match="Synthetic request failure"):
+        runner.baseline()
+    assert api.patient_body is None
+    assert len(api.calls) == 1
+    saved = json.loads(journal.path.read_text())
+    assert saved["ids"] == {} and saved["patient_code"] is None
+    assert saved["pending"] == "Patient" and saved["completed"] == []
+
+
+def test_patient_completion_journal_failure_requires_manual_reconciliation(run, monkeypatch):
+    runner, api, journal = run
+    save = journal.save
+
+    def fail_after_response():
+        if journal.data["completed"] == ["Patient"]:
+            raise OSError("Synthetic journal write failure")
+        save()
+
+    monkeypatch.setattr(journal, "save", fail_after_response)
+    with pytest.raises(OSError):
+        runner.baseline()
+    assert api.patient_body["patient_code"] == api.generated_patient_code
+    assert len(api.calls) == 1
+    saved = json.loads(journal.path.read_text())
+    assert saved["pending"] == "Patient" and saved["ids"] == {}
+    assert saved["patient_code"] is None
+    journal.close()
+    with pytest.raises(p9.ValidationError, match="uncertain write"):
+        p9.Journal(journal.path)
+
+
+@pytest.mark.parametrize("version", [1, 2])
+def test_resume_reads_recorded_patient_without_modifying_history(run, monkeypatch, version):
+    runner, api, journal = run
+    runner.baseline()
+    if version == 1:
+        # Reconstruct a valid historical run, whose code was the recorded run ID.
+        journal.data["version"] = 1
+        journal.data.pop("patient_code")
+        api.patient_body["patient_code"] = runner.run_id
+        api.report_body["patient_snapshot"]["patient_code"] = runner.run_id
+        journal.save()
+    patient_before, reports_before = deepcopy(api.patient_body), deepcopy(api.reports)
+    expected_code = api.patient_body["patient_code"]
+    journal.close()
+    api.calls.clear()
+    monkeypatch.setattr(p9, "Client", lambda *args, **kwargs: api)
+    resumed_journal = p9.Journal(journal.path)
+    try:
+        resumed = p9.Runner(api, FakeSigner(api), resumed_journal)
+        assert resumed.patient_code == expected_code
+        resumed.confirm_baseline()
+        assert resumed_journal.data["baseline_pass"] is True
+        assert all(method == "GET" for method, _, _ in api.calls)
+        assert api.patient_body == patient_before and api.reports == reports_before
+        assert resumed.ids["patient_id"] == 101
+        assert resumed_journal.data["version"] == version
+    finally:
+        resumed_journal.close()
+
+
+@pytest.mark.parametrize("corruption", ["missing", "null", "legacy", "wrong_type", "no_patient_id"])
+def test_current_journal_never_falls_back_to_run_id(run, corruption):
+    runner, api, journal = run
+    runner.baseline()
+    if corruption == "missing":
+        journal.data.pop("patient_code")
+    elif corruption == "no_patient_id":
+        journal.data["ids"].pop("patient_id")
+    else:
+        journal.data["patient_code"] = {"null": None, "legacy": runner.run_id, "wrong_type": 101}[corruption]
+    journal.save()
+    journal.close()
+    with pytest.raises(p9.ValidationError):
+        p9.Journal(journal.path)
+
+
+def test_changed_patient_identity_stops_before_next_write(run, monkeypatch):
+    runner, api, journal = run
+    request = api.request
+
+    def changed(method, path, *args, **kwargs):
+        body = request(method, path, *args, **kwargs)
+        if method == "GET" and path == p9.API + "/patients/101":
+            body["patient_code"] = "PAT-999999"
+        return body
+
+    monkeypatch.setattr(api, "request", changed)
+    with pytest.raises(p9.ValidationError, match="identity/state"):
+        runner.baseline()
+    assert [path for method, path, _ in api.calls if method == "POST"] == [p9.API + "/patients"]
+    assert journal.data["patient_code"] == api.generated_patient_code
+    assert journal.data["completed"] == ["Patient"]
+    assert journal.data["pending"] is None
+
+
+def test_wrong_snapshot_code_cannot_be_accepted(run):
+    runner, api, _ = run
+    runner.baseline()
+    body = deepcopy(api.report_body)
+    body["patient_snapshot"]["patient_code"] = "PAT-999999"
+    with pytest.raises(p9.ValidationError, match="identity/state"):
+        runner.check_report(body, "RELEASED")
+
+
+def test_incomplete_baseline_resume_never_replays_creation(run, monkeypatch):
+    runner, api, journal = run
+    request = api.request
+
+    def failed_read(method, path, *args, **kwargs):
+        if method == "GET" and path == p9.API + "/patients/101":
+            raise p9.ValidationError("Synthetic read failure")
+        return request(method, path, *args, **kwargs)
+
+    monkeypatch.setattr(api, "request", failed_read)
+    with pytest.raises(p9.ValidationError, match="read failure"):
+        runner.baseline()
+    journal.close()
+    calls_before = deepcopy(api.calls)
+    resumed_journal = p9.Journal(journal.path)
+    try:
+        resumed = p9.Runner(api, FakeSigner(api), resumed_journal)
+        assert resumed.patient_code == api.generated_patient_code
+        with pytest.raises(p9.ValidationError, match="recorded successful release"):
+            resumed.confirm_baseline()
+        with pytest.raises(p9.ValidationError, match="unused journal"):
+            resumed.baseline()
+        assert api.calls == calls_before
+    finally:
+        resumed_journal.close()

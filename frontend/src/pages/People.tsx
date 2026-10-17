@@ -14,7 +14,7 @@ import {
 import { Form, choices } from "../components/Form";
 import { Details } from "../components/Details";
 import type { Row, Page } from "../types/domain";
-import { field, resources } from "./resources";
+import { field, resources, resourceDetailFields } from "./resources";
 import { person } from "../utils/display";
 import { ActivityList, SessionList, SuspensionActions } from "./AuthActivity";
 export function PersonDetail({ kind }: { kind: "patients" | "staff" }) {
@@ -44,7 +44,7 @@ function PersonContent({ kind }: { kind: "patients" | "staff" }) {
           <section className="card">
             <Details
               row={state.data}
-              fields={r.fields.map((f) => [f.name, f.label])}
+              fields={resourceDetailFields(r)}
             />
           </section>
           {kind === "patients" &&

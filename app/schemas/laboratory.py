@@ -38,18 +38,17 @@ class DepartmentFields(Input):
 
 
 class DepartmentCreate(DepartmentFields):
-    department_code: text_field(30)
     department_name: text_field(100)
 
 
 class DepartmentPatch(DepartmentFields, Partial):
-    nonnull = {'department_code', 'department_name', 'is_active'}
-    department_code: text_field(30) | None = None
+    nonnull = {'department_name', 'is_active'}
     department_name: text_field(100) | None = None
 
 
 class DepartmentResponse(DepartmentCreate, Output):
     department_id: int
+    department_code: str
 
 
 class SampleTypeCreate(DepartmentFields):
@@ -73,15 +72,13 @@ class TestFields(Input):
 
 
 class TestCreate(TestFields):
-    test_code: text_field(30)
     test_name: text_field(150)
     department_id: Identifier
     result_type: ResultType
 
 
 class TestPatch(TestFields, Partial):
-    nonnull = {'test_code', 'test_name', 'department_id', 'result_type', 'is_active'}
-    test_code: text_field(30) | None = None
+    nonnull = {'test_name', 'department_id', 'result_type', 'is_active'}
     test_name: text_field(150) | None = None
     department_id: Identifier | None = None
     result_type: ResultType | None = None
@@ -89,6 +86,7 @@ class TestPatch(TestFields, Partial):
 
 class TestResponse(TestCreate, Output):
     test_id: int
+    test_code: str
 
 
 class SampleAssignment(Input):
@@ -118,18 +116,17 @@ class PanelFields(DepartmentFields):
 
 
 class PanelCreate(PanelFields):
-    panel_code: text_field(30)
     panel_name: text_field(120)
 
 
 class PanelPatch(PanelFields, Partial):
-    nonnull = {'panel_code', 'panel_name', 'is_active'}
-    panel_code: text_field(30) | None = None
+    nonnull = {'panel_name', 'is_active'}
     panel_name: text_field(120) | None = None
 
 
 class PanelResponse(PanelCreate, Output):
     panel_id: int
+    panel_code: str
 
 
 class SectionCreate(Input):

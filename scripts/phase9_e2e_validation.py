@@ -100,6 +100,13 @@ def identifier(value):
     return value
 
 
+def generated_patient_code(value):
+    require(isinstance(value, str) and re.fullmatch(r"PAT-[0-9]{6,16}", value) is not None
+            and int(value[4:]) > 0,
+            "Missing or invalid generated Patient code; stopping.")
+    return value
+
+
 def matches(body, **expected):
     body = obj(body)
     require(all(key in body and type(body[key]) is type(value) and body[key] == value
@@ -266,7 +273,7 @@ def check_contracts(spec, *, revocation=False, revision=False, portal=False, act
     # Check payload fields against deployed OpenAPI, including required/enums/bounds.
     schemas = obj(spec.get("components", {})).get("schemas", {})
     samples = {
-        "PatientCreate": {"patient_code": "P9-260101120000-ABC", "first_name": "Phase9", "last_name": "Validation-P9-260101120000-ABC"},
+        "PatientCreate": {"first_name": "Phase9", "last_name": "Validation-P9-260101120000-ABC"},
         "OrderCreate": {"patient_id": 1, "physician_id": 1, "priority": "ROUTINE", "test_ids": [1], "panel_ids": [], "request_reason": "Synthetic validation"},
         "SpecimenCreate": {"sample_type_id": 1, "order_item_ids": [1], "remarks": "Synthetic validation"},
         "ResultCreate": {"result_value": "42", "specimen_id": 1, "remarks": "Synthetic validation"},
@@ -408,18 +415,31 @@ class Journal:
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
             if create:
-                self.data = {"version": 1, "base": base, "run_id": new_run_id(), "ids": {},
+                self.data = {"version": 2, "base": base, "run_id": new_run_id(), "ids": {},
+                             "patient_code": None,
                              "completed": [], "pending": None, "baseline_pass": False}
                 self.save()
             else:
                 self.data = json.load(self.file)
-                require(self.data.get("version") == 1 and self.data.get("base") == base,
+                require(type(self.data.get("version")) is int and self.data["version"] in {1, 2}
+                        and self.data.get("base") == base,
                         "Journal version or target origin does not match.")
                 require(re.fullmatch(r"P9-\d{12}-[A-F0-9]{3}", self.data.get("run_id", "")), "Invalid run identifier.")
                 require(self.data.get("pending") is None, "Journal has an uncertain write; reconcile manually. No writes replayed.")
                 for key, value in obj(self.data.get("ids")).items():
                     require(key in ID_KEYS, "Unexpected journal identifier.")
                     identifier(value)
+                if self.data["version"] == 2:
+                    require("patient_code" in self.data, "Journal Patient code is missing.")
+                    if "patient_id" in self.data["ids"]:
+                        generated_patient_code(self.data["patient_code"])
+                    else:
+                        require(self.data["patient_code"] is None, "Journal Patient reference is inconsistent.")
+                else:
+                    # Version 1 explicitly used run_id as the patient's code.
+                    # Never infer a generated code or adopt a different patient.
+                    require("patient_code" not in self.data or self.data["patient_code"] == self.data["run_id"],
+                            "Legacy journal Patient code conflicts with its run identifier.")
         except Exception:
             self.file.close()
             raise
@@ -440,7 +460,7 @@ ID_KEYS = {"patient_id", "order_id", "order_item_id", "specimen_id", "result_ite
 
 
 def new_run_id():
-    # 19 characters: fits PatientCreate.patient_code's 20-character maximum.
+    # Synthetic run marker for names, notes and journal filenames; not a Patient code.
     return datetime.now(timezone.utc).strftime("P9-%y%m%d%H%M%S-") + secrets.token_hex(2)[:3].upper()
 
 
@@ -451,6 +471,12 @@ class Runner:
         self.ids = journal.data["ids"]
         self.run_id = journal.data["run_id"]
         self.note = "Synthetic Phase 9 validation only; not for clinical use. " + self.run_id
+
+    @property
+    def patient_code(self):
+        if self.journal.data["version"] == 1:
+            return self.run_id  # Historical journal convention; verified by API reads.
+        return generated_patient_code(self.journal.data.get("patient_code"))
 
     def write(self, step, path, payload, validate, *, expected=200, client=None):
         require(self.client.execute, "Workflow writes require --execute.")
@@ -471,7 +497,7 @@ class Runner:
 
     def patient(self):
         return matches(self.client.get(f"/patients/{self.ids['patient_id']}"),
-                       patient_id=self.ids["patient_id"], patient_code=self.run_id,
+                       patient_id=self.ids["patient_id"], patient_code=self.patient_code,
                        first_name="Phase9", last_name="Validation-" + self.run_id)
 
     def order(self, state=None):
@@ -513,7 +539,7 @@ class Runner:
     def check_report(self, body, state, *, key="report_id"):
         matches(body, report_id=self.ids[key], order_id=self.ids["order_id"], report_status=state,
                 template_id=1, facility_id=1, remarks=self.note)
-        matches(body.get("patient_snapshot"), patient_code=self.run_id, patient_name="Phase9 Validation-" + self.run_id)
+        matches(body.get("patient_snapshot"), patient_code=self.patient_code, patient_name="Phase9 Validation-" + self.run_id)
         lines = body.get("result_snapshots")
         require(isinstance(lines, list) and len(lines) == 1, "Report snapshot count differs from the run.")
         matches(lines[0], result_item_id=self.ids["result_item_id"], result_value_snapshot="42", panel_id_snapshot=None)
@@ -521,10 +547,13 @@ class Runner:
 
     def baseline(self):
         require(not self.ids and not self.journal.data["completed"], "New baseline requires an unused journal.")
+        require(self.journal.data["version"] == 2, "New baseline requires a current-format journal.")
         def created_patient(body):
-            matches(body, patient_code=self.run_id, first_name="Phase9", last_name="Validation-" + self.run_id)
+            matches(body, first_name="Phase9", last_name="Validation-" + self.run_id)
+            code = generated_patient_code(body.get("patient_code"))
             self.capture("patient_id", body)
-        self.write("Patient", "/patients", {"patient_code": self.run_id, "first_name": "Phase9",
+            self.journal.data["patient_code"] = code
+        self.write("Patient", "/patients", {"first_name": "Phase9",
                    "last_name": "Validation-" + self.run_id}, created_patient, expected=201)
         self.patient()
         def created_order(body):
@@ -708,10 +737,10 @@ class Runner:
                 and security.get("mfa_verified_for_current_session") is True,
                 "Patient MFA enrollment/verification is required. Complete it in the normal portal, then rerun the gated read checks.")
         validate_patient_identity(me, self.ids["patient_id"])
-        matches(patient.get("/patient/me"), patient_id=self.ids["patient_id"], patient_code=self.run_id)
+        matches(patient.get("/patient/me"), patient_id=self.ids["patient_id"], patient_code=self.patient_code)
         body = obj(patient.get(f"/patient/reports/{self.ids['report_id']}"))
         matches(body, report_id=self.ids["report_id"], report_status="RELEASED", verification_status="AUTHENTIC")
-        matches(body.get("patient_snapshot"), patient_code=self.run_id)
+        matches(body.get("patient_snapshot"), patient_code=self.patient_code)
         validate_patient_evidence(body)
         emit("PASS", "Patient ownership and safe blockchain confirmation checked with a separate patient session.")
 
@@ -843,7 +872,7 @@ def main(argv=None):
             emit("PASS", label)
         emit("SKIP", "Payment (not required)")
         emit("PASS" if args.patient_portal else "SKIP", "Patient portal" + ("" if args.patient_portal else " (separately gated)"))
-        print(json.dumps(runner.ids, sort_keys=True))
+        print(json.dumps({**runner.ids, "patient_code": runner.patient_code}, sort_keys=True))
         emit("PASS", "Overall: PASS")
         return 0
     except ValidationError as exc:

@@ -19,7 +19,7 @@ from test_phase_2d_models import TABLES, PREVIOUS_TABLES
 
 
 def test_session_schema_and_only_one_new_infrastructure_table():
-    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {"auth_session", "patient_activation_token", "user_totp_mfa", "mfa_recovery_code", "mfa_challenge"}
+    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {"auth_session", "patient_activation_token", "user_totp_mfa", "mfa_recovery_code", "mfa_challenge", "code_sequence"}
     table = Base.metadata.tables["auth_session"]
     assert set(table.c.keys()) == {
         "mfa_verified_at", "session_id", "user_id", "token_hash", "csrf_token_hash", "created_at",

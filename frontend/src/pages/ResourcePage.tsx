@@ -134,16 +134,20 @@ function ResourceContent({
           title={(editing ? "Edit " : "New ") + r.singular}
           onClose={() => setEditing(undefined)}
         >
+          {editing && r.code && (
+            <p>{r.code.label}: {String(editing[r.code.key] ?? "—")}</p>
+          )}
           <Form
             fields={r.fields}
             initial={editing || {}}
             onSubmit={async (body) => {
-              await api(
+              const saved = await api<Row>(
                 editing ? `${r.editPath || r.path}/${editing[r.key]}` : r.path,
                 { method: editing ? "PATCH" : "POST", body },
               );
               setEditing(undefined);
-              setSuccess(`${r.singular} saved.`);
+              const code = r.code && saved[r.code.key];
+              setSuccess(`${r.singular} saved${code ? ` (${code})` : ""}.`);
               reload();
             }}
           />

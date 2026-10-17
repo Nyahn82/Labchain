@@ -27,7 +27,8 @@ PHASE_3A = "20260915_01"
 PHASE_6A = "20260916_01"
 PHASE_6B = "20260920_01"
 PHASE_8B = "20260924_01"
-HEAD = "20261005_01"
+PHASE_10 = "20261005_01"
+HEAD = "20261015_01"
 
 
 def config(buffer=None):
@@ -38,6 +39,17 @@ def revision(revision_id=REVISION):
     scripts = ScriptDirectory.from_config(config())
     assert scripts.get_heads() == [HEAD]
     return scripts.get_revision(revision_id).module
+
+
+def test_current_migration_chain_is_linear():
+    scripts = ScriptDirectory.from_config(config())
+    expected = [HEAD, PHASE_10, PHASE_8B, PHASE_6B, PHASE_6A,
+                PHASE_3A, PHASE_2D, PHASE_2C, PHASE_2B, REVISION]
+    assert scripts.get_heads() == [HEAD]
+    assert scripts.get_bases() == [REVISION]
+    revisions = list(scripts.walk_revisions())
+    assert [item.revision for item in revisions] == expected
+    assert [item.down_revision for item in revisions] == expected[1:] + [None]
 
 
 def test_offline_mysql_upgrade_and_downgrade(monkeypatch):
@@ -192,10 +204,16 @@ def test_alembic_online_environment_reuses_application_engine(monkeypatch):
         with engine.connect() as connection:
             assert set(sa.inspect(connection).get_table_names()) == set(Base.metadata.tables) | {"alembic_version"}
             assert MigrationContext.configure(connection).get_current_revision() == HEAD
+            sequence_table = Base.metadata.tables["code_sequence"]
+            sequence_query = sa.select(sequence_table).order_by(sequence_table.c.sequence_key)
+            sequences_before = connection.execute(sequence_query).all()
+            assert len(sequences_before) == 7
         command.check(config())
-        command.downgrade(config(), "base")
+        with pytest.raises(RuntimeError, match="Automatic code sequence downgrade is intentionally blocked"):
+            command.downgrade(config(), "base")
         with engine.connect() as connection:
-            assert sa.inspect(connection).get_table_names() == ["alembic_version"]
-            assert MigrationContext.configure(connection).get_current_revision() is None
+            assert set(sa.inspect(connection).get_table_names()) == set(Base.metadata.tables) | {"alembic_version"}
+            assert MigrationContext.configure(connection).get_current_revision() == HEAD
+            assert connection.execute(sequence_query).all() == sequences_before
     finally:
         engine.dispose()

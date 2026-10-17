@@ -36,7 +36,7 @@ authority, including on an interrupted or concurrent run.
 
 | Step | Method and path | Request schema / payload | Permission | Prerequisite → result; returned IDs |
 |---|---|---|---|---|
-| Patient | POST `/patients` | `PatientCreate`: unique `patient_code`, `first_name=Phase9`, `last_name=Validation-<run-id>` | `PATIENT_CREATE` | New synthetic identity → `patient_id`; DOB/sex/contact fields optional and omitted |
+| Patient | POST `/patients` | `PatientCreate`: `first_name=Phase9`, `last_name=Validation-<run-id>`; no manual code | `PATIENT_CREATE` | New synthetic identity → returned `patient_id` and generated `patient_code`; DOB/sex/contact fields optional and omitted |
 | Order / test selection | POST `/lab-orders` | `OrderCreate`: returned `patient_id`, `physician_id=1`, `priority=ROUTINE`, `test_ids=[1]`, `panel_ids=[]`, synthetic `request_reason` | `LAB_ORDER_CREATE` | Active test/physician → REQUESTED order and item; `order_id`, `items[].order_item_id` |
 | Panels (not needed) | POST `/lab/panels`; POST `/lab/panels/{panel_id}/sections`; PUT `/lab/panels/{panel_id}/tests` | `PanelCreate`, `SectionCreate`, `PanelReplacement` | `TEST_PANEL_MANAGE` | Active panel with configured tests may be requested via `OrderCreate.panel_ids`; runner creates no panel |
 | Payment (skipped) | POST `/lab-orders/{order_id}/payments` | `PaymentCreate`: `payment_status`, optional amount/method/reference | `PAYMENT_RECORD` | Existing order → append-only `payment_id`; no processing/release gate and no payment update endpoint |
@@ -121,20 +121,39 @@ signs/approves/releases it; and thereby causes the existing outbox/worker to
 submit evidence. It does not directly call Fabric. A successful baseline leaves
 the report RELEASED. It never automatically revokes or revises it.
 
-Run IDs use UTC `P9-YYMMDDhhmmss-XXX` (random suffix), 19 characters to fit the
-actual 20-character patient-code bound. Journals default to `.phase9-runs/`,
-ignored by Git, with mode 0600 and an exclusive file lock. They contain run ID,
-origin, returned numeric IDs, steps, safe receipt metadata, and queue counts only.
+Run IDs use UTC `P9-YYMMDDhhmmss-XXX` (random suffix) as synthetic markers in
+names, notes, confirmation prompts and journal filenames. They are not assigned
+as Patient codes. The API generates the Patient code; the runner captures it from
+the successful creation response, validates its `PAT-` format and records it with
+the returned numeric patient ID. Subsequent patient, snapshot and portal checks
+use that exact code. Order and other database relationships still use numeric IDs.
+The final identifier summary includes the recorded Patient code.
+
+Journals default to `.phase9-runs/`, ignored by Git, with mode 0600 and an exclusive
+file lock. New version-2 journals contain run ID, origin, returned numeric IDs,
+the generated `patient_code`, steps, safe receipt metadata and queue counts.
+`patient_code` starts as null and is persisted with the completed Patient step.
 No credentials, patient body, results payload, public token, or activation token
 are persisted. `--state-file` must name a new file; existing files are not replaced.
+
+Valid historical version-1 journals remain supported: their run ID records the
+Patient code that the old CLI assigned. Reads must still match that historical
+code, numeric patient ID and synthetic name. The CLI does not rewrite codes or
+upgrade historical journal versions during resume. Version-2 journals require
+the captured generated code whenever a patient ID is recorded; a missing or
+invalid code never falls back to the run ID. Legacy reference master data such
+as `P9SIGN01` and `P9REPORT` remains an independently verified prerequisite.
 
 Before a workflow write, the runner re-reads relevant IDs, ownership, and states,
 then fsyncs a pending intent. A failed, timed-out, malformed or interrupted write
 stops later steps. **There is no automatic POST retry.** A pending intent requires
 manual reconciliation through supported read APIs; do not delete it and blindly
 rerun the baseline. The tool intentionally cannot resume incomplete baseline
-writes. Even a crash after server commit but before journal confirmation fails
-closed. A journal interrupted after a recorded successful release can resume
+writes. Each API request owns its server-side transaction; the CLI cannot roll
+back previously committed requests. A rejected or uncertain creation does not
+capture a code or trigger compensating deletes. A later failed request leaves
+the successfully captured patient reference intact for manual reconciliation.
+Even a crash after server commit but before journal confirmation fails closed. A journal interrupted after a recorded successful release can resume
 polling/public checks without creating another record:
 
 ```bash

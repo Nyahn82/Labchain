@@ -52,3 +52,5 @@ __all__ = [
     "BlockchainNode", "BlockchainEvent", "BlockchainVerificationLog",
     "BlockchainSyncLog",
 ]
+
+from .code_sequence import CodeSequence

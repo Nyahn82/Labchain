@@ -12,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api import workflow
 from app.cli import bootstrap_permissions
 from app.models import (
-    AuditLog, LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
+    AuditLog, CodeSequence, LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
     Permission, RejectionReason, RequestingPhysician, RolePermission, SampleType,
     Specimen, SpecimenOrderItem, SpecimenRejection, TestCatalog as Catalog,
     TestPanel as Panel, TestSampleType as SampleLink, UserRole,
@@ -34,6 +34,8 @@ REJECT = {'rejection_reason_id': 1, 'details': 'Synthetic details', 'recollectio
 def workflow_api(lab_api):
     lab_api.app.include_router(workflow.router, prefix=BASE)
     with lab_api.factory.begin() as db:
+        if db.get(CodeSequence, 'REJECTION_REASON') is None:
+            db.add(CodeSequence(sequence_key='REJECTION_REASON', prefix='REJ', current_value=0, padding=3))
         db.add_all(Patient(patient_id=i, patient_code=f'P-SYNTH-{i}', first_name=f'Synthetic{i}',
                            last_name=f'Example{i}', address='unrelated-address', email='private@example.invalid') for i in (1, 2))
         db.add_all(RequestingPhysician(physician_id=i, first_name='Synthetic', last_name='Physician', is_active=i == 1)
@@ -104,7 +106,7 @@ ENDPOINTS = [
     ('POST', '/specimens/999/collect', None, 'SPECIMEN_COLLECT'),
     ('POST', '/specimens/999/receive', None, 'SPECIMEN_RECEIVE'),
     ('POST', '/specimens/999/reject', REJECT, 'SPECIMEN_REJECT'),
-    ('POST', '/lab/rejection-reasons', {'reason_code': 'NEW', 'reason_name': 'Synthetic'}, 'REJECTION_REASON_MANAGE'),
+    ('POST', '/lab/rejection-reasons', {'reason_name': 'Synthetic'}, 'REJECTION_REASON_MANAGE'),
     ('GET', '/lab/rejection-reasons', None, 'REJECTION_REASON_MANAGE'),
     ('PATCH', '/lab/rejection-reasons/999', {}, 'REJECTION_REASON_MANAGE'),
 ]
@@ -417,19 +419,77 @@ def test_cancelled_order_can_record_rejection_of_existing_collected_specimen(adm
     assert detail(admin)['status'] == 'CANCELLED'
 
 
-def test_rejection_reasons_crud_paging_duplicates(admin):
-    new = create(admin, '/lab/rejection-reasons', {'reason_code': 'NEW', 'reason_name': 'New synthetic', 'description': 'Description'})
-    assert call(admin, 'POST', '/lab/rejection-reasons', REASON).status_code == 409
+def test_rejection_reasons_crud_paging_generated_codes(admin):
+    payload = {'reason_name': 'New synthetic', 'description': 'Description'}
+    new = create(admin, '/lab/rejection-reasons', payload)
+    second = create(admin, '/lab/rejection-reasons', payload)
+    assert re.fullmatch(r'REJ-[0-9]{3,}', new['reason_code'])
+    assert re.fullmatch(r'REJ-[0-9]{3,}', second['reason_code'])
+    assert new['reason_code'] != second['reason_code']
     path = f'/lab/rejection-reasons/{new["rejection_reason_id"]}'
-    assert call(admin, 'PATCH', path, {'reason_code': 'CLOTTED'}).status_code == 409
+    assert call(admin, 'POST', '/lab/rejection-reasons', {**payload, 'reason_code': 'MANUAL'}).status_code == 422
+    assert call(admin, 'PATCH', path, {'reason_code': 'CLOTTED', 'description': 'Must rollback'}).status_code == 422
+    unchanged = call(admin, 'GET', '/lab/rejection-reasons?search=' + new['reason_code']).json()
+    assert unchanged['items'] == [new]
+    page = call(admin, 'GET', '/lab/rejection-reasons?search=New&page_size=1&page=2').json()
+    assert page['total'] == 2 and page['page'] == 2 and page['page_size'] == 1
+    assert page['items'] == [second]
     changed = call(admin, 'PATCH', path, {'description': None, 'is_active': False}).json()
-    assert changed['description'] is None and changed['is_active'] is False and changed['reason_code'] == 'NEW'
+    assert changed['description'] is None and changed['is_active'] is False
+    assert changed['reason_code'] == new['reason_code']
     assert call(admin, 'GET', '/lab/rejection-reasons?search=NEW&is_active=false&page_size=1').json()['items'] == [changed]
     for field in ('reason_code', 'reason_name', 'is_active'):
         assert call(admin, 'PATCH', path, {field: None}).status_code == 422
     assert call(admin, 'PATCH', path, {'rejection_reason_id': 5}).status_code == 422
     assert call(admin, 'PATCH', path, {'reason_code': 'x' * 41}).status_code == 422
     assert call(admin, 'DELETE', path).status_code == 405
+    with admin.factory() as db:
+        assert db.get(RejectionReason, 1).reason_code == 'CLOTTED'
+        assert db.get(RejectionReason, 2).reason_code == 'INACTIVE'
+        assert db.get(CodeSequence, 'REJECTION_REASON').current_value == 2
+        logs = list(db.scalars(select(AuditLog).where(AuditLog.entity_type == 'rejection_reason')
+                               .order_by(AuditLog.audit_id)))
+        assert [log.action for log in logs] == ['REJECTION_REASON_CREATE', 'REJECTION_REASON_CREATE', 'REJECTION_REASON_UPDATE']
+        assert 'reason_code' in logs[0].new_value['changed_fields']
+        assert logs[-1].new_value == {'changed_fields': ['description', 'is_active']}
+
+
+@pytest.mark.parametrize('failure', ['collision', 'audit_log', 'commit'])
+def test_rejection_reason_creation_rolls_back_code_record_and_audit(admin, failure):
+    payload = {'reason_name': 'Synthetic reason'}
+    first = create(admin, '/lab/rejection-reasons', payload)
+    assert first['reason_code'] == 'REJ-001'
+    with admin.factory.begin() as db:
+        if failure == 'collision':
+            # Simulate a stale counter while preserving the existing record.
+            db.get(CodeSequence, 'REJECTION_REASON').current_value = 0
+        before_value = db.get(CodeSequence, 'REJECTION_REASON').current_value
+        before_audits, before_records = count(db, AuditLog), count(db, RejectionReason)
+
+    def fail(*args):
+        if failure == 'commit' or args[2].startswith('INSERT INTO audit_log '):
+            raise SQLAlchemyError('private failure')
+
+    host, hook = (admin.factory, 'before_commit') if failure == 'commit' else (admin.engine, 'before_cursor_execute')
+    if failure != 'collision':
+        event.listen(host, hook, fail)
+    try:
+        response = call(admin, 'POST', '/lab/rejection-reasons', payload)
+        assert response.status_code == (409 if failure == 'collision' else 503), response.text
+        assert 'private' not in response.text
+    finally:
+        if failure != 'collision':
+            event.remove(host, hook, fail)
+    with admin.factory.begin() as db:
+        sequence = db.get(CodeSequence, 'REJECTION_REASON')
+        assert sequence.current_value == before_value
+        assert count(db, RejectionReason) == before_records
+        assert count(db, AuditLog) == before_audits
+        assert db.get(RejectionReason, first['rejection_reason_id']).reason_code == first['reason_code']
+        if failure == 'collision':
+            sequence.current_value = 1
+    recovered = create(admin, '/lab/rejection-reasons', payload)
+    assert recovered['reason_code'] == 'REJ-002'
 
 
 @pytest.mark.parametrize('target', ['lab_order', 'order_panel', 'lab_order_item', 'audit_log', 'commit'])
@@ -511,7 +571,7 @@ def test_all_audits_bootstrap_and_privacy(admin, caplog):
     transition(admin, 'collect')
     transition(admin, 'receive')
     transition(admin, 'reject', body={**REJECT, 'details': 'private-details'})
-    create(admin, '/lab/rejection-reasons', {'reason_code': 'NEW', 'reason_name': 'Private reason', 'description': 'private-description'})
+    create(admin, '/lab/rejection-reasons', {'reason_name': 'Private reason', 'description': 'private-description'})
     call(admin, 'PATCH', '/lab/rejection-reasons/1', {'is_active': False})
     call(admin, 'POST', '/lab-orders/1/cancel', {'reason': 'Synthetic withdrawal'})
     bootstrap_permissions.main()

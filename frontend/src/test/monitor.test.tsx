@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { AppRoutes } from "../App";
@@ -64,8 +64,11 @@ describe("administrative blockchain monitor", () => {
   });
   it("shows loading, then a partial network result without hiding the healthy peers", async () => {
     let resolve!: (value: Response) => void;
-    mockFetch(p => p === ROOT + "/overview" ? new Promise<Response>(r => { resolve = r; }) : standard(p));
-    await open(); expect(screen.getAllByText("Loading records…").length).toBeGreaterThan(0);
+    const fetch = mockFetch(p => p === ROOT + "/overview" ? new Promise<Response>(r => { resolve = r; }) : standard(p));
+    await open();
+    // The heading can render before useResource starts the overview request.
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith(ROOT + "/overview", expect.objectContaining({ method: "GET" })));
+    expect(screen.getAllByText("Loading records…").length).toBeGreaterThan(0);
     resolve(respond({ ...network, status: "DEGRADED", nodes: network.nodes.map((n, i) => i === 1 ? { ...n, status: "OFFLINE", height: null } : n) }));
     expect(await screen.findByText("3 / 4")).toBeVisible();
     expect(screen.getByText("OFFLINE")).toBeVisible();

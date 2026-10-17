@@ -2,6 +2,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 import json
+import re
 from types import SimpleNamespace
 
 import pytest
@@ -11,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api import reporting
 from app.cli import bootstrap_permissions
 from app.models import (
-    AuditLog, FacilityProfile, LabOrder, LabOrderItem, LabReport, LabResultItem,
+    AuditLog, CodeSequence, FacilityProfile, LabOrder, LabOrderItem, LabReport, LabResultItem,
     PanelTest, Patient, Permission, ReferenceRange, ReportPatientSnapshot,
     ReportResultItem, ReportSignatory, ReportTemplate, ReportVerification,
     RolePermission, Signatory, Staff, StaffAccountLink, TestCatalog as Catalog, UserRole,
@@ -30,6 +31,8 @@ from test_phase_4b_results import results_api, finish, requested
 def reports_api(results_api):
     results_api.app.include_router(reporting.router, prefix='/api/v1')
     with results_api.factory.begin() as db:
+        if db.get(CodeSequence, 'REPORT_TEMPLATE') is None:
+            db.add(CodeSequence(sequence_key='REPORT_TEMPLATE', prefix='TMP', current_value=0, padding=3))
         db.add_all(Staff(staff_id=i, staff_code=f'STAFF-{i}', first_name='Synthetic', last_name=f'Signer{i}',
                          is_active=i != 3) for i in (1, 2, 3))
         db.flush()
@@ -88,7 +91,7 @@ ENDPOINTS = [
     ('GET', '/facility-profile', None, 'FACILITY_PROFILE_READ'),
     ('POST', '/facility-profile', {'facility_name': 'Synthetic'}, 'FACILITY_PROFILE_MANAGE'),
     ('PATCH', '/facility-profile', {}, 'FACILITY_PROFILE_MANAGE'),
-    ('POST', '/report-templates', {'template_code': 'T', 'template_name': 'Synthetic'}, 'REPORT_TEMPLATE_MANAGE'),
+    ('POST', '/report-templates', {'template_name': 'Synthetic'}, 'REPORT_TEMPLATE_MANAGE'),
     ('GET', '/report-templates', None, 'REPORT_TEMPLATE_READ'),
     ('GET', '/report-templates/999', None, 'REPORT_TEMPLATE_READ'),
     ('PATCH', '/report-templates/999', {}, 'REPORT_TEMPLATE_MANAGE'),
@@ -152,19 +155,75 @@ def test_multiple_legacy_facilities_rejected(admin):
     assert generate(admin).status_code == 409
 
 
-def test_template_crud_filters_duplicate_and_optional_panel(admin):
-    first = create(admin, '/report-templates', {'template_code': 'GENERAL', 'template_name': 'Synthetic general'})
+def test_template_crud_filters_generated_codes_and_optional_panel(admin):
+    payload = {'template_name': 'Synthetic general'}
+    first = create(admin, '/report-templates', payload)
     assert first['panel_id'] is None
-    create(admin, '/report-templates', {'template_code': 'PANEL', 'template_name': 'Synthetic panel', 'panel_id': 1})
-    assert call(admin, 'POST', '/report-templates', {'template_code': 'GENERAL', 'template_name': 'Duplicate'}).status_code == 409
-    assert call(admin, 'POST', '/report-templates', {'template_code': 'BAD', 'template_name': 'Bad', 'panel_id': 999}).status_code == 422
+    panel = create(admin, '/report-templates', {'template_name': 'Synthetic panel', 'panel_id': 1})
+    second = create(admin, '/report-templates', payload)
+    for row in (first, panel, second):
+        assert re.fullmatch(r'TMP-[0-9]{3,}', row['template_code'])
+    assert len({row['template_code'] for row in (first, panel, second)}) == 3
+    assert call(admin, 'POST', '/report-templates', {**payload, 'template_code': 'MANUAL'}).status_code == 422
+    assert call(admin, 'POST', '/report-templates', {'template_name': 'Bad', 'panel_id': 999}).status_code == 422
     assert call(admin, 'PATCH', '/report-templates/1', {'panel_id': 999}).status_code == 422
     assert call(admin, 'GET', '/report-templates/1').json() == first
-    assert call(admin, 'GET', '/report-templates?search=general&page_size=1').json()['total'] == 1
-    assert call(admin, 'GET', '/report-templates?panel_id=1').json()['items'][0]['template_code'] == 'PANEL'
-    assert call(admin, 'PATCH', '/report-templates/2', {'template_code': 'GENERAL'}).status_code == 409
+    page = call(admin, 'GET', '/report-templates?search=general&page_size=1&page=2').json()
+    assert page['total'] == 2 and page['items'] == [second]
+    assert page['page'] == 2 and page['page_size'] == 1
+    assert call(admin, 'GET', '/report-templates?panel_id=1').json()['items'] == [panel]
+    assert call(admin, 'GET', '/report-templates?search=' + second['template_code']).json()['items'] == [second]
+    assert call(admin, 'PATCH', '/report-templates/2', {
+        'template_code': first['template_code'], 'header_title': 'Must rollback',
+    }).status_code == 422
+    assert call(admin, 'GET', '/report-templates/2').json() == panel
     assert call(admin, 'PATCH', '/report-templates/1', {'is_active': False, 'header_title': 'New'}).status_code == 200
     assert call(admin, 'GET', '/report-templates?is_active=false').json()['total'] == 1
+    with admin.factory() as db:
+        assert db.get(CodeSequence, 'REPORT_TEMPLATE').current_value == 3
+        logs = list(db.scalars(select(AuditLog).where(AuditLog.entity_type == 'report_template')
+                               .order_by(AuditLog.audit_id)))
+        assert [log.action for log in logs] == ['REPORT_TEMPLATE_CREATE'] * 3 + ['REPORT_TEMPLATE_UPDATE']
+        assert 'template_code' in logs[0].new_value['changed_fields']
+        assert logs[-1].new_value == {'changed_fields': ['header_title', 'is_active']}
+
+
+@pytest.mark.parametrize('failure', ['collision', 'audit_log', 'commit'])
+def test_template_creation_rolls_back_code_record_and_audit(admin, failure):
+    payload = {'template_name': 'Synthetic template'}
+    first = create(admin, '/report-templates', payload)
+    assert first['template_code'] == 'TMP-001'
+    with admin.factory.begin() as db:
+        if failure == 'collision':
+            # Simulate a stale counter while preserving the existing template.
+            db.get(CodeSequence, 'REPORT_TEMPLATE').current_value = 0
+        before_value = db.get(CodeSequence, 'REPORT_TEMPLATE').current_value
+        before_audits, before_records = count(db, AuditLog), count(db, ReportTemplate)
+
+    def fail(*args):
+        if failure == 'commit' or args[2].startswith('INSERT INTO audit_log '):
+            raise SQLAlchemyError('private failure')
+
+    host, hook = (admin.factory, 'before_commit') if failure == 'commit' else (admin.engine, 'before_cursor_execute')
+    if failure != 'collision':
+        event.listen(host, hook, fail)
+    try:
+        response = call(admin, 'POST', '/report-templates', payload)
+        assert response.status_code == (409 if failure == 'collision' else 503), response.text
+        assert 'private' not in response.text
+    finally:
+        if failure != 'collision':
+            event.remove(host, hook, fail)
+    with admin.factory.begin() as db:
+        sequence = db.get(CodeSequence, 'REPORT_TEMPLATE')
+        assert sequence.current_value == before_value
+        assert count(db, ReportTemplate) == before_records
+        assert count(db, AuditLog) == before_audits
+        assert db.get(ReportTemplate, first['template_id']).template_code == first['template_code']
+        if failure == 'collision':
+            sequence.current_value = 1
+    recovered = create(admin, '/report-templates', payload)
+    assert recovered['template_code'] == 'TMP-002'
 
 
 def test_signatory_crud_staff_validation_and_multiple_profiles(admin):
@@ -181,9 +240,9 @@ def test_signatory_crud_staff_validation_and_multiple_profiles(admin):
 
 
 @pytest.mark.parametrize('path,payload', [
-    ('/report-templates', {'template_code': 'T', 'template_name': 'X', 'header_title': 'x' * 151}),
+    ('/report-templates', {'template_name': 'X', 'header_title': 'x' * 151}),
     ('/report-templates', {'template_code': '', 'template_name': 'X'}),
-    ('/report-templates', {'template_code': 'T', 'template_name': 'X', 'template_id': 1}),
+    ('/report-templates', {'template_name': 'X', 'template_id': 1}),
     ('/signatories', {'staff_id': None}), ('/signatories', {'staff_id': 1, 'signature_image_path': 'x' * 256}),
     ('/signatories', {'staff_id': 1, 'license_number_snapshot': 'x' * 51}),
 ])
@@ -228,7 +287,7 @@ def test_generation_prerequisites(admin, case):
 
 
 def test_generation_snapshots_provenance_and_historical_reads(admin, monkeypatch):
-    template = create(admin, '/report-templates', {'template_code': 'T', 'template_name': 'Template'})
+    template = create(admin, '/report-templates', {'template_name': 'Template'})
     completed(admin)
     with admin.factory.begin() as db:
         p = db.get(Patient, 1)
@@ -445,15 +504,16 @@ def test_approval_rechecks_snapshot_integrity(admin, case):
 
 
 def test_historical_configuration_guards_and_no_snapshot_crud(admin):
-    create(admin, '/report-templates', {'template_code': 'T', 'template_name': 'Synthetic'})
+    create(admin, '/report-templates', {'template_name': 'Synthetic'})
     generated(admin, template_id=1)
     assigned(admin)
     sign(admin)
     # Signing already freezes identity and signature metadata, before approval.
     assert call(admin, 'PATCH', '/signatories/1', {'staff_id': 2}).status_code == 409
     assert approve(admin).status_code == 200
-    for payload in [{'header_title': 'Rewrite'}, {'panel_id': 1}, {'template_code': 'Rewrite'}, {'clinical_note': 'Rewrite'}]:
+    for payload in [{'header_title': 'Rewrite'}, {'panel_id': 1}, {'clinical_note': 'Rewrite'}]:
         assert call(admin, 'PATCH', '/report-templates/1', payload).status_code == 409
+    assert call(admin, 'PATCH', '/report-templates/1', {'template_code': 'Rewrite'}).status_code == 422
     for payload in [{'staff_id': 2}, {'license_number_snapshot': 'Rewrite'}, {'signature_image_path': '/rewrite'}]:
         assert call(admin, 'PATCH', '/signatories/1', payload).status_code == 409
     for path in ['/signatories/1', '/report-templates/1']:
@@ -509,7 +569,7 @@ def test_atomic_rollback(admin, action, target):
 
 def test_audit_actions_privacy_permissions_and_openapi(admin):
     call(admin, 'PATCH', '/facility-profile', {'address': 'Private address'})
-    create(admin, '/report-templates', {'template_code': 'T', 'template_name': 'Private template'})
+    create(admin, '/report-templates', {'template_name': 'Private template'})
     call(admin, 'PATCH', '/report-templates/1', {'footer_note': 'Private footer'})
     generated(admin, template_id=1)
     assigned(admin)

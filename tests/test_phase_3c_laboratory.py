@@ -3,6 +3,7 @@
 from datetime import date
 from decimal import Decimal
 import json
+import re
 
 import pytest
 from sqlalchemy import event, select
@@ -12,7 +13,7 @@ from fastapi import HTTPException
 from app.api import laboratory
 from app.cli import bootstrap_permissions
 from app.models import (
-    AuditLog, LabDepartment, PanelSection, Permission, ReferenceRange,
+    AuditLog, CodeSequence, LabDepartment, PanelSection, Permission, ReferenceRange,
     Role, RolePermission, SampleType, TestCatalog as Catalog,
     TestPanel as Panel, UserRole,
 )
@@ -29,6 +30,24 @@ def lab_api(env, monkeypatch):
     env.app.include_router(laboratory.router, prefix='/api/v1')
     monkeypatch.setattr(bootstrap_permissions, 'SessionLocal', env.factory)
     with env.factory.begin() as db:
+        CodeSequence.__table__.create(
+            db.connection(),
+            checkfirst=True,
+        )
+
+        for key, prefix, padding in (
+            ('DEPARTMENT', 'DEP', 3),
+            ('TEST', 'TST', 4),
+            ('PANEL', 'PNL', 4),
+        ):
+            if db.get(CodeSequence, key) is None:
+                db.add(CodeSequence(
+                    sequence_key=key,
+                    prefix=prefix,
+                    current_value=0,
+                    padding=padding,
+                ))
+
         ensure_permissions(db)
         db.add(Role(role_id=2, role_code='SYSTEM_ADMIN', role_name='Administrator', is_active=True))
         db.add(LabDepartment(department_id=1, department_code='SEED', department_name='Synthetic department'))
@@ -62,13 +81,13 @@ def create(api, path, body):
 
 RESOURCES = [
     ('departments', 'department_id', 'department_code', 'department_name', 'LAB_DEPARTMENT',
-     {'department_code': 'SYNTH', 'department_name': ' Synthetic item '}),
+     {'department_name': ' Synthetic item '}),
     ('sample-types', 'sample_type_id', 'sample_name', 'sample_name', 'SAMPLE_TYPE',
      {'sample_name': ' Synthetic specimen '}),
     ('tests', 'test_id', 'test_code', 'test_name', 'TEST',
-     {'test_code': 'SYNTH', 'test_name': ' Synthetic item ', 'department_id': 1, 'result_type': 'NUMERIC'}),
+     {'test_name': ' Synthetic item ', 'department_id': 1, 'result_type': 'NUMERIC'}),
     ('panels', 'panel_id', 'panel_code', 'panel_name', 'PANEL',
-     {'panel_code': 'SYNTH', 'panel_name': ' Synthetic item '}),
+     {'panel_name': ' Synthetic item '}),
 ]
 PERMISSIONS = ['LAB_DEPARTMENT_MANAGE', 'SAMPLE_TYPE_MANAGE', 'TEST_CATALOG_MANAGE', 'TEST_PANEL_MANAGE']
 ENDPOINTS = []
@@ -114,14 +133,65 @@ def test_master_lifecycle_duplicate_pagination_search_audit(lab_admin, path, key
     assert first[name] == body[name].strip()
     identifier = first[key]
     assert call(lab_admin, 'GET', f'/{path}/{identifier}').json()[name] == first[name]
-    assert call(lab_admin, 'POST', '/' + path, body).status_code == 409
-    second = create(lab_admin, '/' + path, {**body, code: 'SYNTH-SECOND'})
-    assert call(lab_admin, 'PATCH', f'/{path}/{second[key]}', {code: first[code]}).status_code == 409
+    if path == 'sample-types':
+        # Sample Type names retain their existing uniqueness rules.
+        assert call(
+            lab_admin, 'POST', '/' + path, body
+        ).status_code == 409
+
+        second = create(
+            lab_admin,
+            '/' + path,
+            {**body, code: 'SYNTH-SECOND'},
+        )
+
+        assert call(
+            lab_admin,
+            'PATCH',
+            f'/{path}/{second[key]}',
+            {code: first[code]},
+        ).status_code == 409
+
+        search_code = 'SYNTH-SECOND'
+
+    else:
+        expected_pattern = {
+            'departments': r'DEP-[0-9]{3,}',
+            'tests': r'TST-[0-9]{4,}',
+            'panels': r'PNL-[0-9]{4,}',
+        }[path]
+
+        assert re.fullmatch(expected_pattern, first[code])
+
+        # The same valid payload gets a NEW code each time.
+        second = create(lab_admin, '/' + path, body)
+
+        assert re.fullmatch(expected_pattern, second[code])
+        assert second[code] != first[code]
+
+        # Clients cannot assign or modify generated codes.
+        assert call(
+            lab_admin,
+            'POST',
+            '/' + path,
+            {**body, code: 'SYNTH-SECOND'},
+        ).status_code == 422
+
+        assert call(
+            lab_admin,
+            'PATCH',
+            f'/{path}/{second[key]}',
+            {code: first[code]},
+        ).status_code == 422
+
+        search_code = second[code]
     result = call(lab_admin, 'GET', f'/{path}?search=synth&page_size=1&page=2').json()
     # The department seed's name also includes Synthetic; use code-specific search below.
     assert result['total'] >= 2 and result['page'] == 2 and result['page_size'] == 1
     assert len(result['items']) == 1
-    assert call(lab_admin, 'GET', f'/{path}?search=SYNTH-SECOND').json()['total'] == 1
+    assert call(
+        lab_admin, 'GET', f'/{path}?search={search_code}'
+    ).json()['total'] == 1
     assert call(lab_admin, 'GET', f'/{path}?search=%25').json()['total'] == 0
     assert call(lab_admin, 'GET', f'/{path}?page=999').json()['items'] == []
     for query in ('page=0', 'page_size=101', 'page_size=0', 'is_active=bad'):
@@ -155,7 +225,7 @@ def test_allowlists_required_fields_lengths(lab_admin, path, key, code, name, ac
 
 @pytest.mark.parametrize('result_type', ['NUMERIC', 'TEXT', 'POS_NEG', 'numeric', 'TEXT ', 'POSITIVE', ''])
 def test_result_type_exact_and_test_filters(lab_admin, result_type):
-    response = call(lab_admin, 'POST', '/tests', {'test_code': 'T', 'test_name': 'Synthetic',
+    response = call(lab_admin, 'POST', '/tests', {'test_name': 'Synthetic',
                     'department_id': 1, 'result_type': result_type})
     if result_type not in {'NUMERIC', 'TEXT', 'POS_NEG'}:
         assert response.status_code == 422
@@ -168,10 +238,10 @@ def test_result_type_exact_and_test_filters(lab_admin, result_type):
 
 
 def test_department_relationships_and_nullable_patch(lab_admin):
-    body = {'test_code': 'NEW', 'test_name': 'Synthetic', 'department_id': 999, 'result_type': 'TEXT'}
+    body = {'test_name': 'Synthetic', 'department_id': 999, 'result_type': 'TEXT'}
     assert call(lab_admin, 'POST', '/tests', body).status_code == 422
     assert call(lab_admin, 'PATCH', '/tests/1', {'department_id': 999}).status_code == 422
-    assert call(lab_admin, 'POST', '/panels', {'panel_code': 'NEW', 'panel_name': 'Synthetic', 'department_id': 999}).status_code == 422
+    assert call(lab_admin, 'POST', '/panels', {'panel_name': 'Synthetic', 'department_id': 999}).status_code == 422
     assert call(lab_admin, 'PATCH', '/panels/1', {'department_id': 999}).status_code == 422
     assert call(lab_admin, 'PATCH', '/panels/1', {'department_id': 1}).status_code == 200
     assert call(lab_admin, 'GET', '/panels?department_id=1').json()['total'] == 1

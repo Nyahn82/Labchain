@@ -12,7 +12,7 @@ from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 import pytest
 import sqlalchemy as sa
-from test_phase_2a_migration import config, revision, HEAD, PHASE_8B
+from test_phase_2a_migration import config, revision, PHASE_10 as HEAD, HEAD as CURRENT_HEAD, PHASE_8B
 
 
 @pytest.fixture(scope='module')
@@ -50,7 +50,9 @@ def disposable_mysql():
 
 
 def test_chain_and_offline_mysql_upgrade():
-    assert ScriptDirectory.from_config(config()).get_heads() == [HEAD] == ['20261005_01']
+    assert ScriptDirectory.from_config(config()).get_heads() == [CURRENT_HEAD] == ['20261015_01']
+    assert HEAD == '20261005_01'
+    assert revision(CURRENT_HEAD).down_revision == HEAD
     assert revision(HEAD).down_revision == PHASE_8B
     output = StringIO()
     command.upgrade(config(output), f'{PHASE_8B}:{HEAD}', sql=True)

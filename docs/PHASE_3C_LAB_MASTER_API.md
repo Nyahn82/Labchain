@@ -95,18 +95,26 @@ at most 1,000 members and requires its array field explicitly.
 
 ## Departments, sample types and tests
 
-Department create requires `department_code` (30 characters) and
-`department_name` (100); optional `description` and `is_active` (default true).
-Duplicate department codes return 409, including on PATCH.
+Current automatic-code contract: Department, Test and Panel CREATE requests omit
+`department_code`, `test_code` and `panel_code`. Responses include server-generated
+identifiers such as `DEP-001`, `TST-0001` and `PNL-0001`. PATCH cannot modify these
+codes; manual submission on CREATE or PATCH, including null, returns HTTP 422.
+Existing historical identifiers remain unchanged in responses, searches and
+relationships. Sample Type name uniqueness and other business rules are unchanged.
+This supersedes the original manual-code request contract; see
+[migration safety](AUTO_CODE_MIGRATION.md).
+
+Department create requires `department_name` (100); optional `description` and
+`is_active` (default true). The server assigns `department_code` (column capacity 30).
 
 Sample type create requires `sample_name` (80); optional `description` and
 `is_active` (default true). Duplicate names return 409. Referenced sample types
 can be deactivated without destroying their mappings.
 
-Test create requires `test_code` (30), `test_name` (150), `department_id`, and
+Test create requires `test_name` (150), `department_id`, and
 `result_type` (`NUMERIC`, `TEXT`, `POS_NEG`). Optional fields are `default_unit`
 (50), `methodology` (150), `default_sort_order` (nullable), and `is_active`
-(default true). Duplicate test codes return 409. Department IDs must exist.
+(default true). The server assigns `test_code` (column capacity 30). Department IDs must exist.
 
 Creating or activating an active test, or moving an active test to a different
 department, requires an active department (409 otherwise). Existing tests can
@@ -142,10 +150,10 @@ identify a configured association by its test/sample pair.
 
 ## Panels, sections and composition
 
-Panel create requires `panel_code` (30) and `panel_name` (120). Optional fields are
+Panel create requires `panel_name` (120); the server assigns `panel_code` (column capacity 30). Optional fields are
 `department_id`, `description`, and `is_active` (default true). A supplied department
 must exist; it may be inactive. PATCH may clear the department with null.
-Duplicate panel codes return 409.
+Generated panel codes remain protected by the database uniqueness constraint.
 
 Section create requires `section_name` (120) and `sort_order`; `is_active` defaults
 to true. The path panel must exist. PATCH verifies that the section belongs to
@@ -312,7 +320,7 @@ LABCHAIN_JAR=/tmp/labchain-synthetic.cookies
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d '{"department_code":"SYNTH-3C","department_name":"Synthetic laboratory"}' \
+  -d '{"department_name":"Synthetic laboratory"}' \
   "$LABCHAIN_URL/api/v1/lab/departments"
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
@@ -323,7 +331,7 @@ curl --fail-with-body -b "$LABCHAIN_JAR" \
 # Set LABCHAIN_DEPARTMENT_ID and LABCHAIN_SAMPLE_ID from the responses above.
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d "{\"test_code\":\"SYNTH-TEST-3C\",\"test_name\":\"Synthetic measurement\",\"department_id\":$LABCHAIN_DEPARTMENT_ID,\"result_type\":\"NUMERIC\"}" \
+  -d "{\"test_name\":\"Synthetic measurement\",\"department_id\":$LABCHAIN_DEPARTMENT_ID,\"result_type\":\"NUMERIC\"}" \
   "$LABCHAIN_URL/api/v1/lab/tests"
 
 # Set LABCHAIN_TEST_ID from that response.

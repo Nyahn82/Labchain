@@ -98,13 +98,21 @@ assigned role codes. Effective authorization uses active roles only.
 
 ## Identity validation and patient data handling
 
-Patient create requires `patient_code`, `first_name`, `last_name`. Optional fields
+Current automatic-code contract (superseding the original manual-code inputs):
+Patient and Staff CREATE requests omit `patient_code` and `staff_code`. The
+server returns generated identifiers such as `PAT-000001` and `STF-000001`.
+PATCH cannot modify these identifiers. Submitting either resource's code on
+CREATE or PATCH, including null, returns HTTP 422. Existing historical codes
+remain unchanged and available in responses, searches and existing relationships.
+Numeric IDs remain the relationship keys. See [migration safety](AUTO_CODE_MIGRATION.md).
+
+Patient create requires `first_name` and `last_name`; omit `patient_code`. Optional fields
 are `middle_name`, `suffix`, `birth_date`, `sex`, `civil_status`, `nationality`,
 `contact_number`, `email` and `address`. Patient age is neither accepted nor stored.
 If a later consumer needs current age, it must calculate it from `birth_date` and
 the current date; Phase 3B exposes the birth date, not an age snapshot.
 
-Staff create requires `staff_code`, `first_name`, `last_name`. Optional fields are
+Staff create requires `first_name` and `last_name`; omit `staff_code`. Optional fields are
 `middle_name`, `suffix`, `position_title`, `license_number`, `contact_number`,
 `email`, `is_active` (default true). Credentials belong only to `USER_ACCOUNT`.
 
@@ -117,7 +125,7 @@ values. Request schemas reject unknown fields, generated IDs, timestamps, age,
 passwords and password hashes in identity records.
 
 PATCH updates only submitted fields. Omitted fields retain their values. Explicit
-null is accepted only for nullable fields. Required names/codes and `is_active`
+null is accepted only for nullable fields. Required names and `is_active`
 cannot be set to null. Empty PATCH requests return the current record and write
 an audit entry with an empty changed-field list. Patient/staff `updated_at` changes
 when a field value changes.
@@ -244,12 +252,12 @@ curl --fail-with-body -b "$LABCHAIN_JAR" "$LABCHAIN_URL/api/v1/patients?page=1&p
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d '{"patient_code":"P-SYNTH-3B","first_name":"Synthetic","last_name":"Example","birth_date":"2000-02-29","sex":"Other"}' \
+  -d '{"first_name":"Synthetic","last_name":"Example","birth_date":"2000-02-29","sex":"Other"}' \
   "$LABCHAIN_URL/api/v1/patients"
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d '{"staff_code":"S-SYNTH-3B","first_name":"Synthetic","last_name":"Staff"}' \
+  -d '{"first_name":"Synthetic","last_name":"Staff"}' \
   "$LABCHAIN_URL/api/v1/staff"
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \

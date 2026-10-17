@@ -65,15 +65,13 @@ class RejectRequest(Input):
 
 
 class ReasonCreate(Input):
-    reason_code: text_field(40)
     reason_name: text_field(120)
     description: text_field(16000) | None = None
     is_active: bool = True
 
 
 class ReasonPatch(Partial):
-    nonnull = {'reason_code', 'reason_name', 'is_active'}
-    reason_code: text_field(40) | None = None
+    nonnull = {'reason_name', 'is_active'}
     reason_name: text_field(120) | None = None
     description: text_field(16000) | None = None
     is_active: bool | None = None

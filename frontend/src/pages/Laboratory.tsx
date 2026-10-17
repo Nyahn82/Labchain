@@ -10,6 +10,7 @@ import type { Row } from "../types/domain";
 import {
   field,
   resources,
+  resourceDetailFields,
   ranges,
   rules,
   sampleLookup,
@@ -80,7 +81,7 @@ function LabContent({ kind }: { kind: "tests" | "panels" }) {
           <section className="card">
             <Details
               row={state.data}
-              fields={config.fields.map((f) => [f.name, f.label])}
+              fields={resourceDetailFields(config)}
             />
           </section>
           {kind === "tests" ? (

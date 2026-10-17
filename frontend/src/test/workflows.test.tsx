@@ -75,12 +75,16 @@ describe("patient directory", () => {
     );
   });
   it("creates a patient from a labeled form", async () => {
-    const fetch = mockFetch(() => respond(page([])));
+    const fetch = mockFetch((_, options) =>
+      options.method === "POST"
+        ? respond({ ...patient, patient_code: "PAT-000002" }, 201)
+        : respond(page([])),
+    );
     renderAuth(<ResourcePage resource={resources.patients} />);
     await userEvent.click(
       await screen.findByRole("button", { name: "New patient" }),
     );
-    await userEvent.type(screen.getByLabelText("Patient code *"), "P-002");
+    expect(screen.queryByLabelText(/Patient code/)).not.toBeInTheDocument();
     await userEvent.type(screen.getByLabelText("First name *"), "Test");
     await userEvent.type(screen.getByLabelText("Last name *"), "Patient");
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -89,10 +93,13 @@ describe("patient directory", () => {
         "/api/v1/patients",
         expect.objectContaining({
           method: "POST",
-          body: expect.stringContaining('"patient_code":"P-002"'),
+          body: expect.stringContaining('"first_name":"Test"'),
         }),
       ),
     );
+    const created = fetch.mock.calls.find(([, options]) => options?.method === "POST")!;
+    expect(JSON.parse(String(created[1]?.body))).not.toHaveProperty("patient_code");
+    expect(await screen.findByRole("status")).toHaveTextContent("PAT-000002");
   });
   it("renders field validation errors safely", async () => {
     mockFetch((_, o) =>
@@ -101,7 +108,7 @@ describe("patient directory", () => {
             {
               detail: [
                 {
-                  loc: ["body", "patient_code"],
+                  loc: ["body", "first_name"],
                   input: "secret",
                   msg: "SQL private",
                 },
@@ -116,13 +123,12 @@ describe("patient directory", () => {
       await screen.findByRole("button", { name: "New patient" }),
     );
     for (const [label, v] of [
-      ["Patient code *", "P-2"],
       ["First name *", "Test"],
       ["Last name *", "Patient"],
     ])
       await userEvent.type(screen.getByLabelText(label), v);
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("patient_code");
+    expect(await screen.findByRole("alert")).toHaveTextContent("first_name");
     expect(screen.getByRole("alert")).not.toHaveTextContent("SQL");
   });
   it("handles backend 403 without exposing raw content", async () => {

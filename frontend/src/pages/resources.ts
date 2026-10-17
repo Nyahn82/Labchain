@@ -5,6 +5,7 @@ export interface Resource {
   singular: string;
   path: string;
   key: string;
+  code?: { key: string; label: string };
   read: string;
   create: string;
   update: string;
@@ -14,6 +15,13 @@ export interface Resource {
   detail?: string;
   editPath?: string;
   searchable?: boolean;
+}
+// Display identifiers separately from the editable request fields.
+export function resourceDetailFields(resource: Resource): [string, string][] {
+  return [
+    ...(resource.code ? [[resource.code.key, resource.code.label] as [string, string]] : []),
+    ...resource.fields.map((f): [string, string] => [f.name, f.label]),
+  ];
 }
 export const lookup = (
   path: string,
@@ -78,12 +86,12 @@ export const resources: Record<string, Resource> = {
     singular: "patient",
     path: "/patients",
     key: "patient_id",
+    code: { key: "patient_code", label: "Patient code" },
     read: "PATIENT_READ",
     create: "PATIENT_CREATE",
     update: "PATIENT_UPDATE",
     detail: "patients",
     fields: [
-      field("patient_code", "Patient code", { required: true, max: 20 }),
       ...names,
       field("birth_date", "Birth date", { type: "date" }),
       field("sex", "Sex", {
@@ -165,12 +173,12 @@ export const resources: Record<string, Resource> = {
     singular: "staff member",
     path: "/staff",
     key: "staff_id",
+    code: { key: "staff_code", label: "Staff code" },
     read: "STAFF_READ",
     create: "STAFF_CREATE",
     update: "STAFF_UPDATE",
     detail: "staff",
     fields: [
-      field("staff_code", "Staff code", { required: true, max: 20 }),
       ...names,
       field("position_title", "Position"),
       field("license_number", "License number"),
@@ -190,11 +198,11 @@ export const resources: Record<string, Resource> = {
     singular: "department",
     path: "/lab/departments",
     key: "department_id",
+    code: { key: "department_code", label: "Department code" },
     read: "LAB_MASTER_READ",
     create: "LAB_DEPARTMENT_MANAGE",
     update: "LAB_DEPARTMENT_MANAGE",
     fields: [
-      field("department_code", "Department code", { required: true }),
       field("department_name", "Department name", { required: true }),
       field("description", "Description", { type: "textarea" }),
       active,
@@ -231,12 +239,12 @@ export const resources: Record<string, Resource> = {
     singular: "test",
     path: "/lab/tests",
     key: "test_id",
+    code: { key: "test_code", label: "Test code" },
     read: "LAB_MASTER_READ",
     create: "TEST_CATALOG_MANAGE",
     update: "TEST_CATALOG_MANAGE",
     detail: "laboratory/tests",
     fields: [
-      field("test_code", "Test code", { required: true }),
       field("test_name", "Test name", { required: true }),
       field("department_id", "Department", {
         lookup: lookup("/lab/departments", "department_id", "department_name"),
@@ -272,12 +280,12 @@ export const resources: Record<string, Resource> = {
     singular: "panel",
     path: "/lab/panels",
     key: "panel_id",
+    code: { key: "panel_code", label: "Panel code" },
     read: "LAB_MASTER_READ",
     create: "TEST_PANEL_MANAGE",
     update: "TEST_PANEL_MANAGE",
     detail: "laboratory/panels",
     fields: [
-      field("panel_code", "Panel code", { required: true }),
       field("panel_name", "Panel name", { required: true }),
       field("department_id", "Department", {
         lookup: lookup("/lab/departments", "department_id", "department_name"),
@@ -297,11 +305,11 @@ export const resources: Record<string, Resource> = {
     singular: "rejection reason",
     path: "/lab/rejection-reasons",
     key: "rejection_reason_id",
+    code: { key: "reason_code", label: "Reason code" },
     read: "REJECTION_REASON_MANAGE",
     create: "REJECTION_REASON_MANAGE",
     update: "REJECTION_REASON_MANAGE",
     fields: [
-      field("reason_code", "Reason code", { required: true }),
       field("reason_name", "Reason name", { required: true }),
       field("description", "Description", { type: "textarea" }),
       active,

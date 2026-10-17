@@ -1,6 +1,7 @@
 """Phase 3B HTTPS integration tests with synthetic identities and no network."""
 
 import json
+import re
 
 import pytest
 from sqlalchemy import event, select
@@ -9,7 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api import administration, patients, physicians, referring_facilities, staff
 from app.cli import bootstrap_permissions
 from app.models import (
-    AuditLog, AuthSession, Patient, PatientAccountLink, Permission, Role,
+    AuditLog, AuthSession, CodeSequence, Patient, PatientAccountLink, Permission, Role,
     RolePermission, Staff, StaffAccountLink, UserAccount, UserRole,
 )
 from app.security.passwords import verify_password
@@ -19,8 +20,8 @@ from test_phase_3a_authentication_rbac import env, password_hash, login, csrf, c
 
 BASE = '/api/v1'
 RESOURCES = [
-    ('patients', 'patient_id', 'PATIENT', {'patient_code': 'P-SYNTH', 'first_name': '  Ana ', 'last_name': 'Example'}),
-    ('staff', 'staff_id', 'STAFF', {'staff_code': 'S-SYNTH', 'first_name': '  Ana ', 'last_name': 'Example'}),
+    ('patients', 'patient_id', 'PATIENT', {'first_name': '  Ana ', 'last_name': 'Example'}),
+    ('staff', 'staff_id', 'STAFF', {'first_name': '  Ana ', 'last_name': 'Example'}),
     ('referring-facilities', 'referring_facility_id', 'REFERRING_FACILITY', {'facility_name': '  Synthetic Clinic '}),
     ('physicians', 'physician_id', 'PHYSICIAN', {'first_name': '  Ana ', 'last_name': 'Example'}),
 ]
@@ -32,6 +33,21 @@ def api(env, monkeypatch):
         env.app.include_router(module.router, prefix=BASE)
     monkeypatch.setattr(bootstrap_permissions, 'SessionLocal', env.factory)
     with env.factory.begin() as db:
+        # The fixture database is isolated from production.
+        CodeSequence.__table__.create(db.connection(), checkfirst=True)
+
+        for key, prefix in (
+            ('PATIENT', 'PAT'),
+            ('STAFF', 'STF'),
+        ):
+            if db.get(CodeSequence, key) is None:
+                db.add(CodeSequence(
+                    sequence_key=key,
+                    prefix=prefix,
+                    current_value=0,
+                    padding=6,
+                ))
+
         ensure_permissions(db)
         db.add(Role(role_id=2, role_code='SYSTEM_ADMIN', role_name='Administrator', is_active=True))
         db.add(Role(role_id=3, role_code='INACTIVE_ROLE', role_name='Inactive', is_active=False))
@@ -96,6 +112,15 @@ def test_identity_lifecycle_and_audit(admin, path, key, prefix, body):
     response = request(admin, 'POST', f'/{path}', body)
     assert response.status_code == 201, response.text
     created = response.json()
+
+    if path in {'patients', 'staff'}:
+        code_field = 'patient_code' if path == 'patients' else 'staff_code'
+        expected_prefix = 'PAT' if path == 'patients' else 'STF'
+        assert re.fullmatch(
+            rf'{expected_prefix}-[0-9]{{6}}',
+            created[code_field],
+        )
+
     record_id = created[key]
     name = 'facility_name' if path == 'referring-facilities' else 'first_name'
     assert created[name] == body[name].strip()
@@ -129,17 +154,22 @@ def test_identity_lifecycle_and_audit(admin, path, key, prefix, body):
 
 @pytest.mark.parametrize('path,key,prefix,body', RESOURCES)
 def test_paginated_search_filters_and_ordering(admin, path, key, prefix, body):
+    generated_codes = []
     for i in range(3):
         values = dict(body)
         if path == 'referring-facilities':
             values['facility_name'] = f'Synthetic Facility {i}'
         else:
             values.update(first_name=f'Synthetic{i}', middle_name='Middlematch', last_name='UniqueSurname')
-            if path != 'physicians':
-                values[f'{path.rstrip("s")}_code' if path == 'patients' else 'staff_code'] = f'CODE-{i}'
-            else:
+            if path == 'physicians':
                 values['license_number'] = f'LICENSE-{i}'
-        assert request(admin, 'POST', '/' + path, values).status_code == 201
+
+        created_response = request(admin, 'POST', '/' + path, values)
+        assert created_response.status_code == 201, created_response.text
+
+        if path in {'patients', 'staff'}:
+            code_key = 'patient_code' if path == 'patients' else 'staff_code'
+            generated_codes.append(created_response.json()[code_key])
     result = request(admin, 'GET', f'/{path}?search=Synthetic&page_size=2').json()
     assert len(result['items']) == 2 and result['total'] == (4 if path == 'staff' else 3)
     assert result['page'] == 1 and result['page_size'] == 2
@@ -156,19 +186,68 @@ def test_paginated_search_filters_and_ordering(admin, path, key, prefix, body):
             assert request(admin, 'GET', f'/{path}?search=LICENSE-1').json()['total'] == 1
         else:
             code_key = 'patient_code' if path == 'patients' else 'staff_code'
-            assert request(admin, 'GET', f'/{path}?{code_key}=CODE-1').json()['total'] == 1
-            assert request(admin, 'GET', f'/{path}?search=CODE-1').json()['total'] == 1
+            generated_code = generated_codes[1]
+            assert request(
+                admin, 'GET', f'/{path}?{code_key}={generated_code}'
+            ).json()['total'] == 1
+            assert request(
+                admin, 'GET', f'/{path}?search={generated_code}'
+            ).json()['total'] == 1
 
 
 @pytest.mark.parametrize('path,key,prefix,body', RESOURCES[:2])
-def test_duplicate_codes_create_and_patch_rollback(admin, path, key, prefix, body):
-    first = request(admin, 'POST', '/' + path, body).json()
-    assert request(admin, 'POST', '/' + path, body).status_code == 409
-    code = 'patient_code' if path == 'patients' else 'staff_code'
-    second = request(admin, 'POST', '/' + path, {**body, code: 'SECOND'}).json()
-    response = request(admin, 'PATCH', f'/{path}/{second[key]}', {code: first[code], 'first_name': 'Must rollback'})
-    assert response.status_code == 409
-    assert request(admin, 'GET', f'/{path}/{second[key]}').json()['first_name'] == 'Ana'
+def test_generated_codes_are_unique_and_immutable(admin, path, key, prefix, body):
+    first_response = request(admin, 'POST', '/' + path, body)
+    second_response = request(admin, 'POST', '/' + path, body)
+
+    assert first_response.status_code == 201, first_response.text
+    assert second_response.status_code == 201, second_response.text
+
+    first = first_response.json()
+    second = second_response.json()
+
+    code_field = 'patient_code' if path == 'patients' else 'staff_code'
+    expected_prefix = 'PAT' if path == 'patients' else 'STF'
+
+    assert re.fullmatch(
+        rf'{expected_prefix}-[0-9]{{6}}',
+        first[code_field],
+    )
+    assert re.fullmatch(
+        rf'{expected_prefix}-[0-9]{{6}}',
+        second[code_field],
+    )
+    assert first[code_field] != second[code_field]
+
+    # Clients cannot override automatic codes during creation.
+    invalid_create = request(
+        admin,
+        'POST',
+        '/' + path,
+        {**body, code_field: 'MANUAL-001'},
+    )
+    assert invalid_create.status_code == 422
+
+    # A rejected PATCH must not change other record fields.
+    invalid_patch = request(
+        admin,
+        'PATCH',
+        f'/{path}/{second[key]}',
+        {
+            code_field: first[code_field],
+            'first_name': 'Must rollback',
+        },
+    )
+    assert invalid_patch.status_code == 422
+
+    saved = request(
+        admin,
+        'GET',
+        f'/{path}/{second[key]}',
+    ).json()
+
+    assert saved[code_field] == second[code_field]
+    assert saved['first_name'] == 'Ana'
 
 
 @pytest.mark.parametrize('path,key,prefix,body', RESOURCES)
@@ -196,7 +275,7 @@ def test_patient_sex_birth_date_and_no_activation(admin):
     for sex in ('m', 'FEMALE', 'OTHER', ' M ', 'ANY'):
         assert request(admin, 'POST', '/patients', {**RESOURCES[0][3], 'sex': sex}).status_code == 422
     for i, sex in enumerate(('M', 'F', 'Other')):
-        response = request(admin, 'POST', '/patients', {**RESOURCES[0][3], 'patient_code': str(i), 'sex': sex, 'birth_date': '2000-02-29'})
+        response = request(admin, 'POST', '/patients', {**RESOURCES[0][3], 'sex': sex, 'birth_date': '2000-02-29'})
         assert response.status_code == 201 and 'age' not in response.json()
         assert request(admin, 'GET', f'/patients?sex={sex}').json()['total'] == 1
     assert request(admin, 'POST', '/patients/1/account', {}).status_code == 404
@@ -455,8 +534,8 @@ def test_openapi_contract_and_migration_chain():
         assert schema['paths'][BASE + '/' + path]['get']['tags']
     assert 'password_hash' not in json.dumps(schema)
     assert '/api/v1/patients/{patient_id}/account' not in schema['paths']
-    assert ScriptDirectory.from_config(config()).get_heads() == [HEAD]
-    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 9
+    assert ScriptDirectory.from_config(config()).get_heads() == ["20261015_01"]
+    assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 10
 
 
 def test_account_patient_summary_is_read_only_and_minimal(admin):

@@ -19,7 +19,7 @@ from test_phase_2d_models import TABLES, PREVIOUS_TABLES
 
 
 def test_activation_model_and_exact_infrastructure_scope():
-    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {'auth_session', 'patient_activation_token', 'user_totp_mfa', 'mfa_recovery_code', 'mfa_challenge'}
+    assert set(Base.metadata.tables) == TABLES | PREVIOUS_TABLES | {'auth_session', 'patient_activation_token', 'user_totp_mfa', 'mfa_recovery_code', 'mfa_challenge', 'code_sequence'}
     table = Base.metadata.tables['patient_activation_token']
     assert set(table.c.keys()) == {'activation_token_id', 'patient_id', 'token_hash', 'issued_by_user_id',
         'created_at', 'expires_at', 'used_at', 'revoked_at'}

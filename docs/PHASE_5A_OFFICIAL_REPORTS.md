@@ -78,11 +78,19 @@ release; its final artifact will preserve what was actually rendered.
 
 ## Report templates
 
-Create/read/list/PATCH supports template_code, template_name, nullable panel_id,
-header_title, section_title, clinical_note, footer_note, medico_legal_note and
-is_active. A supplied panel must exist. NULL means a general template. Template
-codes are unique; duplicate creation or update returns 409. Deactivate with
-is_active=false. Template text is configuration, not new snapshot columns.
+CREATE/PATCH supports template_name, nullable panel_id, header_title,
+section_title, clinical_note, footer_note, medico_legal_note and is_active.
+CREATE omits `template_code`; the server assigns an identifier such as `TMP-001`.
+Read/list/create/update responses include the code. PATCH cannot modify it;
+manual submission on CREATE or PATCH, including null, returns HTTP 422.
+Existing historical identifiers and report references remain unchanged. This
+supersedes the original manual template-code inputs; see
+[migration safety](AUTO_CODE_MIGRATION.md).
+
+A supplied panel must exist. NULL means a general template. Codes retain their
+database uniqueness constraint. Deactivate with is_active=false. Template text
+is configuration, not new snapshot columns. The frontend currently provides a
+template lookup for report generation, but no template creation/editing UI.
 
 Lists use page >= 1, page_size 1–100 (default 20), search over template code/name,
 and panel_id/is_active filters. An omitted panel_id filter includes both general
@@ -93,7 +101,7 @@ reference. There is no PDF renderer in this phase.
 
 A template referenced by an APPROVED report is protected against changes to every
 field except is_active. The same protection covers existing RELEASED/REVOKED
-records. No-op writes remain safe. Create a new code/profile for rendering changes.
+records. No-op writes remain safe. Create a new template/profile for rendering changes.
 Deactivation affects future selection only. Generated reports still refer to
 mutable template text until approval; edits before approval can affect their
 future rendering. Template detail is explicitly the selected live reference.
@@ -318,7 +326,7 @@ curl --fail-with-body -b "$LABCHAIN_JAR" \
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d '{"template_code":"SYNTH-GENERAL-V1","template_name":"Synthetic general","panel_id":null}' \
+  -d '{"template_name":"Synthetic general","panel_id":null}' \
   "$LABCHAIN_URL/api/v1/report-templates"
 # Set LABCHAIN_TEMPLATE_ID from the response.
 

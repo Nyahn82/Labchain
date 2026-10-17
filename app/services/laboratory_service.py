@@ -11,11 +11,12 @@ from sqlalchemy import delete, inspect, or_, select
 from sqlalchemy.exc import OperationalError
 
 from app.models import (
-    LabDepartment, PanelSection, PanelTest, ReferenceRange, SampleType,
+    LabDepartment, PanelSection, PanelTest, ReferenceRange, RejectionReason, SampleType,
     TestCatalog, TestPanel, TestSampleType,
 )
 from app.schemas import laboratory as s
 from app.services.identity_service import audit, get_record, mutation
+from app.services.code_generation_service import allocate_code
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,17 @@ def save_record(db, model, payload, response_schema, actor_id, ip_address, actio
                 raise HTTPException(422, 'Invalid reference range bounds.') from None
             ensure_no_overlap(db, parent_id, validated, exclude_id=record_id)
         if record is None:
+            sequence_fields = {
+                LabDepartment: ('department_code', 'DEPARTMENT'),
+                TestCatalog: ('test_code', 'TEST'),
+                TestPanel: ('panel_code', 'PANEL'),
+                RejectionReason: ('reason_code', 'REJECTION_REASON'),
+            }
+            configuration = sequence_fields.get(model)
+            if configuration is not None:
+                code_field, sequence_key = configuration
+                values[code_field] = allocate_code(db, sequence_key)
+                changed.add(code_field)
             if parent_id is not None:
                 values['panel_id' if model is PanelSection else 'test_id'] = parent_id
             record = model(**values)

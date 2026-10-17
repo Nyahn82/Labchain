@@ -213,9 +213,14 @@ be rejected again. Quality history may still be recorded for an existing
 collected/received specimen after its order is cancelled or completed; this
 never resumes processing or changes the order status.
 
-Rejection reasons have code (40 characters), name (120), optional description
-(16,000), and `is_active` (default true). Duplicate codes return 409 on create or
-PATCH. Deactivation preserves references. PATCH cannot null required fields;
+Rejection reasons have a server-generated `reason_code` (column capacity 40),
+name (120), optional description (16,000), and `is_active` (default true).
+CREATE omits `reason_code`; responses include identifiers such as `REJ-001`.
+PATCH cannot modify the code. Manual code submission on CREATE or PATCH,
+including null, returns HTTP 422. Existing historical codes remain unchanged
+in responses and searches; deactivation preserves references. This supersedes
+the original manual reason-code input. Order/specimen code formats and workflow
+rules are unchanged. See [migration safety](AUTO_CODE_MIGRATION.md). PATCH cannot null required fields;
 an empty PATCH follows existing conventions and is audited. No DELETE exists.
 
 For recollection, register a **new** specimen mapped to the same items, then
@@ -309,7 +314,7 @@ curl --fail-with-body -X POST -b "$LABCHAIN_JAR" \
 
 curl --fail-with-body -b "$LABCHAIN_JAR" \
   -H "X-CSRF-Token: $LABCHAIN_CSRF" -H 'Content-Type: application/json' \
-  -d '{"reason_code":"SYNTH-CLOTTED","reason_name":"Synthetic clotted specimen","is_active":true}' \
+  -d '{"reason_name":"Synthetic clotted specimen","is_active":true}' \
   "$LABCHAIN_URL/api/v1/lab/rejection-reasons"
 # Set LABCHAIN_REASON_ID from that response.
 curl --fail-with-body -b "$LABCHAIN_JAR" \
