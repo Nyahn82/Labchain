@@ -1,7 +1,13 @@
 # Isolated native MySQL migration rehearsal and read-only verification
 
-This harness rehearses the **complete real Alembic upgrade**, unlike the allocator
-probe. Preparation/offline tests do not open a connection or execute a migration.
+This harness rehearses the **complete real Alembic upgrade through automatic-code
+revision `20261015_01`**, unlike the allocator probe. It intentionally excludes
+later revisions, including PDF presentation revision `20261018_01`. It validates
+the exact ten-revision ancestor chain and copies those files byte for byte;
+future migrations cannot silently expand this harness's scope. A combined release
+requires a separately authorized rehearsal of both new migrations, as described
+in [the release readiness procedure](MAJOR_UPDATE_RELEASE_READINESS.md).
+Preparation/offline tests do not open a connection or execute a migration.
 Native execution is separately authorized. See the Step 29C.6 diagnosis below for
 the user-reported run and the distinction between migration and rehearsal completion.
 

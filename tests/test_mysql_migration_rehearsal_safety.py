@@ -144,10 +144,32 @@ def test_exact_migrations_and_isolated_env_without_execution():
         assert config.get_main_option('sqlalchemy.url') is None
         assert config.attributes['verified_connection'] is sentinel_connection
         assert (folder / 'env.py').read_text() == rehearsal.ENVIRONMENT
-        for original in (rehearsal.ROOT / 'migrations/versions').glob('*.py'):
+        from alembic.config import Config
+        from alembic.script import ScriptDirectory
+
+        source_config = Config()
+        source_config.set_main_option('script_location', str(rehearsal.ROOT / 'migrations'))
+        source = ScriptDirectory.from_config(source_config)
+        selected = [source.get_revision(revision) for revision in rehearsal.REVISIONS]
+        assert {path.name for path in (folder / 'versions').glob('*.py')} == {
+            Path(item.path).name for item in selected
+        }
+        for item in selected:
+            original = Path(item.path)
             assert (folder / 'versions' / original.name).read_bytes() == original.read_bytes()
+        assert ScriptDirectory.from_config(config).get_heads() == [rehearsal.HEAD]
+        # The later PDF revision stays in the repository, outside this A-only run.
+        assert source.get_revision('20261018_01').down_revision == rehearsal.HEAD
+        assert not (folder / 'versions' / Path(source.get_revision('20261018_01').path).name).exists()
     assert not folder.exists()
     assert sys.modules.get('app.database') is before
+
+
+def test_pinned_ancestor_inventory_mismatch_refuses(monkeypatch):
+    monkeypatch.setattr(rehearsal, 'REVISIONS', rehearsal.REVISIONS[:-1])
+    with pytest.raises(AssertionError, match='Unexpected revision chain'):
+        with rehearsal.isolated_config(object()):
+            pytest.fail('A changed historical chain must not be accepted')
 
 
 def test_explicit_dispatch_only_to_offline_stub(environment, monkeypatch):

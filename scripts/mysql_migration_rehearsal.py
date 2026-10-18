@@ -118,11 +118,20 @@ def isolated_config(connection):
     from alembic.config import Config
     from alembic.script import ScriptDirectory
 
+    # This historical harness rehearses automatic codes, not later releases.
+    # Resolve and validate its complete ancestor chain before copying any files.
+    source_config = Config()
+    source_config.set_main_option('script_location', str(ROOT / 'migrations'))
+    source = ScriptDirectory.from_config(source_config)
+    selected = list(reversed(list(source.walk_revisions(base='base', head=HEAD))))
+    check(tuple(item.revision for item in selected) == REVISIONS, 'Unexpected revision chain.')
+
     with tempfile.TemporaryDirectory(prefix='.migration-rehearsal-', dir=ROOT) as directory:
         folder = Path(directory)
         (folder / 'env.py').write_text(ENVIRONMENT)
-        shutil.copytree(ROOT / 'migrations/versions', folder / 'versions',
-                        ignore=shutil.ignore_patterns('__pycache__'))
+        (folder / 'versions').mkdir()
+        for item in selected:
+            shutil.copy2(item.path, folder / 'versions' / Path(item.path).name)
         config = Config()
         config.set_main_option('script_location', str(folder))
         config.attributes['verified_connection'] = connection

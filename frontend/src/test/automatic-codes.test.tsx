@@ -46,8 +46,9 @@ async function fillRequired(resource: Resource) {
   for (const field of resource.fields.filter((f) => f.required)) {
     const label = field.label + " *";
     if (field.lookup) {
-      await screen.findByRole("option", { name: "Hematology" });
-      await userEvent.selectOptions(screen.getByLabelText(label), "1");
+      const select = screen.getByLabelText(label);
+      await within(select).findByRole("option", { name: "Hematology" });
+      await userEvent.selectOptions(select, "1");
     } else if (field.type === "select") {
       await userEvent.selectOptions(screen.getByLabelText(label), "NUMERIC");
     } else {
