@@ -1,3 +1,4 @@
+import { StarterCatalog } from "../components/StarterCatalog";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
@@ -26,6 +27,7 @@ export function Laboratory() {
         Configure the catalog and approved reference information used by your
         laboratory.
       </p>
+      <StarterCatalog />
       <div className="setup-grid">
         {["departments", "samples", "tests", "panels", "reasons"]
           .filter((k) => can(resources[k].read))
@@ -79,6 +81,11 @@ function LabContent({ kind }: { kind: "tests" | "panels" }) {
       {state.data && (
         <>
           <section className="card">
+            <h2>Clinical configuration review</h2>
+            <p>Inactive entries are unavailable for new orders. Before enabling a test or panel, qualified laboratory personnel must approve facility capability, specimen collection instructions, result format, units, methodology, reference applicability and panel membership. An active flag records availability, not a clinical accreditation.</p>
+            <p>Review specimen types separately from containers and additives. Leave unsupported services inactive; disabling an entry preserves historical results.</p>
+            <Link to="/laboratory/departments">Review departments</Link>{" · "}<Link to="/laboratory/samples">Review sample types</Link>
+            {kind === "tests" && state.data.result_type === "TEXT" && <p>Text results allow a 100-character summary with separate remarks. For multi-component examinations, approve complete reporting or configure component tests and a panel before activation.</p>}
             <Details
               row={state.data}
               fields={resourceDetailFields(config)}
@@ -138,10 +145,16 @@ function SampleMapping({ test, done }: { test: Row; done: () => void }) {
   return (
     <section className="card">
       <h2>Allowed sample types</h2>
+      <p>Specimen type is separate from the collection container/additive. Confirm the assay SOP before enabling clinical use.</p>
+      <Table rows={mappings} columns={[
+        { key: "sample_type.sample_name", label: "Configured specimen" },
+        { key: "sample_type.description", label: "Specimen guidance" },
+        { key: "sample_type.is_active", label: "Status", badge: true },
+      ]} />
       {can("TEST_CATALOG_MANAGE") ? (
         <>
           <Lookup
-            spec={sampleLookup}
+            spec={{ ...sampleLookup, params: "" }}
             label="Allowed sample types"
             multiple
             value={ids}
@@ -246,7 +259,7 @@ function PanelComposition({ panel, done }: { panel: Row; done: () => void }) {
         <h2>Panel composition</h2>
         {editable && (
           <Lookup
-            spec={testsLookup}
+            spec={{ ...testsLookup, params: "" }}
             label="Panel tests"
             multiple
             value={ids}

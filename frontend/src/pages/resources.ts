@@ -247,7 +247,7 @@ export const resources: Record<string, Resource> = {
     fields: [
       field("test_name", "Test name", { required: true }),
       field("department_id", "Department", {
-        lookup: lookup("/lab/departments", "department_id", "department_name"),
+        lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", ""),
         required: true,
       }),
       field("default_unit", "Unit"),
@@ -269,6 +269,7 @@ export const resources: Record<string, Resource> = {
     ],
     filters: [
       ...activeFilter,
+      field("department_id", "Department filter", { lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", "") }),
       field("result_type", "Result type", {
         type: "select",
         options: choices("NUMERIC", "TEXT", "POS_NEG"),
@@ -288,7 +289,7 @@ export const resources: Record<string, Resource> = {
     fields: [
       field("panel_name", "Panel name", { required: true }),
       field("department_id", "Department", {
-        lookup: lookup("/lab/departments", "department_id", "department_name"),
+        lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", ""),
       }),
       field("description", "Description", { type: "textarea" }),
       active,
@@ -298,7 +299,7 @@ export const resources: Record<string, Resource> = {
       { key: "panel_name", label: "Panel" },
       { key: "is_active", label: "Status", badge: true },
     ],
-    filters: activeFilter,
+    filters: [...activeFilter, field("department_id", "Department filter", { lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", "") })],
   },
   reasons: {
     title: "Rejection reasons",

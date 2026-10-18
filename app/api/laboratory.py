@@ -14,6 +14,8 @@ from app.models import (
 from app.schemas import laboratory as s
 from app.schemas.identity import Identifier, Page
 from app.services import laboratory_service as service
+from app.services import starter_catalog_service as starter
+from app.services.auth_activity_service import staff_only
 from app.services.identity_service import get_record, list_records
 
 router = APIRouter(prefix='/lab', tags=['Laboratory Master Data'], route_class=PrivateRoute)
@@ -243,3 +245,24 @@ def resolve_range(test_id: Identifier, db: Db, actor: Reader, query: Annotated[s
     if result is None:
         raise HTTPException(404, 'No applicable reference range.')
     return result
+
+
+# Explicit preview and confirmed import; never invoked by startup or a migration.
+
+
+@router.get('/starter-catalog')
+def preview_starter_catalog(db: Db, actor: Reader):
+    staff_only(db, actor.user_id)
+    return starter.preview(db)
+
+
+@router.post('/starter-catalog', dependencies=[
+    Depends(require_permission('LAB_MASTER_READ')),
+    Depends(require_permission('LAB_DEPARTMENT_MANAGE')),
+    Depends(require_permission('SAMPLE_TYPE_MANAGE')),
+    Depends(require_permission('TEST_CATALOG_MANAGE')),
+    Depends(require_permission('TEST_PANEL_MANAGE')),
+])
+def import_starter_catalog(payload: starter.ImportRequest, request: Request, db: Db, actor: Reader):
+    staff_only(db, actor.user_id)
+    return starter.import_catalog(db, payload, actor.user_id, get_request_ip(request))

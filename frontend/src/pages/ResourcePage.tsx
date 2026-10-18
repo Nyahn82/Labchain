@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useResource } from "../api/useResource";
 import { PermissionGuard, useAuth } from "../auth/Auth";
-import { Form } from "../components/Form";
+import { Form, Lookup } from "../components/Form";
 import { Dialog, Pagination, State, Table, Title } from "../components/UI";
 import type { Page, Row } from "../types/domain";
 import { activationLabel } from "./PatientActivation";
@@ -81,7 +81,11 @@ function ResourceContent({
               />
             </label>
           )}
-          {r.filters?.map((f) => (
+          {r.filters?.map((f) => f.lookup ? (
+            <Lookup key={f.name} spec={f.lookup} label={f.label}
+              value={filters[f.name] || null}
+              onChange={value => { setFilters({ ...filters, [f.name]: value == null ? "" : String(value) }); setPage(1); }} />
+          ) : (
             <label key={f.name}>
               {f.label}
               <select

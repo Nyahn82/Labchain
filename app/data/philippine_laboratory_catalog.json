@@ -1,0 +1,835 @@
+{
+  "version": "ph-rhu-starter-1",
+  "sources": {
+    "ph_services": {
+      "title": "DOH Don Jose S. Monfort Medical Center laboratory services (examples, not RHU licensing authority)",
+      "url": "https://djsmmc.doh.gov.ph/laboratory-pricelist/"
+    },
+    "cbc": {
+      "title": "Mayo Clinic Laboratories CBC with differential: components and whole blood",
+      "url": "https://www.mayocliniclabs.com/test-catalog/overview/9109"
+    },
+    "chemistry": {
+      "title": "Mayo Clinic Laboratories comprehensive metabolic panel, serum",
+      "url": "https://www.mayocliniclabs.com/test-catalog/overview/113631"
+    },
+    "lipids": {
+      "title": "Mayo Clinic Laboratories lipid testing",
+      "url": "https://news.mayocliniclabs.com/2024/10/23/dr-leslie-donato-discusses-lipid-testing-on-adlms-laborastories-the-podcast/"
+    },
+    "hba1c": {
+      "title": "Mayo Clinic Laboratories HbA1c, whole blood",
+      "url": "https://www.mayocliniclabs.com/api/sitecore/testcatalog/TestCatalogSetupPDF?testid=82080"
+    },
+    "urate": {
+      "title": "Mayo Clinic Laboratories uric acid, serum",
+      "url": "https://www.mayocliniclabs.com/test-catalog/Overview/8440"
+    },
+    "bilirubin": {
+      "title": "Labcorp bilirubin, total and direct, serum",
+      "url": "https://www.labcorp.com/tests/001214/bilirubin-total-and-direct?letter=L"
+    },
+    "abo": {
+      "title": "Cleveland Clinic Laboratories ABO Rh typing, whole blood",
+      "url": "https://clevelandcliniclabs.com/test/abo-rh-typing/"
+    },
+    "urine": {
+      "title": "Mayo Clinic urinalysis and urine specimen distinction",
+      "url": "https://www.mayoclinic.org/tests-procedures/urinalysis/about/pac-20384907"
+    },
+    "hbsag": {
+      "title": "Mayo Clinic Laboratories hepatitis B surface antigen, serum",
+      "url": "https://gi.testcatalog.org/show/HBAG"
+    },
+    "ns1": {
+      "title": "CDC dengue NS1 antigen testing, serum preferred",
+      "url": "https://www.cdc.gov/dengue/hcp/diagnosis-testing/dengue-virus-antigen-detection.html"
+    },
+    "dengue": {
+      "title": "CDC dengue serologic testing and interpretation limitations",
+      "url": "https://www.cdc.gov/dengue/hcp/diagnosis-testing/serologic-tests-for-dengue-virus.html"
+    }
+  },
+  "departments": [
+    {
+      "key": "hematology",
+      "name": "Hematology",
+      "aliases": [],
+      "description": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "chemistry",
+      "name": "Clinical Chemistry",
+      "aliases": [],
+      "description": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "microscopy",
+      "name": "Clinical Microscopy",
+      "aliases": [],
+      "description": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "serology",
+      "name": "Serology and Immunology",
+      "aliases": [],
+      "description": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "microbiology",
+      "name": "Microbiology",
+      "aliases": [],
+      "description": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    }
+  ],
+  "samples": [
+    {
+      "key": "blood",
+      "name": "Whole blood",
+      "aliases": [],
+      "description": "Specimen type only; collection container, additive, volume, handling and stability require the facility-approved assay SOP. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "serum",
+      "name": "Serum",
+      "aliases": [],
+      "description": "Specimen type only; collection container, additive, volume, handling and stability require the facility-approved assay SOP. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "plasma",
+      "name": "Plasma",
+      "aliases": [],
+      "description": "Specimen type only; collection container, additive, volume, handling and stability require the facility-approved assay SOP. Not assigned to starter tests until the facility validates the assay-specific plasma requirements."
+    },
+    {
+      "key": "urine",
+      "name": "Urine",
+      "aliases": [],
+      "description": "Specimen type only; collection container, additive, volume, handling and stability require the facility-approved assay SOP. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "stool",
+      "name": "Stool",
+      "aliases": [],
+      "description": "Specimen type only; collection container, additive, volume, handling and stability require the facility-approved assay SOP. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    }
+  ],
+  "tests": [
+    {
+      "key": "hb",
+      "name": "Hemoglobin",
+      "aliases": [
+        "HGB"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "hct",
+      "name": "Hematocrit",
+      "aliases": [
+        "HCT"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "wbc",
+      "name": "White Blood Cell Count",
+      "aliases": [
+        "WBC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "plt",
+      "name": "Platelet Count",
+      "aliases": [
+        "Platelets"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "rbc",
+      "name": "Red Blood Cell Count",
+      "aliases": [
+        "RBC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "mcv",
+      "name": "Mean Corpuscular Volume",
+      "aliases": [
+        "MCV"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "mch",
+      "name": "Mean Corpuscular Hemoglobin",
+      "aliases": [
+        "MCH"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "mchc",
+      "name": "Mean Corpuscular Hemoglobin Concentration",
+      "aliases": [
+        "MCHC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "rdw",
+      "name": "Red Cell Distribution Width",
+      "aliases": [
+        "RDW"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "neut",
+      "name": "Neutrophils (relative count)",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Relative differential component; approve the reporting unit and method. Absolute counts require separate, explicitly approved definitions. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "lymph",
+      "name": "Lymphocytes (relative count)",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Relative differential component; approve the reporting unit and method. Absolute counts require separate, explicitly approved definitions. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "mono",
+      "name": "Monocytes (relative count)",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Relative differential component; approve the reporting unit and method. Absolute counts require separate, explicitly approved definitions. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "eos",
+      "name": "Eosinophils (relative count)",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Relative differential component; approve the reporting unit and method. Absolute counts require separate, explicitly approved definitions. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "baso",
+      "name": "Basophils (relative count)",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "Relative differential component; approve the reporting unit and method. Absolute counts require separate, explicitly approved definitions. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "abo",
+      "name": "Blood Typing and Rh",
+      "aliases": [
+        "ABO/Rh",
+        "Blood Typing/Rh"
+      ],
+      "department": "hematology",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "TEXT",
+      "sources": [
+        "abo"
+      ],
+      "review_note": "ABO/Rh result only; not crossmatching or authorization to transfuse. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "fbs",
+      "name": "Fasting Blood Sugar",
+      "aliases": [
+        "FBS",
+        "Fasting Glucose"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Confirm fasting status and specimen processing SOP; no fasting duration is assumed. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "rbs",
+      "name": "Random Blood Sugar",
+      "aliases": [
+        "RBS",
+        "Random Glucose"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "hba1c",
+      "name": "HbA1c",
+      "aliases": [
+        "Hemoglobin A1c"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "blood"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "hba1c"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "chol",
+      "name": "Total Cholesterol",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "lipids"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "tg",
+      "name": "Triglycerides",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "lipids"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "hdl",
+      "name": "HDL Cholesterol",
+      "aliases": [
+        "HDL"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "lipids"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "ldl",
+      "name": "LDL Cholesterol",
+      "aliases": [
+        "LDL"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "lipids"
+      ],
+      "review_note": "Verify direct versus calculated LDL and calculation validity; this catalog performs no LDL calculation. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "creat",
+      "name": "Creatinine",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "bun",
+      "name": "Blood Urea Nitrogen",
+      "aliases": [
+        "BUN"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "urate",
+      "name": "Uric Acid",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "urate"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "alt",
+      "name": "ALT / SGPT",
+      "aliases": [
+        "ALT",
+        "SGPT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "ast",
+      "name": "AST / SGOT",
+      "aliases": [
+        "AST",
+        "SGOT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "alp",
+      "name": "Alkaline Phosphatase",
+      "aliases": [
+        "ALP"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "albumin",
+      "name": "Albumin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "protein",
+      "name": "Total Protein",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "chemistry"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "bili",
+      "name": "Total Bilirubin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "bilirubin"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "direct_bili",
+      "name": "Direct Bilirubin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "sources": [
+        "bilirubin"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved numeric interval and unit required where applicable."
+    },
+    {
+      "key": "ua",
+      "name": "Routine Urinalysis",
+      "aliases": [
+        "Urinalysis"
+      ],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "sources": [
+        "urine"
+      ],
+      "review_note": "Summary entry (100 characters) with separate remarks only. This is not a structured urinalysis panel. Before use, approve the complete reporting workflow or configure individual components and a panel; never omit required findings. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "stool",
+      "name": "Stool Examination",
+      "aliases": [
+        "Routine Stool Exam",
+        "Fecalysis"
+      ],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "sources": [
+        "ph_services"
+      ],
+      "review_note": "Summary entry (100 characters) with separate remarks only. Approve reporting of all required macroscopic/microscopic findings or configure component tests and a panel before use. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "upt",
+      "name": "Urine Pregnancy Test",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "POS_NEG",
+      "sources": [
+        "urine"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "hbsag",
+      "name": "Hepatitis B Surface Antigen",
+      "aliases": [
+        "HBsAg"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "POS_NEG",
+      "sources": [
+        "hbsag"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "ns1",
+      "name": "Dengue NS1 Antigen",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "POS_NEG",
+      "sources": [
+        "ns1"
+      ],
+      "review_note": "Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "igm",
+      "name": "Dengue IgM",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "POS_NEG",
+      "sources": [
+        "dengue"
+      ],
+      "review_note": "Review assay instructions, timing and confirmatory testing policy. A single IgM result is not a definitive diagnosis. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    },
+    {
+      "key": "igg",
+      "name": "Dengue IgG",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "POS_NEG",
+      "sources": [
+        "dengue"
+      ],
+      "review_note": "A single IgG result must not be used to diagnose acute dengue. Local assay and interpretation approval required. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability.",
+      "reference_policy": "Facility-approved qualitative reporting and interpretation required; no default normal value."
+    }
+  ],
+  "panels": [
+    {
+      "key": "cbc",
+      "name": "Complete Blood Count",
+      "aliases": [
+        "CBC"
+      ],
+      "department": "hematology",
+      "tests": [
+        "hb",
+        "hct",
+        "wbc",
+        "plt",
+        "rbc",
+        "mcv",
+        "mch",
+        "mchc",
+        "rdw",
+        "neut",
+        "lymph",
+        "mono",
+        "eos",
+        "baso"
+      ],
+      "description": "Starter CBC with relative differential; verify component list against facility SOP. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "diff",
+      "name": "Differential Count",
+      "aliases": [],
+      "department": "hematology",
+      "tests": [
+        "neut",
+        "lymph",
+        "mono",
+        "eos",
+        "baso"
+      ],
+      "description": "Relative differential components shared with CBC. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "lipid",
+      "name": "Lipid Profile",
+      "aliases": [],
+      "department": "chemistry",
+      "tests": [
+        "chol",
+        "tg",
+        "hdl",
+        "ldl"
+      ],
+      "description": "Verify direct/calculated LDL policy. No calculation is performed. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "liver",
+      "name": "Liver Function Tests",
+      "aliases": [],
+      "department": "chemistry",
+      "tests": [
+        "alt",
+        "ast",
+        "alp",
+        "albumin",
+        "protein",
+        "bili",
+        "direct_bili"
+      ],
+      "description": "Proposed component grouping, not a universal diagnostic panel. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    },
+    {
+      "key": "renal",
+      "name": "Renal Function Tests",
+      "aliases": [],
+      "department": "chemistry",
+      "tests": [
+        "creat",
+        "bun"
+      ],
+      "description": "Limited starter grouping: creatinine and BUN only. No eGFR calculation or electrolyte testing is implied. Review and extend only for approved facility services. Requires facility approval before activation. Confirm licensed service capability, trained personnel, validated assay, specimen collection SOP, units and reference applicability."
+    }
+  ]
+}

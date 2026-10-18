@@ -531,7 +531,9 @@ def test_openapi_complete_and_scope():
     # Phase 4A adds rejection reasons under /lab and a separate /lab-orders prefix.
     lab_paths = {path: methods for path, methods in paths.items()
                  if path.startswith(BASE + '/') and not path.startswith(BASE + '/rejection-reasons')}
-    assert sum(len(methods) for methods in lab_paths.values()) == 32
+    # Workstream E adds an authorized preview and a confirmed starter import.
+    assert sum(len(methods) for methods in lab_paths.values()) == 34
+    assert set(paths[BASE + '/starter-catalog']) == {'get', 'post'}
     for path, methods in lab_paths.items():
         assert 'delete' not in methods
         assert not any(word in path for word in ('patients', 'orders', 'results', 'diagnosis', 'prescription'))
