@@ -6,8 +6,8 @@ Review completed 19 October 2026 (Asia/Singapore). Regression artifacts are date
 
 The integrated development checks have no unresolved failure after the focused
 corrections below. Release authorization still requires native migration evidence,
-verified recovery capability, an operational writer fence, and a dependency-risk
-decision. Passing application tests does not establish those conditions.
+verified recovery capability and an operational writer fence. The dependency
+advisory is resolved by the separately verified 1.2.2 patch described below. Passing application tests does not establish those conditions.
 
 ## 1. Release identity and repository review
 
@@ -19,7 +19,13 @@ decision. Passing application tests does not establish those conditions.
 | D | `42b276bd7ad2aaabfef21ed6ff5e3b9fb38110af` | Laboratory workspace and frozen PDF v2 presentation |
 | E | `dcb6bfb4d81963bd62791f9384adf5f68efa4924` | Inactive Philippine starter catalog and atomic, idempotent import |
 
-E was committed locally during this review. Its 11 files contain only intended
+The integration corrections and native preparation plan are committed as
+`b5b5656cf1ffecc8668d5d44c648f2040f0b0862`. The separate security commit contains
+the 1.2.2 lockfile change and the updated evidence in this report; resolve its
+hash with `git log -1 --format=%H -- frontend/package-lock.json`. All five
+workstream commits remain unchanged ancestors.
+
+E was committed locally during the preceding integration review. Its 11 files contain only intended
 API/service code, catalog JSON, frontend components, tests and documentation:
 
 - `app/api/laboratory.py`
@@ -55,7 +61,8 @@ corrected validation state:
 
 The integration commit also includes [the native release rehearsal plan](NATIVE_RELEASE_REHEARSAL_PLAN.md).
 Before release, record the final approved commit and artifact checksums. No application business rule, migration identifier,
-manifest or dependency version was changed during the corrective work.
+manifest or dependency version was changed during the integration correction.
+The subsequent dependency patch is separately recorded in section 6.
 
 Keep `.env`, virtual environments, `node_modules`, `frontend/dist`, test caches,
 logs, local Fabric tools, generated identities/certificates, ledgers, bundles,
@@ -77,7 +84,7 @@ archive sanitized results in the approved private evidence store before cleanup.
 | Corrected Python syntax | **PASS**, compile-only, no execution or database connection |
 | `git diff --check` | **PASS** |
 | Runtime-only npm audit | **0 vulnerabilities** reported |
-| Full npm audit | **1 high** development/build dependency advisory; see section 6 |
+| Latest full npm audit | **0 vulnerabilities** after the 1.2.2 security correction; see section 6 |
 
 The backend failure was the historical rehearsal copying the newer PDF revision
 and rejecting its chain. It was reproduced offline and fixed without weakening
@@ -313,36 +320,62 @@ Clinical approval blocks clinical use of the affected inactive entries, **not**
 installation of an otherwise approved release with the catalog still inactive.
 Do not automatically call the import endpoint during deployment.
 
-## 6. Dependency advisory
+## 6. Dependency advisory — resolved in development
 
-Installed frontend transitive `source-map-js` is **1.2.1**. The full read-only npm
-audit reports one high-severity advisory,
-[GHSA-68fv-2mgg-jv7q / CVE-2026-93749](https://github.com/advisories/GHSA-68fv-2mgg-jv7q):
-malicious indexed source-map offsets can block the event loop. Versions before
-1.2.2 in the affected range are vulnerable;
-[upstream 1.2.2](https://github.com/7rulnik/source-map-js/releases/tag/v1.2.2)
-is the published patch.
+Frontend transitive `source-map-js` was updated **only from 1.2.1 to 1.2.2**.
+The original finding was
+[GHSA-68fv-2mgg-jv7q / CVE-2026-93749](https://github.com/advisories/GHSA-68fv-2mgg-jv7q),
+a high-severity event-loop denial of service involving indexed source-map offsets.
+[Upstream 1.2.2](https://github.com/7rulnik/source-map-js/releases/tag/v1.2.2)
+is the published patch. No blanket `npm audit fix` or unrelated upgrade was used.
 
-Local chains are `vite → postcss → source-map-js` and
-`jsdom → css-tree → source-map-js`. Both parents permit `^1.2.1`, so 1.2.2 fits
-the existing semver constraints without a top-level manifest change. The registry
-returns the patched package and integrity metadata. This is a suitable **targeted
-patch candidate**, not a claim of completed compatibility testing: the installed
-package and lockfile were not changed in this review.
+Both existing parents, `postcss` under Vite and `css-tree` under jsdom, permit
+`^1.2.1`. The lockfile's single `node_modules/source-map-js` entry changed only
+`version`, `resolved` and `integrity`, using registry metadata for exactly 1.2.2.
+A structural comparison against the integration commit confirms every other
+package object and top-level lock field is unchanged. `package.json` is unchanged.
+The package adds no dependency or install lifecycle script. `npm ci` completed
+successfully, and `npm ls source-map-js --all` confirms both chains resolve to 1.2.2.
 
-The affected paths are development/test/build tooling; `npm audit --omit=dev`
-reports zero findings. No application endpoint was found that processes indexed
-source maps. This narrows runtime exposure but does not remove risk from untrusted
-build inputs or CI dependencies. Do not expose a Vite development server as the
-production application. Serve the built static artifact.
+Verified registry integrity:
 
-Recommended separate remediation: update only the resolved transitive package to
-1.2.2 in a reviewed lockfile change, inspect its integrity/diff, install through
-`npm ci`, run affected frontend tests and the TypeScript/Vite build, and repeat
-both audit scopes. Reject unrelated package upgrades; do not use blanket
-`npm audit fix`. Before release, record either verified remediation or explicit,
-time-bounded security-owner acceptance with build-input restrictions. No dependency
-upgrade or risk acceptance is implied by this document.
+```
+sha512-KGj/8Y43x35aZVDtt+J4mK1hoLGHULMYfSkODJNQjNDC3oW1PqPoxMwo0pLUsWM/UEGzON/NxeHywEfNXNP3Vw==
+```
+
+Validation with Node v24.21.0 / npm 11.19.0:
+
+| Check | Result |
+| --- | --- |
+| `npm ci` | PASS; locked install, no unrelated lockfile edits |
+| Six focused frontend files | **95 passed**, zero failed |
+| TypeScript / Vite production build | PASS |
+| Full `npm audit --json` | **0 vulnerabilities**, exit 0 |
+| Runtime-only `npm audit --omit=dev --json` | **0 vulnerabilities**, exit 0 |
+| Focused integration backend safety checks | **163 passed**, zero failed; no MySQL connections |
+| Native selection `--collect-only` | **74 collected**, none executed |
+| Migration chain / `git diff --check` | PASS |
+
+Focused frontend command (run inside `frontend`):
+
+```bash
+npm run test -- --run src/test/automatic-codes.test.tsx src/test/dashboard.test.tsx src/test/patient-activation-staff.test.tsx src/test/laboratory-workspace.test.tsx src/test/starter-catalog.test.tsx src/test/auth.test.tsx
+npm run build
+```
+
+The selection covers automatic-code forms, dashboard, activation, laboratory
+workspace, catalog import and authentication through jsdom/Vitest, plus the Vite
+CSS/asset build. The previous complete frontend regression was not repeated.
+Audit results are point-in-time dependency findings, not a guarantee against all
+vulnerabilities. The affected chain remains build/test tooling; production should
+serve the compiled static artifact, never an exposed Vite development server.
+No dependency advisory blocker remains from this finding.
+
+Current logs: `/tmp/rhu-final-prep-npm-ci.log`,
+`/tmp/rhu-final-prep-frontend.log`, `/tmp/rhu-final-prep-build.log`,
+`/tmp/rhu-final-prep-audit-full.json`, `/tmp/rhu-final-prep-audit-runtime.json`,
+`/tmp/rhu-final-prep-offline.log`, `/tmp/rhu-final-prep-native-collection.log`.
+Archive approved sanitized evidence before temporary-file cleanup.
 
 ## 7. Release gates and nonblocking findings
 
@@ -351,7 +384,7 @@ upgrade or risk acceptance is implied by this document.
 | High operational — blocker | Combined native migration and recovery evidence is incomplete; old rehearsal completion unproven | Read-only verification of preserved run, fresh authorized A+D success/failure/restore evidence; separately authorized native regression coverage |
 | High operational — blocker | Production schema/collations, backups, restoration and complete writer inventory not inspected here | Authorized preflight; tested consistent recovery set, RPO/RTO, operational exclusion and named release/recovery owners |
 | Release provenance — development correction finalized | Integration corrections included in the authorized local commit | Freeze final security-patched artifact/lock/source hashes before release |
-| High advisory, build scope — release decision required | Installed source-map-js 1.2.1 | Targeted validated patch or documented security-owner acceptance |
+| Previous high advisory — resolved | source-map-js 1.2.2 installed and validated; both audits zero | Preserve the reviewed lockfile and build artifact; normal ongoing dependency monitoring |
 | Clinical — use gate | Starter entries require local approval/configuration | Keep new entries inactive until qualified facility authorization; no deployment seed |
 | Low maintenance — nonblocking | Two framework deprecation warnings | Track separately; no security protection was disabled |
 | Test-only integration — resolved | Duplicate option selector; historical harness copied newer migration | Focused fixes pass; include corrections in the release artifact |
@@ -488,4 +521,22 @@ Production Git remains clean on `main` at `8622444`. No production file, databas
 service, Fabric identity, certificate, channel or peer was modified. No MySQL
 connection or migration was attempted in this task. There was no push, merge,
 deployment, service restart or global dependency change. Workstream E and the separately authorized integration corrections are local
-commits only. No production release is implied.
+commits only. The separate dependency-security correction is also a local commit only.
+No production release is implied.
+
+## 10. Development artifact checksums after the security patch
+
+SHA-256 recorded during final development preparation. Build outputs remain
+ignored and are not committed. Match the approved release commit and these
+checksums when staging; re-record them if the approved source or build changes.
+These are development artifacts, not checksums of production files.
+
+```
+b6d470bfb56f64a14f49a43d60f39d28335dcb4d80d31ff80ef358aeff43ce6b  frontend/package-lock.json
+328fda6803633e39290b1b9603edd6d95af94e1d5261ec46b779202076b20222  requirements.txt
+f398c184e9d4496118f845c445337d6806834081a7de2e9c50cae10720ffea1d  migrations/versions/20261015_01_auto_codes.py
+6483e9765b8ac990898d7b46c81e3a4d7ddb9459f6e0486bd560c5ff8402dee2  migrations/versions/20261018_01_report_presentation.py
+134110d8776321782e9c3f8fd5778852b017e8a3671d0529dca84f606e260e95  frontend/dist/index.html
+dcc2f212a34e17f50731036e418425e3845818ed89174337bbcf6bc9bf4a24fb  frontend/dist/assets/index-BHPOWevB.css
+023a0e53415d373a66b8b11e11f53b9f01091e1346312958dff89fbc843d7c4a  frontend/dist/assets/index-C6PKYa_-.js
+```
