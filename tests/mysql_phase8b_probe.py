@@ -20,8 +20,13 @@ def assert_outbox_schema(engine):
     # Scope parity to the changed tables. An existing MFA nonce is reflected as
     # TINYBLOB vs LargeBinary(12); that unrelated legacy difference is not Phase 8B.
     def include_object(obj, name, kind, reflected, compare_to):
+        # This deliberately historical upgrade predates PDF presentation DDL.
+        # All other columns/defaults/indexes/FKs still require exact parity.
+        if kind == 'column' and obj.table.name == 'lab_report' and name == 'presentation_snapshot':
+            return False
         return kind != 'table' or name in {'lab_report', 'blockchain_event'}
     with engine.connect() as db:
+        assert 'presentation_snapshot' not in {c['name'] for c in sa.inspect(db).get_columns('lab_report')}
         context = MigrationContext.configure(db, opts={'compare_type': True,
             'compare_server_default': True, 'include_object': include_object})
         assert compare_metadata(context, Base.metadata) == []

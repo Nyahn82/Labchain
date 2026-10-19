@@ -1,5 +1,12 @@
 # Major update release readiness: Workstreams A–E
 
+**Latest status:** [main integration and native validation](MAIN_INTEGRATION_MYSQL_VALIDATION.md)
+records the subsequent same-VPS disposable-MySQL authorization, all 74 native
+cases passing after focused fixes, the combined rehearsal and synthetic restore,
+and the active schema preflight. The historical findings below remain evidence
+of the earlier review; native testing and the second-host requirement are no
+longer open development blockers. Active cutover still requires authorization.
+
 Review completed 19 October 2026 (Asia/Singapore). Regression artifacts are dated
 18 October 2026 UTC. Development: `/home/rhuadmin/rhu-labchain-dev`, branch
 `major-update-v1`. **Recommendation: NOT YET READY FOR DEPLOYMENT.**
@@ -191,8 +198,8 @@ Identifier capacities, with the current three-letter prefixes and separator:
 | Department | 30 | DEP-001 | 9,223,372,036,854,775,807 |
 | Test | 30 | TST-0001 | 9,223,372,036,854,775,807 |
 | Panel | 30 | PNL-0001 | 9,223,372,036,854,775,807 |
-| Rejection Reason | 30 | REJ-001 | 9,223,372,036,854,775,807 |
-| Report Template | 30 | TMP-001 | 9,223,372,036,854,775,807 |
+| Rejection Reason | 40 | REJ-001 | 9,223,372,036,854,775,807 |
+| Report Template | 40 | TMP-001 | 9,223,372,036,854,775,807 |
 
 Padding is a minimum, not a maximum. The allocator checks actual rendered length
 against model column capacity and signed BIGINT exhaustion. No column resize or

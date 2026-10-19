@@ -1,5 +1,6 @@
 """Read-only analytics SQL parity on a validated disposable MySQL socket."""
 from pathlib import Path
+import os
 from types import SimpleNamespace
 import stat
 import sys
@@ -23,7 +24,23 @@ def main(socket):
     with root.begin() as db: db.exec_driver_sql('CREATE DATABASE phase11_synthetic CHARACTER SET utf8mb4')
     engine=sa.create_engine('mysql+pymysql://root@localhost/phase11_synthetic',**options)
     database.engine=engine
-    command.upgrade(Config(str(Path(__file__).resolve().parents[1]/'alembic.ini')),'20261005_01')
+    # Analytics fixtures use the current ORM, so build the current real schema.
+    # Acknowledgement is restricted to this verified, empty private server.
+    with engine.connect() as db:
+        actual_socket, tcp_disabled = db.execute(sa.text('SELECT @@socket, @@skip_networking')).one()
+        assert Path(actual_socket).resolve() == socket and tcp_disabled == 1
+        assert db.scalar(sa.text('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()')) == 0
+        assert db.scalar(sa.text('SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE DB=DATABASE() AND ID<>CONNECTION_ID()')) == 0
+    flag = 'RHU_AUTO_CODE_MIGRATION_WRITERS_STOPPED'
+    previous = os.environ.get(flag)
+    os.environ[flag] = '1'
+    try:
+        command.upgrade(Config(str(Path(__file__).resolve().parents[1]/'alembic.ini')), 'head')
+    finally:
+        if previous is None:
+            os.environ.pop(flag, None)
+        else:
+            os.environ[flag] = previous
     factory=sessionmaker(bind=engine,autoflush=False)
     with factory.begin() as db: db.add(UserAccount(user_id=1,username='synthetic',password_hash='not-a-real-password',account_status='ACTIVE'))
     rich.__wrapped__(SimpleNamespace(factory=factory))

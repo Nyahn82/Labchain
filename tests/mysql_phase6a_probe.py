@@ -2,6 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import timedelta
 from pathlib import Path
+import os
 import stat
 import sys
 from threading import Barrier
@@ -40,7 +41,23 @@ def main(socket, scenario):
         # Exercise the real migration chain on MySQL, including the new table.
         scripts = ScriptDirectory.from_config(Config('alembic.ini'))
         with engine.begin() as db, Operations.context(MigrationContext.configure(db)):
-            for revision in reversed(list(scripts.walk_revisions())): revision.module.upgrade()
+            # A's migration guard also applies to this fresh, exclusively owned
+            # test schema. Verify the private server before scoped acknowledgement.
+            actual_socket, tcp_disabled = db.execute(text('SELECT @@socket, @@skip_networking')).one()
+            assert Path(actual_socket).resolve() == socket_path and tcp_disabled == 1
+            assert db.scalar(text('SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE()')) == 0
+            assert db.scalar(text('SELECT COUNT(*) FROM information_schema.PROCESSLIST WHERE DB=DATABASE() AND ID<>CONNECTION_ID()')) == 0
+            flag = 'RHU_AUTO_CODE_MIGRATION_WRITERS_STOPPED'
+            previous = os.environ.get(flag)
+            os.environ[flag] = '1'
+            try:
+                for revision in reversed(list(scripts.walk_revisions())):
+                    revision.module.upgrade()
+            finally:
+                if previous is None:
+                    os.environ.pop(flag, None)
+                else:
+                    os.environ[flag] = previous
         with factory.begin() as db:
             db.add(UserAccount(user_id=1, username='issuer', password_hash='not-a-password', account_status='ACTIVE'))
             db.add(Role(role_id=1, role_code='PATIENT', role_name='Patient', is_active=True))

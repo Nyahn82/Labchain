@@ -1,5 +1,12 @@
 # Native release rehearsal and operator approval checklist
 
+**Subsequent authorization and execution:** the user approved disposable private
+MySQL instances on this VPS; a second VPS is not required. See
+[MAIN_INTEGRATION_MYSQL_VALIDATION.md](MAIN_INTEGRATION_MYSQL_VALIDATION.md) for
+the executed combined rehearsal, 74-case results, synthetic restore and remaining
+active cutover approvals. The separate-host restrictions below describe the
+earlier preparation plan, not the current approved testing arrangement.
+
 Prepared 19 October 2026. **Plan only: no native database test, migration,
 provisioning, restore, privilege change or service operation was executed.**
 Read together with [MAJOR_UPDATE_RELEASE_READINESS.md](MAJOR_UPDATE_RELEASE_READINESS.md),
