@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import { useResource } from "../api/useResource";
 import { PermissionGuard, useAuth } from "../auth/Auth";
@@ -52,7 +52,7 @@ function PersonContent({ kind }: { kind: "patients" | "staff" }) {
           </section>
           {kind === "patients" && !user?.patient && !user?.roles.includes("PATIENT") &&
             (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ")) && (
-              <><PatientActivation id={id!} />{can("ACCOUNT_READ") && <StaffAccountAssociation id={id!} kind="patients" />}</>
+              <><PatientActivation id={id!} onChanged={state.reload} />{can("ACCOUNT_READ") && <StaffAccountAssociation key={JSON.stringify(state.data)} id={id!} kind="patients" />}</>
             )}{" "}
           {kind === "staff" && <StaffAccounts id={id!} />}
         </>
@@ -220,9 +220,10 @@ export function Administration() {
   );
 }
 function Accounts() {
+  const [params] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(params.get("account_status") || "");
   const { can } = useAuth();
   const state = useResource<Page>(
     `/users?page=${page}&page_size=20&search=${encodeURIComponent(search)}${status ? "&account_status=" + status : ""}`,

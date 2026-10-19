@@ -2,6 +2,7 @@
 from copy import deepcopy
 from io import BytesIO, StringIO
 import hashlib
+import re
 from pathlib import Path
 
 from alembic import command
@@ -72,6 +73,41 @@ def test_legacy_release_and_download_never_rerender(api, monkeypatch):
         assert db.scalar(sa.select(ReportVerification.report_hash)) == hashlib.sha256(data).hexdigest()
 
 
+def test_older_v2_snapshot_without_sample_type_remains_renderable(api):
+    ready(api)
+    with api.factory.begin() as db:
+        row = db.get(LabReport, 1)
+        snapshot = deepcopy(row.presentation_snapshot)
+        for extra in snapshot['results'].values():
+            extra.pop('sample_type', None)
+        row.presentation_snapshot = snapshot
+    released = release(api)
+    data = (settings.report_storage_dir / released['pdf_path']).read_bytes()
+    assert 'PDF v2' in pdf_text(data)
+    assert 'Sample type:' not in pdf_text(data)
+    assert metadata(api)['report_hash'] == hashlib.sha256(data).hexdigest()
+
+
+def test_mixed_specimens_in_one_group_keep_test_associations(api):
+    ready(api)
+    detail = detail_for(api)
+    seed = detail.result_snapshots[0]
+    detail.result_snapshots = [seed.model_copy(update={'result_item_id': i, 'test_name_snapshot': name})
+                               for i, name in [(1, 'First test'), (2, 'Second test')]]
+    detail._presentation = deepcopy(detail._presentation)
+    original = detail._presentation['results']['1']
+    detail._presentation['results'] = {
+        str(i): {**original, 'specimen_code': f'SP-SYN-{i}', 'sample_type': sample,
+                 'collected_at': detail.generated_at.isoformat(), 'received_at': detail.generated_at.isoformat()}
+        for i, sample in [(1, 'Whole blood'), (2, 'Serum')]
+    }
+    data = report_pdf.render_pdf(detail, 'https://verify.example.test/api/v1/verify/'+'x'*43, detail.generated_at)
+    text = pdf_text(data)
+    for expected in ['Tests: First test', 'Tests: Second test', 'SP-SYN-1', 'SP-SYN-2', 'Sample type: Whole blood', 'Sample type: Serum']:
+        assert expected in text
+    assert text.count('Sample type:') == 2
+
+
 def test_revised_report_selects_v2_and_preserves_legacy_bytes(api):
     ready(api)
     with api.factory.begin() as db: db.get(LabReport, 1).presentation_snapshot = None
@@ -126,6 +162,9 @@ def test_long_multiline_report_repeats_headers_and_preserves_all_values(api, mon
         assert 'Page ' in text and 'PDF v2' in text
         if '123.450' in text or 'Positive qualitative' in ' '.join(text.split()):
             assert 'REFERENCE RANGE' in text and 'Clinical chemistry' in text and 'Synthetic panel' in text
+    for text in texts[1:]:
+        assert f'Patient code: {detail.patient_snapshot.patient_code}' in text
+    assert not re.search(r'\d{2}:\d{2}:\d{2}\.\d+', combined)
     assert len(boxes) > 500
     # Distinct text boxes may share a row but cannot overlap in both axes.
     for i, (page, x, y, width, height) in enumerate(boxes):
@@ -168,7 +207,7 @@ def test_logo_only_uses_safe_private_assets_and_is_frozen(api, tmp_path, monkeyp
 def test_presentation_migration_preserves_existing_rows_offline_and_sqlite():
     scripts = ScriptDirectory.from_config(config())
     migration = scripts.get_revision('20261018_01').module
-    assert scripts.get_heads() == ['20261018_01']
+    assert scripts.get_heads() == ['20261019_01']
     assert migration.down_revision == '20261015_01'
     output = StringIO()
     command.upgrade(config(output), '20261015_01:20261018_01', sql=True)

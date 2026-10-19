@@ -60,8 +60,8 @@ def release_config(connection, root):
         cfg.attributes['verified_connection'] = connection
         script = ScriptDirectory.from_config(cfg)
         revisions = list(reversed(list(script.walk_revisions())))
-        check(tuple(r.revision for r in revisions) == old.REVISIONS + ('20261018_01',), 'Unexpected release chain.')
-        check(script.get_heads() == ['20261018_01'], 'Unexpected release head.')
+        check(tuple(r.revision for r in revisions) == old.REVISIONS + ('20261018_01', '20261019_01'), 'Unexpected release chain.')
+        check(script.get_heads() == ['20261019_01'], 'Unexpected release head.')
         for i, revision in enumerate(revisions):
             check(revision.down_revision == (revisions[i-1].revision if i else None), 'Nonlinear chain.')
         yield cfg

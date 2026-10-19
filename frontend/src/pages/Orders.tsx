@@ -49,9 +49,10 @@ export function Orders({
 }
 function OrderList({ mode }: { mode: string }) {
   const { can } = useAuth();
+  const [params] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(params.get("status") || "");
   const [priority, setPriority] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -255,6 +256,8 @@ function OrderContent({ tab }: { tab: string }) {
       {order && (
         <>
           <section className="card compact">
+            <p><strong>Patient code: {String(order.patient.patient_code || "Unavailable")}</strong>
+              {can("PATIENT_READ") && order.patient.patient_id != null && <> · <Link to={`/patients/${order.patient.patient_id}`}>Open patient record</Link></>}</p>
             <Details
               row={order}
               fields={["patient", "physician", "priority", "order_date"]}

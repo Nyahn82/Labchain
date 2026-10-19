@@ -1,7 +1,7 @@
 import { ReportPreview } from "../components/ReportPreview";
 import { StaffReportAnchoring } from "../components/BlockchainAnchoring";
 import { useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api, pdf } from "../api/client";
 import { useResource } from "../api/useResource";
 import { PermissionGuard, useAuth } from "../auth/Auth";
@@ -46,17 +46,23 @@ export function Reports() {
   );
 }
 function ReportList() {
+  const [params] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(params.get("status") || "");
+  const [stage, setStage] = useState(params.get("signing_stage") || "");
   const state = useResource<Page>(
-    `/reports?page=${page}&page_size=20&search=${encodeURIComponent(search)}${status ? "&status=" + status : ""}`,
+    `/reports?page=${page}&page_size=20&search=${encodeURIComponent(search)}${status ? "&status=" + status : ""}${stage ? "&signing_stage=" + stage : ""}`,
   );
   return (
     <>
       <Title title="Laboratory reports" />
       <section className="card">
         <div className="toolbar">
+          <label>Signing stage<select value={stage} onChange={e => { setStage(e.target.value); setPage(1); }}>
+            <option value="">All stages</option><option value="unassigned">No signatory assignments</option>
+            <option value="awaiting_signature">Awaiting signatures</option><option value="awaiting_approval">Signed, awaiting approval</option>
+          </select></label>
           <label>
             Search reports
             <input
@@ -116,11 +122,14 @@ export function OrderReports({ order }: { order: Order }) {
     <section className="card">
       <div className="section-heading">
         <h2>Report versions</h2>
-        {order.status === "COMPLETED" && can("REPORT_GENERATE") && (
+        {order.status === "COMPLETED" && can("REPORT_GENERATE") && !state.loading && !state.error && state.data?.total === 0 && (
           <button onClick={() => setOpen(true)}>Generate report</button>
         )}
       </div>
       <State {...state} empty={!state.data?.items.length} />
+      {order.status !== "COMPLETED" && <p>Complete specimen processing, result review and verification before generating a report.</p>}
+      {!!state.data?.total && <p>A report already exists. Open its current version to continue signing or approval, or use the revision action after release.</p>}
+      {can("FACILITY_PROFILE_READ") && <p><Link to="/administration/report-setup">Review facility, template and signatory setup</Link></p>}
       {state.data && (
         <>
           <Table

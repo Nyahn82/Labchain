@@ -24,5 +24,6 @@ class AuthSession(Base):
     user_agent: Mapped[str | None] = mapped_column(String(255))
 
     mfa_verified_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    last_activity_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
 
     user: Mapped["UserAccount"] = relationship("UserAccount", foreign_keys=[user_id])

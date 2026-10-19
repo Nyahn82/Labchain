@@ -25,6 +25,7 @@ import { Verification } from "./pages/Verification";
 import { BlockchainMonitor } from "./pages/BlockchainMonitor";
 import { AuthenticationActivity } from "./pages/AuthActivity";
 import { Analytics } from "./pages/Analytics";
+import { ReportSetup } from "./pages/ReportSetup";
 export function AppRoutes() {
   return (
     <Routes>
@@ -106,6 +107,7 @@ export function AppRoutes() {
           <Route path="reports" element={<Reports />} />
           <Route path="reports/:id" element={<ReportDetail />} />
           <Route path="administration" element={<Administration />} />
+          <Route path="administration/report-setup" element={<ReportSetup />} />
           <Route path="administration/analytics" element={<Analytics />} />
           <Route path="administration/activity" element={<AuthenticationActivity />} />
           <Route path="administration/blockchain" element={<BlockchainMonitor />} />

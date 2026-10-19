@@ -1,6 +1,6 @@
 import { Tabs } from "../components/Tabs";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../auth/Auth";
 import { api } from "../api/client";
 import { useResource } from "../api/useResource";
@@ -26,8 +26,9 @@ export function AuthenticationActivity() {
 }
 
 export function ActivityList({ userId, accountType = "", failed = false }: { userId?: number; accountType?: string; failed?: boolean }) {
+  const [query] = useSearchParams();
   const [page, setPage] = useState(1);
-  const [filters, setFilters] = useState({ search: "", activity_type: failed ? "LOGIN_FAILED" : "", status: "", date_from: "", date_to: "", ip_address: "", account_type: accountType });
+  const [filters, setFilters] = useState({ search: "", activity_type: failed || (!userId && query.get("event") === "LOGIN_FAILED") ? "LOGIN_FAILED" : "", status: "", date_from: !userId ? (query.get("date_from") || "").replace(/Z$/, "") : "", date_to: !userId ? (query.get("date_to") || "").replace(/Z$/, "") : "", ip_address: "", account_type: accountType });
   const [applied, setApplied] = useState(filters);
   const params = new URLSearchParams({ page: String(page), page_size: "20" });
   if (userId) params.set("user_id", String(userId));

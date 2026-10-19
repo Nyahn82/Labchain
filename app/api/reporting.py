@@ -1,6 +1,6 @@
 """Authenticated snapshot, approval and immutable artifact lifecycle endpoints."""
 from datetime import date
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import StreamingResponse
@@ -96,9 +96,10 @@ def generate_report(order_id: Identifier, payload: s.GenerateRequest, request: R
 @router.get('/reports', response_model=Page[s.ReportResponse])
 def list_reports(db: Db, actor: ReportReader, paging: Paging, search: Search = None,
                  order_id: Identifier | None = None, status: s.ReportStatus | None = None,
+                 signing_stage: Literal['unassigned', 'awaiting_signature', 'awaiting_approval'] | None = None,
                  date_from: date | None = None, date_to: date | None = None):
     return service.list_reports(db, **paging, search=search, order_id=order_id, status=status,
-                                date_from=date_from, date_to=date_to)
+                                date_from=date_from, date_to=date_to, signing_stage=signing_stage)
 
 
 @router.get('/reports/{report_id}', response_model=s.ReportDetail)

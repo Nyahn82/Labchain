@@ -300,7 +300,7 @@ export function SpecimenActions({
                 "/lab/rejection-reasons",
                 "rejection_reason_id",
                 "reason_name",
-                "REJECTION_REASON_MANAGE",
+                "SPECIMEN_REJECT",
               )}
               label="Rejection reason"
               required

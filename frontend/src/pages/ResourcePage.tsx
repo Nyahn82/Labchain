@@ -6,7 +6,7 @@ import { PermissionGuard, useAuth } from "../auth/Auth";
 import { Form, Lookup } from "../components/Form";
 import { Dialog, Pagination, State, Table, Title } from "../components/UI";
 import type { Page, Row } from "../types/domain";
-import { activationLabel } from "./PatientActivation";
+import { ActivationBadge, activationLabels } from "./PatientActivation";
 import type { Resource } from "./resources";
 export function ResourcePage({
   resource,
@@ -15,10 +15,11 @@ export function ResourcePage({
   resource: Resource;
   embedded?: boolean;
 }) {
+  const { user } = useAuth();
   return (
     <PermissionGuard permission={resource.read}>
       <ResourceContent
-        key={resource.path}
+        key={`${resource.path}:${user?.user_id}:${user?.permissions.join(',')}:${user?.roles.join(',')}`}
         resource={resource}
         embedded={embedded}
       />
@@ -34,9 +35,16 @@ function ResourceContent({
 }) {
   const { can, user } = useAuth();
   const [params] = useSearchParams();
+  const patientDirectory = r.path === "/patients";
+  const activationAccess = patientDirectory && !user?.patient && !user?.roles.includes("PATIENT") &&
+    (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ"));
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [filters, setFilters] = useState<Record<string, string>>((): Record<string, string> => activationAccess ? {
+    activation_group: params.get("activation_group") || "", activation_state: params.get("activation_state") || "",
+  } : {});
+  const [sort, setSort] = useState("patient_id");
+  const [direction, setDirection] = useState("asc");
   const [editing, setEditing] = useState<Row | null | undefined>(() =>
     params.get("new") === "1" && can(r.create) ? null : undefined,
   );
@@ -45,6 +53,7 @@ function ResourceContent({
     page: String(page),
     page_size: "20",
     ...(search ? { search } : {}),
+    ...(patientDirectory ? { sort_by: sort, sort_direction: direction } : {}),
     ...Object.fromEntries(Object.entries(filters).filter(([, v]) => v)),
   });
   const { data, loading, error, reload } = useResource<Page>(
@@ -67,6 +76,21 @@ function ResourceContent({
       <div className="card">
         <div className="toolbar">
           {r.path === "/patients" && <button onClick={reload} disabled={loading}>Refresh patients</button>}
+          {activationAccess && <>
+            <label>Portal activation group<select value={filters.activation_group || ""} onChange={e => { setFilters({ ...filters, activation_group: e.target.value }); setPage(1); }}>
+              <option value="">All groups</option><option value="ACTIVATED">Activated</option><option value="NOT_ACTIVATED">Not activated</option>
+            </select></label>
+            <label>Activation state<select value={filters.activation_state || ""} onChange={e => { setFilters({ ...filters, activation_state: e.target.value }); setPage(1); }}>
+              <option value="">All activation states</option>{Object.entries(activationLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+            </select></label>
+          </>}
+          {patientDirectory && <>
+            <label>Sort patients<select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
+              <option value="patient_id">Registration order</option><option value="name">Name</option><option value="patient_code">Permanent code</option>
+              {activationAccess && <option value="activation">Activation state</option>}
+            </select></label>
+            <label>Sort direction<select value={direction} onChange={e => { setDirection(e.target.value); setPage(1); }}><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
+          </>}
           {r.searchable !== false && (
             <label>
               Search {r.title.toLowerCase()}
@@ -114,9 +138,8 @@ function ResourceContent({
           <>
             <Table
               rows={data.items}
-              columns={r.path === "/patients" && !user?.patient && !user?.roles.includes("PATIENT") &&
-                (can("PATIENT_ACCOUNT_ACTIVATE") || can("ACCOUNT_READ"))
-                ? [...r.columns, { key: "activation_status", label: "Portal activation", render: row => activationLabel(row.activation_status) }]
+              columns={activationAccess
+                ? [...r.columns, { key: "activation_status", label: "Portal activation", render: row => <ActivationBadge value={row.activation_status} /> }]
                 : r.columns}
               actions={(row) => (
                 <>

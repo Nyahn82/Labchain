@@ -87,7 +87,7 @@ def test_each_permission_only_exposes_its_aggregate(overview_api, permission, ke
     finally:
         event.remove(overview_api.engine, 'before_cursor_execute', capture)
     assert response.status_code == 200
-    assert set(response.json()) == {'generated_at', key}
+    assert set(response.json()) == {'generated_at', key} | ({'signing'} if key == 'reports' else set())
     assert 'PRIVATE' not in response.text and 'SensitiveName' not in response.text
     assert not any('result_value' in statement or 'first_name' in statement for statement in statements)
     grouped = [sql for sql in statements if 'group by' in sql]
@@ -132,7 +132,7 @@ def test_admin_uses_existing_permission_bypass(overview_api):
         db.flush()
         db.add(UserRole(user_id=1, role_id=2, assigned_at=utc_now()))
     login(overview_api)
-    assert set(overview_api.client.get(PATH).json()) == {'generated_at', 'patients', 'orders', 'specimens', 'results', 'reports'}
+    assert set(overview_api.client.get(PATH).json()) == {'generated_at', 'patients', 'orders', 'specimens', 'results', 'reports', 'presence', 'activation', 'accounts', 'failed_logins', 'signing', 'services'}
 
 
 def test_revoked_permission_is_applied_on_next_request(overview_api):
@@ -199,7 +199,7 @@ def test_overview_is_registered_in_application_openapi():
     assert set(operations) == {'get'}
     reference = operations['get']['responses']['200']['content']['application/json']['schema']['$ref']
     schema = document['components']['schemas'][reference.rsplit('/', 1)[1]]
-    assert set(schema['properties']) == {'generated_at', 'patients', 'orders', 'specimens', 'results', 'reports'}
+    assert set(schema['properties']) == {'generated_at', 'patients', 'orders', 'specimens', 'results', 'reports', 'presence', 'activation', 'accounts', 'failed_logins', 'signing', 'services'}
     assert schema['required'] == ['generated_at']
     assert reference == '#/components/schemas/DashboardOverview'
     monitor_schema = document['paths']['/api/v1/admin/blockchain/overview']['get']['responses']['200']['content']['application/json']['schema']

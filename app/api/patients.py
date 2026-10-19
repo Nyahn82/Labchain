@@ -1,6 +1,7 @@
 """Patients HTTP API using existing session, CSRF and permission dependencies."""
 
-from fastapi import APIRouter, Depends, Query, Request
+from typing import Literal
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.api.private import PrivateRoute
@@ -9,7 +10,7 @@ from app.models import Patient, UserAccount
 from app.schemas.identity import PatientCreate, PatientPatch, PatientResponse, PatientDirectoryResponse, Page, Identifier, Sex
 from app.services.identity_service import create_record, get_record, list_records, patch_record
 
-from app.services.patient_activation_service import activation_states, can_read_status
+from app.services.patient_activation_service import activation_states, can_read_status, patient_directory
 
 router = APIRouter(prefix='/patients', tags=['Patients'], route_class=PrivateRoute)
 
@@ -28,11 +29,18 @@ def list_all(
     search: str | None = Query(None, max_length=200),
     patient_code: str | None = None,
     sex: Sex | None = None,
+    activation_group: Literal['ACTIVATED', 'NOT_ACTIVATED'] | None = None,
+    activation_state: Literal['NOT_ACTIVATED', 'TOKEN_ACTIVE', 'TOKEN_EXPIRED', 'TOKEN_REVOKED', 'ACTIVATED', 'REVIEW_REQUIRED'] | None = None,
+    sort_by: Literal['patient_id', 'patient_code', 'name', 'activation'] = 'patient_id',
+    sort_direction: Literal['asc', 'desc'] = 'asc',
     actor: UserAccount = Depends(require_permission('PATIENT_READ')),
     db: Session = Depends(get_db),
 ):
-    result = list_records(db, Patient, page=page, page_size=page_size, search=search,
-                        search_fields=('patient_code', 'first_name', 'middle_name', 'last_name'), filters={'patient_code': patient_code, 'sex': sex})
+    if (activation_group or activation_state or sort_by == 'activation') and not can_read_status(db, actor.user_id):
+        raise HTTPException(403, 'Activation status access required.')
+    result = patient_directory(db, page=page, page_size=page_size, search=search,
+        patient_code=patient_code, sex=sex, activation_group=activation_group,
+        activation_state=activation_state, sort_by=sort_by, sort_direction=sort_direction)
     result['items'] = directory_items(db, result['items'], actor.user_id)
     return result
 

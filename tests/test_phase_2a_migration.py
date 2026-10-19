@@ -29,7 +29,8 @@ PHASE_6B = "20260920_01"
 PHASE_8B = "20260924_01"
 PHASE_10 = "20261005_01"
 AUTO_CODES = "20261015_01"
-HEAD = "20261018_01"
+PDF_PRESENTATION = "20261018_01"
+HEAD = "20261019_01"
 
 
 def config(buffer=None):
@@ -44,7 +45,7 @@ def revision(revision_id=REVISION):
 
 def test_current_migration_chain_is_linear():
     scripts = ScriptDirectory.from_config(config())
-    expected = [HEAD, AUTO_CODES, PHASE_10, PHASE_8B, PHASE_6B, PHASE_6A,
+    expected = [HEAD, PDF_PRESENTATION, AUTO_CODES, PHASE_10, PHASE_8B, PHASE_6B, PHASE_6A,
                 PHASE_3A, PHASE_2D, PHASE_2C, PHASE_2B, REVISION]
     assert scripts.get_heads() == [HEAD]
     assert scripts.get_bases() == [REVISION]
@@ -210,7 +211,7 @@ def test_alembic_online_environment_reuses_application_engine(monkeypatch):
             sequences_before = connection.execute(sequence_query).all()
             assert len(sequences_before) == 7
         command.check(config())
-        with pytest.raises(RuntimeError, match="PDF presentation history must be preserved"):
+        with pytest.raises(RuntimeError, match="retain activity observations"):
             command.downgrade(config(), "base")
         with engine.connect() as connection:
             assert set(sa.inspect(connection).get_table_names()) == set(Base.metadata.tables) | {"alembic_version"}

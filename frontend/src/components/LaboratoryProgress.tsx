@@ -10,6 +10,7 @@ export function LaboratoryProgress({ order }: { order: Order }) {
   const patientId = (order.patient as { patient_id?: number }).patient_id;
   return <section className="card laboratory-progress" aria-labelledby="laboratory-progress-heading">
     <div className="section-heading"><h2 id="laboratory-progress-heading">Laboratory workflow</h2><Badge>{order.priority}</Badge></div>
+    <p aria-label="Workflow sequence">Order → Specimen → Result entry → Review → Verification → Report generation → Signing → Approval → Release</p>
     <p>{order.status === "CANCELLED" ? "This order is cancelled. Its history remains available." :
       order.status === "COMPLETED" ? "Testing is complete. Report signing, approval and release are separate steps." :
         "Collect and receive suitable specimens, enter results, then review and verify each result."}</p>

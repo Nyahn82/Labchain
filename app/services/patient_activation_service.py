@@ -3,7 +3,7 @@ from datetime import timedelta
 import secrets
 
 from fastapi import HTTPException
-from sqlalchemy import func, select
+from sqlalchemy import case, exists, func, or_, select
 
 from app.config import settings
 from app.models import Patient, PatientAccountLink, PatientActivationToken, Role, UserAccount, UserRole
@@ -97,6 +97,45 @@ def activation_states(db, patient_ids):
             state = 'TOKEN_ACTIVE' if token.expires_at > now else 'TOKEN_EXPIRED'
         states[patient_id] = state
     return states
+
+
+def activation_state_expression(now):
+    """SQL equivalent of activation_states, evaluated before counting/pagination."""
+    token = PatientActivationToken
+    latest = select(func.max(token.activation_token_id)).where(
+        token.patient_id == Patient.patient_id).correlate(Patient).scalar_subquery()
+    linked = exists(select(PatientAccountLink.patient_id).where(PatientAccountLink.patient_id == Patient.patient_id))
+    consumed = exists(select(token.activation_token_id).where(
+        token.patient_id == Patient.patient_id, token.used_at.is_not(None)))
+    revoked = exists(select(token.activation_token_id).where(token.activation_token_id == latest, token.revoked_at.is_not(None)))
+    active = exists(select(token.activation_token_id).where(token.activation_token_id == latest, token.expires_at > now))
+    return case((linked, 'ACTIVATED'), (consumed, 'REVIEW_REQUIRED'),
+                (latest.is_(None), 'NOT_ACTIVATED'), (revoked, 'TOKEN_REVOKED'),
+                (active, 'TOKEN_ACTIVE'), else_='TOKEN_EXPIRED')
+
+
+def patient_directory(db, *, page, page_size, search=None, patient_code=None, sex=None,
+                      activation_group=None, activation_state=None, sort_by='patient_id', sort_direction='asc'):
+    state = activation_state_expression(utc_now())
+    conditions = []
+    for column, value in ((Patient.patient_code, patient_code), (Patient.sex, sex)):
+        if value is not None:
+            conditions.append(column == value)
+    if search and search.strip():
+        conditions.append(or_(*(column.icontains(search.strip(), autoescape=True) for column in
+            (Patient.patient_code, Patient.first_name, Patient.middle_name, Patient.last_name))))
+    if activation_group:
+        conditions.append(state == 'ACTIVATED' if activation_group == 'ACTIVATED' else state != 'ACTIVATED')
+    if activation_state:
+        conditions.append(state == activation_state)
+    sorts = {'patient_id': (Patient.patient_id,), 'patient_code': (Patient.patient_code,),
+             'name': (Patient.last_name, Patient.first_name, Patient.middle_name), 'activation': (state,)}
+    columns = sorts[sort_by]
+    ordering = [column.desc() if sort_direction == 'desc' else column.asc() for column in columns]
+    total = db.scalar(select(func.count()).select_from(Patient).where(*conditions))
+    items = db.scalars(select(Patient).where(*conditions).order_by(*ordering, Patient.patient_id.asc())
+                      .offset((page - 1) * page_size).limit(page_size)).all()
+    return dict(items=items, total=total, page=page, page_size=page_size)
 
 
 def activation_status(db, patient_id):

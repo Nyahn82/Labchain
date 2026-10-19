@@ -14,7 +14,7 @@ const summary: Overview = {
   reports: { total: 9, statuses: { GENERATED: 3, APPROVED: 1, RELEASED: 4, REVOKED: 1 } },
 };
 const queue = { counts: { pending: 2, processing: 0, confirmed: 7, failed: 0, dead: 0 }, worker_health: "IDLE", last_confirmed_at: null, delivery_enabled: false };
-const network = { status: "DEGRADED", checked_at: "2026-10-17T07:55:00Z", nodes: [{ status: "ONLINE" }, { status: "UNKNOWN" }] };
+const network = { status: "DEGRADED", checked_at: new Date().toISOString(), nodes: [{ name: "peer1", status: "ONLINE", checked_at: new Date().toISOString() }, { name: "peer2", status: "UNKNOWN", checked_at: new Date().toISOString() }] };
 function normal(p: string) {
   if (p === path) return respond(summary);
   if (p.startsWith("/api/v1/lab-orders?")) return respond(page([{ ...order, patient: { first_name: "PRIVATE-PATIENT", last_name: "SECRET" } }]));
@@ -22,7 +22,7 @@ function normal(p: string) {
   if (p === "/api/v1/admin/blockchain/overview") return respond(network);
 }
 const staff = (permissions: string[]) => ({ ...admin, roles: ["LAB_STAFF"], permissions });
-const countFor = (region: HTMLElement, label: string) => within(region).getByText(label).parentElement?.querySelector("dd")?.textContent;
+const countFor = (region: HTMLElement, label: string) => within(region).getByText(label).closest("div")?.querySelector("dd")?.textContent;
 
 describe("authorized overview dashboard", () => {
   it("uses API totals and workflow stages without patient details", async () => {
@@ -119,7 +119,7 @@ describe("authorized overview dashboard", () => {
   it("keeps partial Fabric observations separate from queue activity", async () => {
     mockFetch(normal); renderAuth(<AppRoutes />, "/dashboard");
     expect(await screen.findByText("DEGRADED")).toBeVisible();
-    expect(screen.getByText("1 of 2 peers reporting online")).toBeVisible();
+    expect(screen.getByText("1 of 2 peers with fresh online observations")).toBeVisible();
     expect(screen.getByText(/separate from the anchoring queue/)).toBeVisible();
     expect(screen.getByText("Idle")).toBeVisible();
   });

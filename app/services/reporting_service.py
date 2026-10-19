@@ -143,7 +143,7 @@ def report_detail(db, report_id, *, lock=False):
     return response
 
 
-def list_reports(db, *, page, page_size, search=None, order_id=None, status=None, date_from=None, date_to=None):
+def list_reports(db, *, page, page_size, search=None, order_id=None, status=None, date_from=None, date_to=None, signing_stage=None):
     if date_from and date_to and date_from > date_to:
         raise HTTPException(422, 'date_from must not exceed date_to.')
     statement = select(LabReport).join(LabOrder, LabOrder.order_id == LabReport.order_id).outerjoin(
@@ -152,6 +152,9 @@ def list_reports(db, *, page, page_size, search=None, order_id=None, status=None
         statement = statement.where(LabReport.order_id == order_id)
     if status is not None:
         statement = statement.where(LabReport.report_status == status)
+    if signing_stage is not None:
+        from app.services.report_stage import signing_stages
+        statement = statement.where(signing_stages()[signing_stage])
     if date_from:
         statement = statement.where(LabReport.generated_at >= datetime.combine(date_from, time.min))
     if date_to:

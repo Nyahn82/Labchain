@@ -262,3 +262,73 @@ def test_generated_code_collision_rolls_back_the_entire_import(lab_admin):
     with lab_admin.factory() as db: before, seq = totals(db), counters(db)
     assert apply(lab_admin).status_code == 409
     with lab_admin.factory() as db: assert (totals(db), counters(db)) == (before, seq)
+
+
+@pytest.mark.parametrize('panel_key', ['cbc', 'diff', 'lipid', 'liver', 'renal'])
+def test_every_panel_synthetic_order_to_pdf_and_specimen_errors(api, panel_key):
+    """Synthetic configuration only; no facility-specific clinical interval claim."""
+    assert apply(api).status_code == 200
+    catalog = service.load_catalog()
+    definition = next(panel for panel in catalog.panels if panel.key == panel_key)
+    tests = {test.key: test for test in catalog.tests}
+    mapping = {(i['kind'], i['key']): i['record_id'] for i in preview(api)['items']}
+    panel_id = mapping['panels', panel_key]
+    payload = dict(patient_id=1, priority='ROUTINE', panel_ids=[panel_id], test_ids=[])
+    assert call(api, 'POST', '/lab-orders', payload).status_code == 409
+    members = [tests[key] for key in definition.tests]
+    samples = {sample for test in members for sample in test.samples}
+    departments = {test.department for test in members}
+    for kind, keys, endpoint in [('departments', departments, 'departments'), ('samples', samples, 'sample-types'),
+                                  ('tests', definition.tests, 'tests'), ('panels', [panel_key], 'panels')]:
+        for key in keys:
+            values = {'is_active': True}
+            if kind == 'tests':
+                values.update(default_unit='SYNTHETIC', methodology='Synthetic simulation only')
+            assert call(api, 'PATCH', f'/lab/{endpoint}/{mapping[kind, key]}', values).status_code == 200
+    # One inactive component blocks the complete panel rather than silently omitting it.
+    first_id = mapping['tests', definition.tests[0]]
+    assert call(api, 'PATCH', f'/lab/tests/{first_id}', {'is_active': False}).status_code == 200
+    assert call(api, 'POST', '/lab-orders', payload).status_code == 409
+    assert call(api, 'PATCH', f'/lab/tests/{first_id}', {'is_active': True}).status_code == 200
+    requested = create(api, '/lab-orders', payload)
+    assert {item['test_id'] for item in requested['items']} == {mapping['tests', key] for key in definition.tests}
+    assert len(requested['items']) == len(definition.tests)
+    assert all(item['order_panel_id'] == requested['panels'][0]['order_panel_id'] for item in requested['items'])
+    # Use an active, incompatible specimen. Approval of a sample never makes it universal.
+    wrong_sample = next(key for key in ['urine', 'serum', 'blood'] if key not in samples)
+    assert call(api, 'PATCH', f'/lab/sample-types/{mapping["samples", wrong_sample]}', {'is_active': True}).status_code == 200
+    response = call(api, 'POST', f'/lab-orders/{requested["order_id"]}/specimens',
+        {'sample_type_id': mapping['samples', wrong_sample], 'order_item_ids': [requested['items'][0]['order_item_id']]})
+    assert response.status_code == 409
+    sample_names = []
+    for sample_key in samples:
+        selected_ids = {mapping['tests', key] for key in definition.tests if tests[key].samples[0] == sample_key}
+        selected = [item for item in requested['items'] if item['test_id'] in selected_ids]
+        if not selected:
+            continue
+        registered = specimen(api, requested, sample_type_id=mapping['samples', sample_key], order_item_ids=[i['order_item_id'] for i in selected])
+        sample_names.append(registered['sample_type']['sample_name'])
+        sid = registered['specimen_id']
+        assert transition(api, 'collect', sid).status_code == 200
+        assert transition(api, 'receive', sid).status_code == 200
+        for item in selected:
+            result_path = f'/lab-order-items/{item["order_item_id"]}/result'
+            assert call(api, 'POST', result_path, {'result_value': 'not-numeric', 'specimen_id': sid}).status_code == 422
+            result = create(api, result_path, {'result_value': '5', 'specimen_id': sid})
+            assert call(api, 'POST', result_path, {'result_value': '6', 'specimen_id': sid}).status_code == 409
+            assert advance(api, 'verify', result['result_item_id']).status_code == 409
+            assert advance(api, 'review', result['result_item_id']).status_code == 200
+            assert advance(api, 'verify', result['result_item_id']).status_code == 200
+    generated = create(api, f'/lab-orders/{requested["order_id"]}/reports', {})
+    assert len(generated['result_snapshots']) == len(definition.tests)
+    assigned(api)
+    assert sign(api).status_code == 200 and approve(api).status_code == 200
+    for sample_key in samples:
+        assert call(api, 'PATCH', f'/lab/sample-types/{mapping["samples", sample_key]}', {'sample_name': 'CHANGED AFTER SNAPSHOT'}).status_code == 200
+    released = release(api)
+    data = call(api, 'GET', f'/reports/{released["report_id"]}/pdf').content
+    text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(data)).pages)
+    for expected in [definition.name, 'Sample type:', *sample_names, *[test.name for test in members]]:
+        assert expected in text
+    assert text.count('Sample type:') == len(sample_names)
+    assert 'CHANGED AFTER SNAPSHOT' not in text

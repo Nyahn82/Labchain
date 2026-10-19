@@ -61,7 +61,7 @@ describe("staff patient activation", () => {
     expect(storage).not.toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Done — hide token" }));
     expect(screen.queryByDisplayValue(issued.activation_token)).not.toBeInTheDocument();
-    expect(await screen.findByText("Awaiting activation")).toBeVisible();
+    expect(await screen.findByText("Awaiting activation", { selector: ".activation-badge" })).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Reissue activation invitation" }));
     expect(screen.queryByDisplayValue(issued.activation_token)).not.toBeInTheDocument();
     expect(screen.getByText(/Any previous unused invitation/)).toBeVisible();
@@ -121,7 +121,7 @@ describe("staff patient activation", () => {
     expect(await screen.findByText("Awaiting activation")).toBeVisible();
     status = "ACTIVATED";
     await userEvent.click(screen.getByRole("button", { name: "Refresh patients" }));
-    expect(await screen.findByText("Portal activated")).toBeVisible();
+    expect(await screen.findByText("Portal activated", { selector: ".activation-badge" })).toBeVisible();
     expect(screen.getByText(patient.patient_code)).toBeVisible();
     await userEvent.click(screen.getByRole("link", { name: "Open" }));
     expect(await screen.findByRole("heading", { name: "Patient activation" })).toBeVisible();

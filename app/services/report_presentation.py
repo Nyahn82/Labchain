@@ -5,7 +5,7 @@ from io import BytesIO
 from PIL import Image
 
 from app.config import settings
-from app.models import LabDepartment, OrderPanel, Specimen, Staff, TestCatalog, TestPanel
+from app.models import LabDepartment, OrderPanel, SampleType, Specimen, Staff, TestCatalog, TestPanel
 from app.schemas.reporting import FacilityResponse, TemplateResponse
 from app.services.laboratory_service import related
 from app.services.report_formatting import printable_name
@@ -47,6 +47,7 @@ def capture_presentation(db, order, sources, facility, template):
             'methodology': test.methodology, 'remarks': result.remarks,
             'verified_at': stamp(result.verified_at),
             'specimen_code': specimen.specimen_code if specimen else None,
+            'sample_type': related(db, SampleType, specimen.sample_type_id).sample_name if specimen else None,
             'collected_at': stamp(specimen.collected_at) if specimen else None,
             'received_at': stamp(specimen.received_at) if specimen else None,
         }

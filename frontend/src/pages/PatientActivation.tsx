@@ -5,6 +5,7 @@ import { useResource } from "../api/useResource";
 import { useAuth } from "../auth/Auth";
 import { Dialog, State } from "../components/UI";
 import { timestamp } from "../utils/display";
+import "../styles/activation.css";
 
 export const activationLabels: Record<string, string> = {
   NOT_ACTIVATED: "No portal account",
@@ -15,6 +16,13 @@ export const activationLabels: Record<string, string> = {
   REVIEW_REQUIRED: "Account review required",
 };
 export const activationLabel = (value: unknown) => activationLabels[String(value)] || "Status unavailable";
+export function ActivationBadge({ value }: { value: unknown }) {
+  const state = String(value);
+  const tone = state === "ACTIVATED" ? "success" : state === "REVIEW_REQUIRED" ? "danger" :
+    ["TOKEN_EXPIRED", "TOKEN_REVOKED"].includes(state) ? "warning" : "neutral";
+  const icon = state === "ACTIVATED" ? "✓" : state === "REVIEW_REQUIRED" ? "⚠" : "●";
+  return <span className={`activation-badge activation-${tone}`}><span aria-hidden="true">{icon} </span>{activationLabel(value)}</span>;
+}
 const descriptions: Record<string, string> = {
   NOT_ACTIVATED: "No portal account or invitation is recorded. Verify the patient's identity before issuing an invitation.",
   TOKEN_ACTIVE: "An invitation is available for this patient to activate their portal account. Reissuing invalidates the previous unused invitation.",
@@ -25,7 +33,7 @@ const descriptions: Record<string, string> = {
 };
 type Issued = { activation_token: string; expires_at: string; patient_code: string };
 
-export function PatientActivation({ id }: { id: string }) {
+export function PatientActivation({ id, onChanged }: { id: string; onChanged?: () => void }) {
   const { can } = useAuth();
   const state = useResource<{ status: string }>(`/patients/${id}/activation-status`);
   const [open, setOpen] = useState(false);
@@ -38,14 +46,14 @@ export function PatientActivation({ id }: { id: string }) {
     </div>
     <State loading={state.loading} error={state.error} />
     {!state.loading && !state.error && <>
-      <p role="status"><strong>{activationLabel(status)}</strong></p>
+      <p role={status === "REVIEW_REQUIRED" ? "alert" : "status"}><ActivationBadge value={status} /></p>
       {status && <p>{descriptions[status] || "Refresh to retrieve the current activation state."}</p>}
       {can("PATIENT_ACCOUNT_ACTIVATE") && issuable && <button className="primary" onClick={() => setOpen(true)}>
         {status === "NOT_ACTIVATED" ? "Issue activation invitation" : "Reissue activation invitation"}
       </button>}
     </>}
     {open && can("PATIENT_ACCOUNT_ACTIVATE") && <Invitation id={id} reissue={status !== "NOT_ACTIVATED"}
-      onClose={() => { setOpen(false); state.reload(); }} onIssued={state.reload} />}
+      onClose={() => { setOpen(false); state.reload(); onChanged?.(); }} onIssued={state.reload} />}
   </section>;
 }
 

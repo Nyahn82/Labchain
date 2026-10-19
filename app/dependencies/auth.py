@@ -81,6 +81,8 @@ def get_current_session(
             from app.services.mfa_service import configuration, enabled
             reason = 'MFA_REQUIRED' if enabled(configuration(db, session.user_id, lock=False)) else 'MFA_ENROLLMENT_REQUIRED'
             raise HTTPException(403, reason)
+    from app.services.activity_observation_service import observe_authenticated_activity
+    observe_authenticated_activity(db, session, utc_now())
     return session
 
 

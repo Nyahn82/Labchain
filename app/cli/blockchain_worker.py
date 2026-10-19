@@ -13,6 +13,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.worker_config import WorkerSettings, worker_sessions
 from app.services.blockchain_adapter_service import DeliveryError, GatewayAdapter, WorkerOptions
 from app.services.blockchain_delivery_service import DeliveryWorker
+from app.services.activity_observation_service import record_worker
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,7 @@ def main(argv=None):
     stopping = threading.Event()
     previous = {}
     sessions = None
+    final_status = 'UNHEALTHY'
     try:
         settings = WorkerSettings()
         if not settings.blockchain_delivery_enabled:
@@ -63,9 +65,11 @@ def main(argv=None):
             previous[signum] = signal.signal(signum, lambda *_: stopping.set())
         while not stopping.is_set():
             worker.cycle(stopping)
+            record_worker(sessions)
             if args.once:
                 break
             stopping.wait(options.poll)
+        final_status = 'STOPPED'
         return 0
     except ValidationError:
         logger.error('blockchain_worker state=STOPPED error_code=CONFIG_INVALID')
@@ -83,6 +87,10 @@ def main(argv=None):
         for signum, handler in previous.items():
             signal.signal(signum, handler)
         if sessions is not None:
+            try:
+                record_worker(sessions, final_status)
+            except Exception:
+                logger.error('blockchain_worker observation=UNAVAILABLE')
             sessions.kw['bind'].dispose()
 
 

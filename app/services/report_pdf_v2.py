@@ -1,5 +1,6 @@
 """Print-friendly PDF v2, exclusively from captured report presentation and snapshots."""
 import base64
+from datetime import datetime, timezone
 from io import BytesIO
 from xml.sax.saxutils import escape
 
@@ -27,7 +28,12 @@ def render(report, verification_url, released_at, context):
         return Paragraph(escape(str(value if value is not None else '—')).replace('\n', '<br/>'), style)
 
     def date(value):
-        return str(value).replace('T', ' ') + ' UTC' if value else '—'
+        if not value:
+            return '—'
+        parsed = datetime.fromisoformat(str(value))
+        if parsed.tzinfo is not None:
+            parsed = parsed.astimezone(timezone.utc)
+        return parsed.strftime('%d %b %Y %H:%M UTC')
 
     facility = context['facility']
     template = context.get('template') or {}
@@ -77,28 +83,40 @@ def render(report, verification_url, released_at, context):
             ('VALIGN', (0, 0), (-1, -1), 'TOP'), ('LINEBELOW', (0, 1), (-1, 1), .7, ink),
             ('TOPPADDING', (0, 0), (-1, -1), 6), ('BOTTOMPADDING', (0, 0), (-1, -1), 6)]
         details = []
+        specimens = {}
+        for line, extra in lines:
+            if extra.get('specimen_code'):
+                specimen = tuple(extra.get(field) for field in ('specimen_code', 'sample_type', 'collected_at', 'received_at'))
+                specimens.setdefault(specimen, []).append(line.test_name_snapshot)
+        specimen_details = []
+        for (code, sample, collected, received), test_names in specimens.items():
+            notes = [f'Specimen: {code}']
+            if sample: notes.append(f'Sample type: {sample}')
+            if collected: notes.append(f'Collected: {date(collected)}')
+            if received: notes.append(f'Received: {date(received)}')
+            if len(test_names) != len(lines): notes.append('Tests: ' + '; '.join(test_names))
+            specimen_details += [p('Specimen details', note_heading), p('\n'.join(notes), small)]
         for line, extra in lines:
             abnormal = line.flag_snapshot not in (None, '', 'NORMAL')
             rows.append([p(line.test_name_snapshot), p(line.flag_snapshot or '', bold if abnormal else body),
                 p(line.result_value_snapshot, abnormal_style if abnormal else result_style),
                 p(line.unit_snapshot or ''), p(line.reference_range_snapshot or '')])
             notes = []
-            for field, title in [('methodology', 'Method'), ('remarks', 'Remarks'),
-                                 ('specimen_code', 'Specimen')]:
+            for field, title in [('methodology', 'Method'), ('remarks', 'Remarks')]:
                 if extra.get(field): notes.append(f'{title}: {extra[field]}')
-            for field, title in [('collected_at', 'Collected'), ('received_at', 'Received'), ('verified_at', 'Verified')]:
+            for field, title in [('verified_at', 'Verified')]:
                 if extra.get(field): notes.append(f'{title}: {date(extra[field])}')
             if notes:
-                details += [p(line.test_name_snapshot + ' — specimen and test details', note_heading), p('\n'.join(notes), small)]
+                details += [p(line.test_name_snapshot + ' — test details', note_heading), p('\n'.join(notes), small)]
             commands.append(('LINEBELOW', (0, len(rows)-1), (-1, len(rows)-1), .25, colors.HexColor('#bcc6cc')))
-        table = LongTable(rows, colWidths=[width*.30, width*.13, width*.18, width*.12, width*.27],
+        table = LongTable(rows, colWidths=[width*.30, width*.13, width*.18, width*.15, width*.24],
                           repeatRows=2, splitInRow=1, hAlign='LEFT')
         table.setStyle(TableStyle(commands))
-        story += [table, Spacer(1, 10), *details, Spacer(1, 6)]
+        story += [table, Spacer(1, 10), *specimen_details, *details, Spacer(1, 6)]
     story.append(p('Flags are supplied by the laboratory workflow. Bold flags and results identify recorded abnormal findings.', small))
     if report.remarks: story += [p('Report remarks', bold), p(report.remarks)]
     if template.get('clinical_note'): story.append(p(template['clinical_note']))
-    story += [Spacer(1, 12), p('Authorized signatories', bold)]
+    story += [Spacer(1, 12), p('Authorized signatories', note_heading)]
     for assignment in report.signatories:
         captured = context['signatories'].get(str(assignment.report_signatory_id))
         if assignment.signed_at is None or captured is None:
@@ -121,6 +139,8 @@ def render(report, verification_url, released_at, context):
         canvas.setFont('RHU', 7)
         canvas.drawString(50, A4[1]-26, f'{report.report_code} | Version {report.version_no}')
         canvas.drawRightString(A4[0]-50, A4[1]-26, 'LABORATORY REPORT')
+        if doc.page > 1:
+            canvas.drawString(50, A4[1]-39, f'Patient code: {patient.patient_code}')
         canvas.setStrokeColor(colors.HexColor('#bcc6cc'))
         canvas.line(50, 39, A4[0]-50, 39)
         canvas.drawString(50, 27, f'PDF v2 | Version {report.version_no} | Verify authenticity using the QR')
@@ -128,6 +148,6 @@ def render(report, verification_url, released_at, context):
         canvas.restoreState()
 
     doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=44, rightMargin=44,
-        topMargin=44, bottomMargin=52, title=f'Laboratory report {report.report_code}', author=facility['facility_name'])
+        topMargin=54, bottomMargin=52, title=f'Laboratory report {report.report_code}', author=facility['facility_name'])
     doc.build(story, onFirstPage=furniture, onLaterPages=furniture)
     return output.getvalue()

@@ -4,11 +4,12 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.api.laboratory import Paging
 from app.api.private import PrivateRoute
 from app.dependencies.auth import get_db, get_request_ip, require_permission
-from app.models import UserAccount
+from app.models import UserAccount, LabResultItem, LabOrderItem
 from app.schemas import results as s
 from app.schemas.identity import Identifier, Page
 from app.services import result_service as service
@@ -24,9 +25,17 @@ def create_result(order_item_id: Identifier, payload: s.ResultCreate, request: R
     return service.create_result(db, order_item_id, payload, actor.user_id, get_request_ip(request))
 
 
-@router.get('/lab-orders/{order_id}/results', response_model=Page[s.ResultResponse])
+class ResultPage(Page[s.ResultResponse]):
+    occupied_item_ids: list[int]
+
+
+@router.get('/lab-orders/{order_id}/results', response_model=ResultPage)
 def list_results(order_id: Identifier, db: Db, actor: Reader, paging: Paging):
-    return service.list_results(db, order_id, **paging)
+    result = service.list_results(db, order_id, **paging)
+    result['occupied_item_ids'] = list(db.scalars(select(LabResultItem.order_item_id)
+        .join(LabOrderItem, LabOrderItem.order_item_id == LabResultItem.order_item_id)
+        .where(LabOrderItem.order_id == order_id).distinct()))
+    return result
 
 
 @router.get('/results/{result_item_id}', response_model=s.ResultResponse)

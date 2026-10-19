@@ -16,6 +16,9 @@ def prepare(monkeypatch, enabled=True):
     monkeypatch.setattr(cli, 'worker_sessions', lambda _: sessions)
     monkeypatch.setattr(cli, 'reject_docker_privileges', lambda: None)
     monkeypatch.setattr(cli, 'GatewayAdapter', lambda _: object())
+    observation = MagicMock()
+    monkeypatch.setattr(cli, 'record_worker', observation)
+    return observation
 
 
 def test_disabled_never_opens_worker_or_requires_credentials(monkeypatch):
@@ -25,10 +28,11 @@ def test_disabled_never_opens_worker_or_requires_credentials(monkeypatch):
 
 
 def test_once_single_cycle(monkeypatch):
-    prepare(monkeypatch)
+    observation = prepare(monkeypatch)
     calls = []
     monkeypatch.setattr(cli, 'DeliveryWorker', lambda *a: SimpleNamespace(cycle=lambda stop: calls.append(stop.is_set())))
     assert cli.main(['--once']) == 0 and calls == [False]
+    assert [call.args[1:] for call in observation.call_args_list] == [(), ('STOPPED',)]
 
 
 def test_continuous_sigterm_finishes_cycle_and_stops(monkeypatch):
@@ -48,12 +52,13 @@ def test_continuous_sigterm_finishes_cycle_and_stops(monkeypatch):
 @pytest.mark.parametrize('error,code', [(SQLAlchemyError('SYNTHETIC_PRIVATE SQL password'), 'DATABASE_UNAVAILABLE'),
     (DeliveryError('CONFIG_INVALID'), 'CONFIG_INVALID'), (RuntimeError('SYNTHETIC_PRIVATE'), 'INTERNAL_ERROR')])
 def test_cli_safe_errors(monkeypatch, caplog, error, code):
-    prepare(monkeypatch)
+    observation = prepare(monkeypatch)
     def fail(*args):
         raise error
     monkeypatch.setattr(cli, 'DeliveryWorker', fail)
     assert cli.main(['--once']) == 1
     assert code in caplog.text and 'SYNTHETIC_PRIVATE' not in caplog.text
+    assert observation.call_args.args[1] == 'UNHEALTHY'
 
 
 def test_no_docker_group_or_root_privileges(monkeypatch):

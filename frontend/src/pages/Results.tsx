@@ -24,7 +24,7 @@ export function Results({
   const { can } = useAuth();
   const [page, setPage] = useState(1);
   const [edit, setEdit] = useState<{ item: Row; result?: Result }>();
-  const state = useResource<Page<Result>>(
+  const state = useResource<Page<Result> & { occupied_item_ids: number[] }>(
     `/lab-orders/${order.order_id}/results?page=${page}&page_size=20`,
   );
   const done = () => {
@@ -57,7 +57,7 @@ export function Results({
                     return range
                       ? String(
                           range.qualitative_normal ||
-                            `${range.normal_low ?? "—"} – ${range.normal_high ?? "—"} ${range.unit || ""}`,
+                            `${range.normal_low == null ? (range.normal_high == null ? "Not configured" : `≤ ${range.normal_high}`) : range.normal_high == null ? `≥ ${range.normal_low}` : `${range.normal_low} – ${range.normal_high}`} ${range.unit || ""}`,
                         )
                       : "No matching range";
                   },
@@ -102,15 +102,14 @@ export function Results({
               columns={[
                 { key: "test.test_name", label: "Test" },
                 { key: "order_item_id", label: "Item" },
-                { key: "order_panel_id", label: "Panel request" },
+                { key: "order_panel_id", label: "Panel request", render: item => item.order_panel_id ? `${String((order.panels.find(p => p.order_panel_id === item.order_panel_id)?.panel as Row)?.panel_name || "Panel")} (#${item.order_panel_id})` : "Individual test" },
                 { key: "status", label: "Status", badge: true },
               ]}
               actions={(item) => (
                 <button
                   disabled={
-                    !!state.data?.items.some(
-                      (r) => r.order_item_id === item.order_item_id,
-                    )
+                    state.loading || !!state.error || !state.data?.occupied_item_ids ||
+                    state.data.occupied_item_ids.includes(Number(item.order_item_id))
                   }
                   onClick={() => setEdit({ item })}
                 >
@@ -118,6 +117,8 @@ export function Results({
                 </button>
               )}
             />
+            {(!state.data?.occupied_item_ids || state.error) && <p>Result availability could not be confirmed. Refresh the order before entering another result.</p>}
+            {!!state.data?.occupied_item_ids?.length && <p>Items with existing results are unavailable for new entry. Browse the results pages to edit their drafts.</p>}
           </section>
         )}
       {edit && (

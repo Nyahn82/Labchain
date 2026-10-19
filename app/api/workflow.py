@@ -15,6 +15,7 @@ from app.schemas.identity import Identifier, Page
 from app.services import workflow_service as service
 from app.services.identity_service import get_record, list_records
 from app.services.laboratory_service import save_record
+from app.services.rbac_service import get_user_permissions, get_user_roles
 
 router = APIRouter(route_class=PrivateRoute)
 Db = Annotated[Session, Depends(get_db)]
@@ -107,8 +108,12 @@ def create_reason(payload: s.ReasonCreate, request: Request, db: Db, actor: Reas
 
 
 @router.get('/lab/rejection-reasons', response_model=Page[s.ReasonResponse], tags=['Specimens'])
-def list_reasons(db: Db, actor: ReasonManager, paging: Paging,
+def list_reasons(db: Db, actor: Annotated[UserAccount, Depends(require_permission('REJECTION_REASON_MANAGE', 'SPECIMEN_REJECT'))], paging: Paging,
                  search: str | None = Query(None, max_length=200), is_active: bool | None = None):
+    manager = ('SYSTEM_ADMIN' in get_user_roles(db, actor.user_id) or
+               'REJECTION_REASON_MANAGE' in get_user_permissions(db, actor.user_id))
+    if not manager:
+        is_active = True
     return list_records(db, RejectionReason, **paging, search=search,
                         search_fields=('reason_code', 'reason_name'), filters={'is_active': is_active})
 

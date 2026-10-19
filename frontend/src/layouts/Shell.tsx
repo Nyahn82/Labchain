@@ -57,6 +57,7 @@ export const navigation = [
     permission: "REPORT_READ",
   },
   { to: "/administration/analytics", label: "Analytics", icon: Activity, permission: "ANALYTICS_VIEW" },
+  { to: "/administration/report-setup", label: "Report setup", icon: FileText, permission: "FACILITY_PROFILE_READ" },
   { to: "/administration/activity", label: "Authentication Activity", icon: Shield, permission: "AUTH_ACTIVITY_VIEW" },
   {
     to: "/administration/blockchain",
@@ -124,6 +125,7 @@ export function Shell() {
   const visible = (n: (typeof navigation)[number]) =>
     !n.permission ||
     can(n.permission) ||
+    (n.to === "/administration/report-setup" && (can("REPORT_TEMPLATE_READ") || can("SIGNATORY_READ"))) ||
     (n.to === "/administration/activity" && can("SESSION_MANAGE")) ||
     (n.to === "/administration" && can("ROLE_READ")) ||
     (n.to === "/laboratory" && can("REJECTION_REASON_MANAGE"));
