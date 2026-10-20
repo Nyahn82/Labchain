@@ -1,6 +1,6 @@
 # QR, blockchain and report authenticity completion
 
-Review date: 20 October 2026 (Asia/Singapore).
+Completion date: 21 October 2026 (Asia/Singapore).
 Development baseline: `95a185cbd9212fe284b8fd6e6780ccd7727ff4ae`.
 Database baseline and target: `20261019_01`; **no database migration**.
 
@@ -121,7 +121,8 @@ queried independently of MySQL, not independently of the existing Fabric trust d
 | New synthetic security suite | 23 passed: `tests/test_public_authenticity.py`; `/tmp/rhu-qr-backend-final.log` |
 | Release, outbox/status, monitor, patient privacy and historical PDF compatibility | 197 cases: 196 initially passed; one obsolete REVOKED expectation was corrected to SUPERSEDED and its complete scenario passed in the next run. `/tmp/rhu-qr-compatibility.log` |
 | Corrected portal lifecycle + hosting | 8 passed, including the corrected case and seven hosting tests. `/tmp/rhu-qr-corrections.log` |
-| Distinct backend cases | 227 across these runs, excluding the rerun |
+| MySQL timestamp compatibility and focused authenticity rerun | 35 passed, including 12 new rounding/binding cases; `timestamp-regression.log` in the protected deployment evidence directory. |
+| Distinct backend cases | 239 across these runs, excluding reruns |
 | Frontend verification, blockchain presentation and patient reports | 77 passed across three files. `/tmp/rhu-qr-frontend.log` |
 | Gateway protocol/monitor | 58 passed, including validated issuer projection and wrong-MSP rejection. `/tmp/rhu-qr-gateway-final.log` |
 | TypeScript/Vite | Passed; output staged outside the running asset directory in `/tmp/rhu-qr-build`. `/tmp/rhu-qr-build.log` |
@@ -147,17 +148,66 @@ versus DATETIME(6) precision difference. All artifact, anchor, organization and
 committed transaction checks agreed. Cutover remained paused while the comparison
 was corrected and focused precision/security tests were rerun.
 
-Prepared for the authorized coordinated update. Live results and the deployed code commit
-will be recorded after the cutover; no deployment success is claimed in this preparation
-record. Required operations: fresh protected consistent backup and isolated restore;
-maintenance and API/worker exclusion; deploy matched frontend/backend; restart the local
-read-only monitor for its extended projection; verify existing stored PDF and real ledger,
-raw uploaded match/mismatch, HTTPS and authorization boundaries; restore traffic and prior
-restart policies. Database revision must remain `20261019_01` throughout.
+**Deployment and live HTTP/Fabric checks: SUCCESS.** Browser/camera acceptance remains
+pending. Code commit `5832428cca1daa9793accaf727be7684fd34e6f7` is deployed at
+[https://labchain.online](https://labchain.online/). This includes the initial feature
+commit `af4af4591ca414d23e2441a72900d3e260a55313` and the tested timestamp correction.
+The subsequent documentation-only commit records this evidence without changing running
+code. Both implementation commits were pushed normally to `origin/main`.
 
-No clinical records, reports, signatures, approvals, invitations, catalog imports or
-Fabric write submissions should be created as smoke-test fixtures. Real-site upload checks
-use the existing authorized stored artifact and altered bytes only in memory.
+Traffic resumed at **21 October 2026, 00:46:14 Asia/Singapore**. Final evidence was
+captured at 00:48:20. The database remains `rhu_labchain`, revision `20261019_01`;
+no migration, database reset, clinical fixture or Fabric submission was performed.
+
+| Live check | Result |
+| --- | --- |
+| Public HTTPS, API health/readiness | HTTP 200; configured application database connected |
+| Frontend build/deployment | `npm ci` and TypeScript/Vite passed; public index, JS and CSS SHA-256 match staged artifacts; old hashed assets retained |
+| JS / CSS | `index-mk9inYl_.js` / `index-DxwGaGdR.css` |
+| Existing QR URL | JSON REGISTERED / NOT_COMPARED; HTML request receives 303 to public SPA |
+| Existing official PDF upload | MATCH; stored artifact MATCH; real independent Fabric VERIFIED |
+| Altered in-memory PDF upload | MISMATCH while underlying registration and Fabric evidence remain valid |
+| Larger upload path | More than 1 MiB streamed through Nginx and compared; configured 10 MiB edge cap rejects oversize with 413 |
+| Wrong envelope / invalid token | 415 / NOT_FOUND |
+| Public privacy and caching | Response allowlist passed; no-store present; anonymous staff/patient PDF requests denied |
+| Verification access logs | Synthetic probe token absent from API journal and Nginx access/error logs |
+| API / worker / monitor | All active; Restart=on-failure preserved (5s / 10s / 10s); zero automatic restart loops |
+| Worker | HEALTHY with advancing persisted heartbeat |
+| Fabric | Four peers and orderer ONLINE, height 7; two CONFIRMED outbox events unchanged |
+| Historical data | All 53 non-observation tables retain exact row hashes; only worker service_observation changes; existing private PDF bytes/hash unchanged |
+| Historical issuer | Existing report is LEGACY_UNAVAILABLE; no fabricated/backfilled snapshot and no full document-success badge |
+
+The live altered-file check proves exact-byte mismatch without changing a stored record.
+The synthetic security test separately proves modification of a laboratory result while
+preserving the genuine QR image. Neither operation invented live clinical content.
+
+Only a scoped Nginx `/api/v1/verify/` location was added for the 10 MiB cap, unbuffered
+request handling and suppressed capability-path logs. Existing HTTPS configuration,
+certificates, other routes and web-root permissions were retained. The API, delivery
+worker and inactive legacy API were fenced during backup. Their prior service policies,
+database account availability and event scheduler state were restored. Only the local
+read-only monitor was restarted; Fabric peers, channels, wallets, certificates and ledger
+storage were untouched.
+
+### Recovery and durable evidence
+
+- Backup: `/var/backups/rhu-labchain/20261020-af4af45/recovery.tar.enc`.
+- SHA-256: `73d5594c66b16b3bad942d925dd6becded954e784648e735d72632d88656f5c9`.
+- Root-only key reference: `/var/backups/rhu-labchain-keys/20261020-af4af45.key`.
+- Recovery instructions and protected evidence: `RECOVERY.txt`, `backup-verified.json`,
+  `final-evidence.json`, sanitized test/build logs and HTTP/asset evidence within that
+  backup directory.
+- Readable sanitized deployment report:
+  `/var/log/rhu-labchain-deployments/20261020-5832428.md`.
+
+A fresh consistent dump was restored to a disposable, isolated, socket-only MySQL
+instance. All 54 table hashes matched; the stored PDF, frontend and protected configuration
+checks passed. Database import took 2.25 seconds (not a full operational recovery-time
+claim). The encrypted recovery bundle passed decryption checksum verification. It includes
+previous source/dependencies/assets and configuration; the final corrected source archive
+is retained beside it. Disposable restored copies were removed only after verification.
+Recovery requires fencing and reconciliation of any post-backup writes; no automatic
+rollback or destructive restore was performed.
 
 ## Remaining limits
 
