@@ -97,13 +97,74 @@ Checked-in reproducibility tools: `tests/browser/serve_qr_fixture.py` only accep
 `tests/browser/qr-scanning.mjs` exercises the built frontend. Export with
 `RHU_SCANNER_EXPORT_DIR` and the optional fixture test in `tests/test_qr_scanning.py`.
 Browser tools, local-only TLS certificate, build output and fixture files belong outside
-Git and the public web root. Live deployment results are recorded below after cutover. Synthetic Fabric doubles are not evidence
+Git and the public web root. Live deployment results are recorded below. Synthetic Fabric doubles are not evidence
 of live Fabric; live public-site checks are reported separately.
 
 No database migration is required. Deployment uses the established coordinated writer
 fence, fresh encrypted database/files backup, isolated restore verification, matched
 frontend/backend activation and controlled worker/traffic resumption. Fabric peers,
 identities, channels and ledger storage are not restarted or altered.
+
+## Deployed website and real ledger evidence
+
+**Deployment: SUCCESS. Physical phone and owner's live staff acceptance: pending.**
+Application code `1a493ec055da8e728e5857f703ea2f0421ebc510` is deployed at
+[labchain.online](https://labchain.online/). Public scanner:
+[Verify](https://labchain.online/#/verify). Personnel scanner:
+[Scan and view official report](https://labchain.online/#/reports/scan).
+Implementation was committed and pushed normally to `main`; the documentation follow-up
+records the completed deployment without changing running code.
+
+Traffic resumed **21 October 2026, 07:10:34 Asia/Singapore**. At 07:11:47,
+API/worker/monitor were active, with original on-failure restart policies (5s/10s/10s),
+zero automatic restarts, and an advancing HEALTHY worker heartbeat. The monitor and
+Fabric infrastructure were not restarted. Database identity/revision remained
+`rhu_labchain` / `20261019_01`; no migration or permission bootstrap was performed.
+
+| Actual live check | Result |
+| --- | --- |
+| Chromium camera pipeline using controlled video of the existing historical QR | PASS: actual ZXing decode, exact token/report, live Fabric evidence, stream stopped |
+| Full historical PDF page rasterized at 150 DPI and selected as a QR image | PASS: actual QR decoded to the correct public report/version; image stayed local |
+| QR compatibility | Existing API URL returns HTML 303 to the correct SPA route and JSON evidence to API clients |
+| Live public privacy | No private PDF or clinical data in the public workflow; anonymous personnel resolution and private PDF routes denied |
+| Live public PDF comparison | Official bytes MATCH; altered bytes MISMATCH; stored artifact MATCH; independently queried Fabric VERIFIED |
+| Invalid/external QR and manual fallback | External URL rejected without navigation; malformed/unknown token neutral NOT_FOUND |
+| Frontend | Index, main JS, decoder JS and CSS hashes match the staged build; old hashed assets retained |
+| Assets | `index-B7hp_rbG.js`, `esm-CuJYLdlD.js`, `index-0O6uKZgj.css` |
+| HTTPS/API | Public health and database readiness HTTP 200 |
+| Layout | Real Chromium at 390px and 1280px, no horizontal overflow; desktop original PDF rendering visually inspected using synthetic authorized data |
+| Fabric/outbox | Four peers and orderer ONLINE, height 7; both existing outbox events CONFIRMED and unchanged |
+| Data preservation | All 53 non-observation tables retain exact predeployment row hashes; only worker heartbeat changes; original PDF bytes/hash preserved |
+| Historical issuer | Explicit LEGACY_UNAVAILABLE for the existing old report; no invented snapshot or full-success badge |
+| Edge safeguards | Upload over 1 MiB streams successfully, 10 MiB cap returns 413; verification probe token absent from API/Nginx access logs |
+
+Live browser evidence is separate from the synthetic staff/Fabric-double evidence.
+The owner confirmed availability to perform the real staff and physical phone walkthrough;
+results are requested and remain unconfirmed in this record. Automated video input and
+viewport resizing do not certify Android, iPhone, Safari, optics or printed-paper quality.
+
+### Backup and recovery
+
+Fresh protected recovery bundle:
+`/var/backups/rhu-labchain/20261021-1a493ec/recovery.tar.enc`.
+SHA-256: `4d77af5e24ee4d6c29f3e8fae47ccf65f41302314ee793ad3e74bc706bb3d527`.
+Separate root-only key reference:
+`/var/backups/rhu-labchain-keys/20261021-1a493ec.key`.
+
+All 54 tables were restored to an isolated socket-only disposable MySQL instance;
+exact row hashes, private report hashes, prior frontend and protected configuration
+matched. Database import took 1.98 seconds, not a full operational recovery-time claim.
+Encryption/decryption checksum verification passed. Recovery instructions, source/artifact
+archives and sanitized evidence are retained in the protected backup directory. Recovery
+requires writer fencing and reconciliation of any post-backup writes; no destructive
+restore or ledger reset was performed. Nginx configuration and TLS were unchanged.
+
+Sanitized durable deployment report:
+`/var/log/rhu-labchain-deployments/20261021-1a493ec.md`.
+Protected evidence includes `final-evidence.json`, `public-acceptance.json`,
+`https-assets.json`, `synthetic-browser-evidence.json`, `live-browser-evidence.json`,
+and focused test/build logs. Test fixture corrections and harness limitations are
+retained honestly rather than represented as live clinical or physical-camera proof.
 
 ## Owner's physical and live-staff acceptance
 
