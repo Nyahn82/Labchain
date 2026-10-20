@@ -56,7 +56,7 @@ function ReportList() {
   );
   return (
     <>
-      <Title title="Laboratory reports" />
+      <Title title="Laboratory reports"><Link to="/reports/scan">Scan QR and view official report</Link></Title>
       <section className="card">
         <div className="toolbar">
           <label>Signing stage<select value={stage} onChange={e => { setStage(e.target.value); setPage(1); }}>

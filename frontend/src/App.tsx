@@ -21,7 +21,7 @@ import {
 } from "./pages/patient/Portal";
 import { PatientReport } from "./pages/patient/PatientReport";
 import { MfaSetup, PatientSecurityPage } from "./pages/patient/Security";
-import { Verification } from "./pages/Verification";
+import { Verification, StaffVerification } from "./pages/Verification";
 import { BlockchainMonitor } from "./pages/BlockchainMonitor";
 import { AuthenticationActivity } from "./pages/AuthActivity";
 import { Analytics } from "./pages/Analytics";
@@ -105,6 +105,8 @@ export function AppRoutes() {
           <Route path="specimens/:id" element={<SpecimenDetail />} />
           <Route path="results" element={<Orders mode="results" />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="reports/scan" element={<StaffVerification />} />
+          <Route path="reports/scan/:token" element={<StaffVerification />} />
           <Route path="reports/:id" element={<ReportDetail />} />
           <Route path="administration" element={<Administration />} />
           <Route path="administration/report-setup" element={<ReportSetup />} />

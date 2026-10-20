@@ -1,0 +1,88 @@
+// Real Chromium/ZXing decoding. Camera input is a controlled video, NOT a physical phone.
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
+import { pathToFileURL } from 'node:url';
+const dir=process.env.RHU_BROWSER_TOOLS;
+assert(dir?.startsWith('/tmp/rhu-scan-'));
+const {chromium}=await import(pathToFileURL(dir+'/node_modules/playwright/index.mjs').href);
+const live=process.argv.includes('--live');
+const base=live?'https://labchain.online':'https://localhost:5443';
+const fixture=JSON.parse(fs.readFileSync(dir+(live?'/historical.json':'/fixture.json')));
+const browser=await chromium.launch({headless:true,channel:'chromium',args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--use-file-for-fake-video-capture='+dir+(live?'/historical.y4m':'/synthetic.y4m')]});
+const evidence={mode:live?'live public site':'isolated synthetic backend; Fabric double',physical_camera:false,checks:[]};
+const context=await browser.newContext({ignoreHTTPSErrors:!live,viewport:{width:390,height:844},permissions:['camera']});
+await context.addInitScript(()=>{
+  const original=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
+  window.__cameraTracks=[];
+  navigator.mediaDevices.getUserMedia=async(...args)=>{try { const stream=await original(...args);window.__cameraTracks.push(...stream.getTracks());return stream; } catch(e) {window.__cameraError={name:e.name,message:e.message};throw e;}};
+});
+const page=await context.newPage();
+const browserErrors=[]; page.on('pageerror',e=>browserErrors.push(e.message)); page.on('console',m=>{if(m.type()==='error')browserErrors.push(m.text());});
+try {
+  await page.goto(base+'/#/verify');
+  await page.getByRole('button',{name:'Scan QR Code',exact:true}).waitFor();
+  await page.getByRole('button',{name:'Scan QR Code',exact:true}).click();
+  await page.getByRole('heading',{name:'Registered report',exact:true}).waitFor({timeout:30000});
+  assert(page.url().endsWith('/verify/'+fixture.token));
+  assert(await page.getByText('Independently confirmed on Fabric',{exact:true}).isVisible());
+  assert(await page.getByRole('heading',{name:'Registered / document not yet compared'}).isVisible());
+  assert.equal(await page.locator('iframe').count(),0);
+  assert(await page.evaluate(()=>window.__cameraTracks.length>0 && window.__cameraTracks.every(t=>t.readyState==='ended')));
+  evidence.checks.push('real ZXing camera-video decode; correct token; independent evidence; tracks stopped; no public PDF');
+  await page.getByLabel('Choose a QR image').setInputFiles(dir+'/unrelated.png');
+  await page.getByText('This QR is not a supported RHU LabChain report.',{exact:true}).waitFor();
+  assert(page.url().startsWith(base)); evidence.checks.push('unrelated image QR rejected without external navigation');
+  await page.getByLabel('Choose a QR image').setInputFiles(dir+(live?'/historical-page.png':'/synthetic-qr.png'));
+  await page.getByText('Reading QR image…').waitFor({state:'hidden'});
+  await page.getByRole('heading',{name:'Registered report',exact:true}).waitFor();
+  assert(page.url().endsWith('/verify/'+fixture.token)); evidence.checks.push(live?'original full PDF rendered at 150 DPI: actual QR decoded':'embedded synthetic official PDF QR image decoded');
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)); evidence.checks.push('390px responsive viewport has no horizontal overflow');
+  await page.screenshot({path:dir+(live?'/live-public.png':'/synthetic-public.png'),fullPage:true});
+  await page.getByLabel('Verification token',{exact:true}).fill('x'.repeat(43));
+  await page.getByRole('button',{name:'Check report',exact:true}).click();
+  await page.getByRole('heading',{name:'Verification record not found.',exact:true}).waitFor(); evidence.checks.push('manual invalid-token fallback gives neutral not-found');
+  if (!live) {
+    await page.goto(base+'/#/login');
+    await page.getByLabel('Username',{exact:true}).fill('tester');
+    await page.getByLabel('Password',{exact:true}).fill('Synthetic-password-123!');
+    await page.getByRole('button',{name:'Sign in',exact:true}).click();
+    await page.waitForURL('**/#/dashboard');
+    await page.goto(base+'/#/reports/scan');
+    const pdfResponse=page.waitForResponse(r=>r.url().endsWith('/api/v1/reports/1/pdf') && r.status()===200);
+    await page.getByRole('button',{name:'Scan QR Code',exact:true}).click();
+    const response=await pdfResponse;
+    assert.equal(response.status(),200);
+    await page.getByTitle('Official laboratory report PDF',{exact:true}).waitFor();
+    assert(await page.getByText('Independently confirmed on Fabric',{exact:true}).isVisible());
+    const src=await page.getByTitle('Official laboratory report PDF').getAttribute('src'); assert(src.startsWith('blob:'));
+    const viewed=await page.evaluate(async url=>Array.from(new Uint8Array(await (await fetch(url)).arrayBuffer())),src);
+    assert.equal(crypto.createHash('sha256').update(Buffer.from(viewed)).digest('hex'),fixture.pdf_sha256);
+    assert.equal(await page.getByRole('link',{name:'Open full official PDF'}).getAttribute('href'),src.split('#')[0]);
+    await page.locator('summary').filter({hasText:'REPORT_RELEASED'}).click();
+    assert(await page.getByText(fixture.pdf_sha256,{exact:true}).isVisible());
+    evidence.checks.push('real synthetic login, camera scan, permission-protected original PDF bytes, inline viewer and full PDF link, ledger witness in same workflow');
+    await page.setViewportSize({width:1280,height:900});
+    await page.getByTitle('Official laboratory report PDF').scrollIntoViewIfNeeded();
+    await page.waitForTimeout(1000);
+    await page.screenshot({path:dir+'/synthetic-staff.png',fullPage:true});
+    const again=page.waitForResponse(r=>r.url().endsWith('/api/v1/verify/staff/resolve')&&r.status()===200);
+    await page.getByLabel('Choose a QR image').setInputFiles(dir+'/synthetic-qr.png'); await again;
+    evidence.checks.push('staff image scan again without application restart');
+  }
+  const denied=await browser.newContext({ignoreHTTPSErrors:!live,viewport:{width:375,height:812}});
+  const deniedPage=await denied.newPage();
+  await deniedPage.addInitScript(()=>{navigator.mediaDevices.getUserMedia=async()=>{throw new DOMException('Permission denied','NotAllowedError');};});
+  await deniedPage.goto(base+'/#/verify');
+  await deniedPage.getByRole('button',{name:'Scan QR Code',exact:true}).click();
+  await deniedPage.getByText(/Camera permission was denied/).waitFor();
+  evidence.checks.push('simulated browser camera denial displays image/manual fallbacks'); await denied.close();
+  await page.setViewportSize({width:1280,height:900});
+  assert(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)); evidence.checks.push('1280px desktop layout has no horizontal overflow');
+  fs.writeFileSync(dir+(live?'/live-browser-evidence.json':'/synthetic-browser-evidence.json'),JSON.stringify(evidence,null,2));
+  console.log(JSON.stringify(evidence,null,2));
+} catch (error) {
+  await page.screenshot({path:dir+'/browser-failure.png',fullPage:true});
+  fs.writeFileSync(dir+'/browser-failure.json',JSON.stringify({errors:browserErrors,camera:await page.evaluate(()=>({secure:window.isSecureContext,error:window.__cameraError,tracks:window.__cameraTracks.map(t=>t.readyState)})),text:await page.locator('body').innerText(),video:await page.evaluate(()=>{const v=document.querySelector('video');return v?{width:v.videoWidth,height:v.videoHeight,ready:v.readyState,paused:v.paused}:null;})},null,2));
+  throw error;
+} finally { await context.close(); await browser.close(); }

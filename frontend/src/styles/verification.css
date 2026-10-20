@@ -9,3 +9,17 @@
 .verification-page .document-outcome.match { border-color: #166534; color: #14532d; background: #f0fdf4; }
 .verification-page .pdf-comparison { border-top: 1px solid #cbd5e1; padding-top: 1rem; }
 @media (max-width: 480px) { .verification-page dl { grid-template-columns: minmax(0, 1fr); } .verification-page dd { margin-bottom: .6rem; } }
+
+.qr-scanner { border-block: 1px solid var(--border, #d8e2e7); padding-block: 1rem; margin-block: 1rem; }
+.qr-scanner video { display: block; width: 100%; max-height: 60vh; background: #152d36; border-radius: .5rem; object-fit: contain; }
+.qr-scanner input { max-width: 100%; }
+.official-scan-report { margin-top: 2rem; border-top: 2px solid var(--border, #d8e2e7); padding-top: 1rem; }
+.official-scan-report dd { overflow-wrap: anywhere; margin-inline-start: 0; }
+.official-scan-report iframe { width: 100%; min-height: 65vh; }
+.official-scan-report details { margin-block: 1rem; }
+
+.verification-page .verification-result { background: #f8fafc; color: #243e47; border-color: #cbd5e1; }
+.staff-scan-page { max-width: 90rem; }
+.staff-scan-results { display: grid; grid-template-columns: minmax(18rem, .85fr) minmax(0, 1.15fr); gap: 1.5rem; align-items: start; }
+.staff-scan-results .official-scan-report { margin-top: 0; }
+@media (max-width: 900px) { .staff-scan-results { grid-template-columns: minmax(0, 1fr); } }

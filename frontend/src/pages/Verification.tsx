@@ -1,9 +1,19 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, ApiError } from "../api/client";
 import { PublicShell, PatientMessage } from "./patient/Shared";
 import type { PublicVerification } from "../types/patient";
 import "../styles/verification.css";
+import { QrScanner } from "../components/QrScanner";
+import { ScannedOfficialReport, type StaffScan } from "../components/ScannedOfficialReport";
+import { useAuth } from "../auth/Auth";
+
+export function StaffVerification() {
+  const { user, can } = useAuth();
+  const permitted = !!user && !user.roles.includes("PATIENT") &&
+    (user.roles.includes("SYSTEM_ADMIN") || (!!user.staff && user.roles.some(r => ["LAB_STAFF","LAB_SUPERVISOR","DOCTOR","LAB_SIGNER"].includes(r)))) && can("REPORT_READ") && can("REPORT_DOWNLOAD");
+  return permitted ? <Verification staff /> : <section className="card"><h1>Personnel report access required</h1><p>Active personnel access with report read and download permissions is required.</p></section>;
+}
 
 const titles: Record<string, string> = {
   REGISTERED: "Registered report", REVOKED: "Report revoked", SUPERSEDED: "Report superseded",
@@ -27,8 +37,9 @@ async function compare(token: string, file: File, signal: AbortSignal): Promise<
   }
   return response.json();
 }
-export function Verification() {
+export function Verification({ staff = false }: { staff?: boolean }) {
   const { token } = useParams(); const navigate = useNavigate();
+  const [scan, setScan] = useState<StaffScan>();
   const [data, setData] = useState<PublicVerification>(); const [loading, setLoading] = useState(false);
   const [error, setError] = useState<Error>(); const [attempt, setAttempt] = useState(0);
   const [file, setFile] = useState<File>(); const [checking, setChecking] = useState(false);
@@ -37,25 +48,31 @@ export function Verification() {
   useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 15000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {
     const controller = new AbortController(); upload.current?.abort(); setChecking(false); setFile(undefined); setUploadError("");
-    setData(undefined); setError(undefined); setLoading(!!token);
-    if (token) api<PublicVerification>("/verify/" + encodeURIComponent(token), { public: true, signal: controller.signal })
+    setData(undefined); setScan(undefined); setError(undefined); setLoading(!!token);
+    if (token) (staff ? api<StaffScan>("/verify/staff/resolve", { method: "POST", body: { token }, signal: controller.signal })
+      .then(result => { if (!controller.signal.aborted) setScan(result); return result.verification; })
+      : api<PublicVerification>("/verify/" + encodeURIComponent(token), { public: true, signal: controller.signal }))
       .then(result => { if (!controller.signal.aborted) { if (!titles[result.status]) throw new Error("Verification unavailable. Try again."); setData(result); setNow(Date.now()); } })
       .catch(e => { if (!controller.signal.aborted) { if (e instanceof ApiError && e.status === 404) setData({ status: "NOT_FOUND", message: "" }); else setError(e); } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => { controller.abort(); upload.current?.abort(); };
-  }, [token, attempt]);
+  }, [token, attempt, staff]);
   const found = data && !["NOT_FOUND", "UNAVAILABLE"].includes(data.status);
   const verified = data && documentMatched(data, now);
   const fresh = data?.blockchain_checked_at && now - Date.parse(data.blockchain_checked_at) <= 60000 && now - Date.parse(data.blockchain_checked_at) >= -5000;
-  return <PublicShell><section className="card verification-page">
-    <p className="eyebrow">REPORT AUTHENTICITY</p><h1>Verify a laboratory report</h1>
+  const Wrapper = staff ? Fragment : PublicShell;
+  const loadToken = (value: string) => { if (value === token) setAttempt(n => n + 1); else navigate((staff ? "/reports/scan/" : "/verify/") + encodeURIComponent(value)); };
+  return <Wrapper><section className={"card verification-page" + (staff ? " staff-scan-page" : "")}>
+    <p className="eyebrow">REPORT AUTHENTICITY</p><h1>{staff ? "Scan and view an official laboratory report" : "Verify a laboratory report"}</h1>
     <p>A QR code identifies a registered report. It cannot validate the surrounding printed text or a PDF you have not compared.</p>
-    <form onSubmit={e => { e.preventDefault(); const input = e.currentTarget.elements.namedItem("token") as HTMLInputElement; const value = input.value.trim(); input.value = ""; if (value === token) setAttempt(n => n + 1); else if (value) navigate("/verify/" + encodeURIComponent(value)); }}>
+    <QrScanner key={token || "empty"} onToken={loadToken} />
+    <form onSubmit={e => { e.preventDefault(); const input = e.currentTarget.elements.namedItem("token") as HTMLInputElement; const value = input.value.trim(); input.value = ""; if (value) loadToken(value); }}>
       <label>Verification token<input name="token" required maxLength={128} autoComplete="off" autoCapitalize="none" spellCheck={false} /></label>
       <button className="primary">Check report</button>
     </form>
     <PatientMessage error={error} />{error && token && <button onClick={() => setAttempt(n => n + 1)}>Try again</button>}
     {loading && <p role="status">Checking registration and independent evidence…</p>}
+    <div className={staff ? "staff-scan-results" : undefined}>
     {data && <section className="verification-result" aria-live="polite" aria-label="Verification outcome">
       <h2>{titles[data.status] || "Verification unavailable"}</h2>
       {data.status === "NOT_FOUND" && <p>Check the verification token or contact the issuing laboratory.</p>}
@@ -94,8 +111,10 @@ export function Verification() {
         </form>
       </>}
     </section>}
+    {staff && scan && found && <ScannedOfficialReport key={scan.report_id} scan={scan} />}
+    </div>
     <section><h2>Compare printed information privately</h2><p>A camera scan cannot check every printed result. Authorized patients and staff can sign in, open the official report with this identifier and version, and compare the printed information. Access remains limited by existing permissions and patient ownership.</p>
-      <p><Link to="/patient/reports">Patient reports (sign in required)</Link> · <Link to="/reports">Staff reports (sign in required)</Link></p>
+      <p><Link to="/patient/reports">Patient reports (sign in required)</Link> · <Link to="/reports">Staff reports (sign in required)</Link> · <Link to="/reports/scan">Personnel scanner and official PDF (sign in required)</Link></p>
     </section>
-  </section></PublicShell>;
+  </section></Wrapper>;
 }

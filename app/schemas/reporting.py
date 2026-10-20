@@ -194,3 +194,26 @@ class PublicVerificationResponse(Output):
     checked_at: datetime
     max_upload_bytes: int
     message: str
+
+
+class StaffQrRequest(Input):
+    token: Annotated[str, Field(min_length=43, max_length=43, pattern=r'^[A-Za-z0-9_-]{43}$')]
+
+
+class StaffLedgerWitness(Output):
+    event_type: str
+    artifact_sha256: str
+    content_hash: str
+    transaction_id: str
+    block_number: int
+    validation_status: str
+    source_msp: str
+    source_peer: str
+    checked_at: datetime
+
+
+class StaffQrResponse(Output):
+    report_id: int
+    verification: PublicVerificationResponse
+    ledger_details: list[StaffLedgerWitness]
+    ledger_details_authorized: bool

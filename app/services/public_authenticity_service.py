@@ -28,7 +28,7 @@ def release_time_matches(event_time, report_time):
         event_time + timedelta(microseconds=500000)).replace(microsecond=0)
 
 
-def ledger_evidence(db, report, digest, replacement):
+def ledger_evidence(db, report, digest, replacement, details=None):
     events = list(db.scalars(select(BlockchainEvent).where(
         BlockchainEvent.entity_type == 'REPORT', BlockchainEvent.entity_id == report.report_id)
         .order_by(BlockchainEvent.event_id).limit(5)))
@@ -80,13 +80,19 @@ def ledger_evidence(db, report, digest, replacement):
             and event.fabric_block_number == tx.block_number):
             return 'FAILED', min(checked) if checked else None
         checked.extend([anchor.checked_at, tx.checked_at])
+        if details is not None:
+            details.append(dict(event_type=event.event_type, artifact_sha256=digest,
+                content_hash=anchor.content_hash, transaction_id=tx.transaction_id,
+                block_number=tx.block_number, validation_status=tx.validation_status,
+                source_msp=anchor.source_msp, source_peer=anchor.source_peer,
+                checked_at=min(anchor.checked_at, tx.checked_at)))
     observed = min(checked) if checked else None
     if state == 'VERIFIED' and (observed is None or not -5 <= (datetime.now(timezone.utc) - observed).total_seconds() <= 60):
         state = 'UNAVAILABLE'
     return state, observed
 
 
-def public_verification(db, token, ip_address, uploaded_digest=None):
+def public_verification(db, token, ip_address, uploaded_digest=None, ledger_details=None):
     now = datetime.now(timezone.utc)
     result = PublicVerificationResponse(status='NOT_FOUND', message='Verification record not found.', checked_at=now,
         max_upload_bytes=settings.verification_upload_max_bytes)
@@ -136,7 +142,7 @@ def public_verification(db, token, ip_address, uploaded_digest=None):
                   new={'severity': 'HIGH', 'failure': failure})
     # Read-only independent ledger queries; no submission, backfill or clinical changes.
     marker = (report.report_status, report.revoked_at, verification.verification_status, verification.report_hash)
-    result.blockchain_evidence, result.blockchain_checked_at = ledger_evidence(db, report, verification.report_hash, replacement)
+    result.blockchain_evidence, result.blockchain_checked_at = ledger_evidence(db, report, verification.report_hash, replacement, ledger_details)
     replacement_id = replacement.report_id if replacement else None
     report_id = report.report_id
     verification_id = verification.verification_id
@@ -150,5 +156,6 @@ def public_verification(db, token, ip_address, uploaded_digest=None):
         result.blockchain_evidence = 'UNAVAILABLE'
         result.document_comparison = 'NOT_COMPARED'
         result.message = 'Report state changed during verification. Check again.'
+        if ledger_details is not None: ledger_details.clear()
     result.checked_at = datetime.now(timezone.utc)
     return result
