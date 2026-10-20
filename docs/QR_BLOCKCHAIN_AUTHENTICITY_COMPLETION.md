@@ -96,7 +96,11 @@ No chaincode/channel/MSP/certificate changes are required.
 
 For every relevant release/revocation/supersession event, verification checks canonical
 payload/hash validity, report UUID and version, artifact digest, release timestamp,
-predecessor hash/link and replacement-report UUID when applicable. Confirmed events then
+predecessor hash/link and replacement-report UUID when applicable. Historical report
+release timestamps use MySQL DATETIME(0), while immutable events retain microseconds.
+The comparison accepts exact timestamps or the exact MySQL nearest-second
+representation, including rollover; it does not use a general time tolerance or
+change historical data. Confirmed events then
 require an independent anchor query and a committed-block transaction query. Anchor ID,
 entity reference, event type, content hash, previous hash, source organization, transaction
 ID, valid transaction code and recorded block number must agree. MySQL CONFIRMED alone
@@ -137,6 +141,11 @@ deprecation warnings remain. jsdom verifies mobile semantics and controls, not p
 layout, QR cameras or real signed-in browser behavior.
 
 ## Deployment and live evidence
+
+During maintenance, the first live ledger check exposed the existing DATETIME(0)
+versus DATETIME(6) precision difference. All artifact, anchor, organization and
+committed transaction checks agreed. Cutover remained paused while the comparison
+was corrected and focused precision/security tests were rerun.
 
 Prepared for the authorized coordinated update. Live results and the deployed code commit
 will be recorded after the cutover; no deployment success is claimed in this preparation

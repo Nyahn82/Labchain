@@ -184,3 +184,30 @@ def test_independent_monitor_rejects_stale_evidence(monkeypatch):
         def recv(self,*args): return json.dumps(payload).encode()+b'\n'
     monkeypatch.setattr(socket,'socket',lambda *a,**k:Socket())
     with pytest.raises(monitor.MonitorUnavailable): monitor.query({'action':'anchor','anchor_id':payload['result']['anchor_id']},schema.AnchorEvidence)
+
+
+@pytest.mark.parametrize('fraction,second_shift,expected', [
+    (0,0,True), (1,0,True), (499999,0,True), (500000,1,True),
+    (696997,1,True), (999999,1,True), (499999,1,False),
+    (500000,0,False), (0,1,False), (999999,2,False),
+])
+def test_mysql_release_timestamp_precision(fraction,second_shift,expected):
+    from datetime import timedelta
+    from app.services.public_authenticity_service import release_time_matches
+    base=datetime(2026,10,20,23,59,59,tzinfo=timezone.utc)
+    event_time=base.replace(microsecond=fraction)
+    report_time=base+timedelta(seconds=second_shift)
+    assert release_time_matches(event_time,report_time) is expected
+    assert release_time_matches(event_time,event_time)
+    assert not release_time_matches(event_time,event_time+timedelta(microseconds=2))
+
+
+@pytest.mark.parametrize('offset,expected',[(0,'VERIFIED'),(2,'FAILED')])
+def test_public_verification_preserves_mysql_second_precision(api,monkeypatch,offset,expected):
+    from datetime import timedelta
+    url,pdf=issued(api); ledger(api,monkeypatch)
+    with api.factory.begin() as db:
+        event=db.scalar(select(BlockchainEvent).where(BlockchainEvent.event_type=='REPORT_RELEASED'))
+        db.get(LabReport,1).released_at=(event.occurred_at+timedelta(microseconds=500000,seconds=offset)).replace(microsecond=0)
+    body=compare(api,url,pdf).json()
+    assert body['document_comparison']=='MATCH' and body['blockchain_evidence']==expected

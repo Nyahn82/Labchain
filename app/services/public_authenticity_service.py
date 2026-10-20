@@ -1,5 +1,5 @@
 """Redacted public evidence: registration never certifies a presented document."""
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hmac
 import json
 import re
@@ -15,6 +15,17 @@ from app.services.blockchain_monitor_service import artifact_hash
 from app.services.identity_service import audit, mutation
 from app.services.report_storage import ArtifactUnavailable
 from app.config import settings
+
+
+def release_time_matches(event_time, report_time):
+    event_time, report_time = utc(event_time), utc(report_time)
+    if event_time == report_time:
+        return True
+    # lab_report.released_at is MySQL DATETIME(0), while the immutable event is
+    # DATETIME(6). MySQL rounds fractional seconds on storage. Compare that exact
+    # representation, not a general time tolerance; never rewrite historical rows.
+    return report_time.microsecond == 0 and report_time == (
+        event_time + timedelta(microseconds=500000)).replace(microsecond=0)
 
 
 def ledger_evidence(db, report, digest, replacement):
@@ -40,7 +51,7 @@ def ledger_evidence(db, report, digest, replacement):
             payload = json.loads(event.canonical_payload)
             if (event.entity_reference != report.blockchain_entity_uuid or
                 payload['artifact_sha256'] != digest or payload['report_version'] != report.version_no or
-                (event is release and utc(event.occurred_at) != utc(report.released_at)) or
+                (event is release and not release_time_matches(event.occurred_at, report.released_at)) or
                 (event is not release and (event.predecessor_event_id != release.event_id or event.previous_hash != release.record_hash)) or
                 (event.event_type == 'REPORT_SUPERSEDED' and (replacement is None or payload['superseding_entity_reference'] != replacement.blockchain_entity_uuid))):
                 return 'FAILED', None
