@@ -10,6 +10,9 @@ from app.api.auth import router as auth_router
 from app.api.health import router as health_router
 from app.api.verification import router as verification_router
 from app.config import settings
+from app.services.verification_access_log import install as protect_verification_access_logs
+
+protect_verification_access_logs()
 
 
 app = FastAPI(

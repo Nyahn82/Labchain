@@ -73,3 +73,11 @@ _network_guard.setattr(socket, "create_connection", deny_network)
 
 def pytest_unconfigure(config):
     _network_guard.undo()
+
+@pytest.fixture(autouse=True)
+def reset_public_verification_admission():
+    # Tests are independent clients; individual tests exercise real admission limits.
+    from app.services import verification_limits
+    verification_limits.requests.clear()
+    verification_limits.global_requests.clear()
+    yield

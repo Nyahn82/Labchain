@@ -34,13 +34,13 @@ export interface PatientResult extends Row {
   sort_order: number;
 }
 export interface PublicVerification {
-  blockchain_status?: SafeAnchoringStatus | null;
-  blockchain_confirmed_at?: string | null;
-  status: "VERIFIED" | "REVOKED" | "ALTERED" | "NOT_FOUND";
-  issuing_facility?: string;
-  report_date?: string;
-  version?: number;
-  message: string;
+  status: "REGISTERED" | "REVOKED" | "SUPERSEDED" | "NOT_FOUND" | "UNAVAILABLE";
+  report_code?: string; issuing_facility?: string; issuer_evidence?: "SNAPSHOT" | "LEGACY_UNAVAILABLE";
+  report_date?: string; released_at?: string; version?: number; message: string;
+  checked_at?: string; blockchain_checked_at?: string; max_upload_bytes?: number;
+  document_comparison?: "NOT_COMPARED" | "MATCH" | "MISMATCH";
+  stored_artifact?: "MATCH" | "MISMATCH" | "UNAVAILABLE";
+  blockchain_evidence?: "VERIFIED" | "PENDING" | "FAILED" | "UNAVAILABLE";
 }
 export interface Enrollment {
   secret: string;

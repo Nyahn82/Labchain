@@ -131,10 +131,10 @@ def test_release_snapshots_pdf_qr_hash_and_download(api, monkeypatch):
     assert 'attachment;' in response.headers['content-disposition']
     assert response.headers['cache-control'] == 'no-store'
     public = verify(api)
-    assert public.status_code == 200 and public.json()['status'] == 'VERIFIED'
+    assert public.status_code == 200 and public.json()['status'] == 'REGISTERED'
     assert public.headers['cache-control'] == 'no-store'
-    assert set(public.json()) == {'status', 'issuing_facility', 'report_date', 'version', 'message', 'blockchain_status'}
-    assert public.json()['blockchain_status'] == 'PENDING'
+    assert set(public.json()) == {'status', 'report_code', 'issuing_facility', 'issuer_evidence', 'report_date', 'released_at', 'version', 'message', 'document_comparison', 'stored_artifact', 'blockchain_evidence', 'checked_at', 'max_upload_bytes'}
+    assert public.json()['blockchain_evidence'] == 'PENDING'
     for secret in (original['patient_snapshot']['patient_name'], original['patient_snapshot']['patient_code'], str(settings.report_storage_dir)):
         assert secret not in public.text
     assert call(api, 'POST', '/reports/1/release').status_code == 409
@@ -235,7 +235,8 @@ def test_integrity_failures_are_private_and_audited(api, damage, tmp_path):
         with api.factory.begin() as db:
             db.get(LabReport, 1).pdf_path = '../secret.pdf' if damage == 'traversal' else '/etc/passwd'
     response = verify(api)
-    assert response.json()['status'] == 'ALTERED'
+    assert response.json()['status'] == 'REGISTERED'
+    assert response.json()['stored_artifact'] == ('MISMATCH' if damage == 'tamper' else 'UNAVAILABLE')
     assert str(tmp_path) not in response.text and '/etc/passwd' not in response.text
     assert call(api, 'GET', '/reports/1/pdf').status_code == 409
     assert call(api, 'POST', '/reports/1/print', {'copies': 1}).status_code == 409
@@ -250,7 +251,8 @@ def test_integrity_failures_are_private_and_audited(api, damage, tmp_path):
 @pytest.mark.parametrize('token', ['unknown', 'x'*43, 'x'*121, 'x'*500, '123'])
 def test_neutral_not_found(api, token):
     response = api.client.get('/api/v1/verify/' + token)
-    assert response.json() == {'status': 'NOT_FOUND', 'message': 'Verification record not found.'}
+    assert response.json()['status'] == 'NOT_FOUND'
+    assert not {'report_code', 'issuing_facility', 'version'}.intersection(response.json())
     assert response.headers['cache-control'] == 'no-store'
 
 
@@ -299,14 +301,14 @@ def test_revision_supersession_and_snapshot_refresh(api):
     assert new['patient_snapshot']['patient_name'].startswith('Updated')
     assert any(line['test_name_snapshot'] == 'Current catalog name' for line in new['result_snapshots'])
     assert report(api) == old
-    assert verify(api).json()['status'] == 'VERIFIED'
+    assert verify(api).json()['status'] == 'REGISTERED'
     link = create(api, '/reports/2/signatories', {'signatory_id': 1, 'signatory_type': 'PATHOLOGIST'})
     assert sign(api, link['report_signatory_id'], 2).status_code == 200
     assert call(api, 'POST', '/reports/2/approve').status_code == 200
-    assert verify(api).json()['status'] == 'VERIFIED'
+    assert verify(api).json()['status'] == 'REGISTERED'
     released = release(api, 2)
-    assert verify(api).json()['status'] == 'REVOKED'
-    assert verify(api, 2).json()['status'] == 'VERIFIED'
+    assert verify(api).json()['status'] == 'SUPERSEDED'
+    assert verify(api, 2).json()['status'] == 'REGISTERED'
     old = report(api)
     assert old['revoked_at'] == released['released_at']
     assert old['revocation_reason'] == 'Superseded by report ' + released['report_code']

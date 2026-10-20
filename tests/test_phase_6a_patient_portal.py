@@ -371,7 +371,7 @@ def test_real_supersession_and_revocation_update_portal_visibility(two_reports):
     assert sign(api, link['report_signatory_id'], new['report_id']).status_code == 200
     assert call(api, 'POST', f'/reports/{new["report_id"]}/approve').status_code == 200
     release(api, new['report_id'])
-    assert api.client.get(old_url).json()['status'] == 'REVOKED'
+    assert api.client.get(old_url).json()['status'] == 'SUPERSEDED'
     patient_login(api)
     assert [row['report_id'] for row in api.client.get('/api/v1/patient/reports').json()['items']] == [new['report_id']]
     assert api.client.get('/api/v1/patient/reports/1').status_code == 404

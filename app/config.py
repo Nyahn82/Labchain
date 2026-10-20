@@ -39,6 +39,8 @@ class Settings(BlockchainSettings):
 
     patient_activation_ttl_minutes: int = Field(default=30, ge=1, le=1440)
 
+    verification_upload_max_bytes: int = Field(default=10 * 1024 * 1024, ge=1024, le=25 * 1024 * 1024)
+    verification_requests_per_minute: int = Field(default=20, ge=1, le=120)
     report_storage_dir: Path | None = None
     # Only a local sanitized query socket; API never receives Fabric keys.
     blockchain_monitor_socket: Literal['/run/rhu-labchain-monitor/monitor.sock'] | None = None

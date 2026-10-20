@@ -180,10 +180,17 @@ class VerificationResponse(Output):
 
 
 class PublicVerificationResponse(Output):
-    blockchain_status: SafeAnchoringStatus | None = Field(default=None, description=EVIDENCE_DESCRIPTION)
-    blockchain_confirmed_at: datetime | None = Field(default=None, description="UTC; all relevant lifecycle evidence confirmed.")
-    status: Literal['VERIFIED', 'REVOKED', 'ALTERED', 'NOT_FOUND']
+    status: Literal['REGISTERED', 'REVOKED', 'SUPERSEDED', 'NOT_FOUND', 'UNAVAILABLE']
+    report_code: str | None = None
     issuing_facility: str | None = None
+    issuer_evidence: Literal['SNAPSHOT', 'LEGACY_UNAVAILABLE'] | None = None
     report_date: date | None = None
+    released_at: datetime | None = None
     version: int | None = None
+    document_comparison: Literal['NOT_COMPARED', 'MATCH', 'MISMATCH'] = 'NOT_COMPARED'
+    stored_artifact: Literal['MATCH', 'MISMATCH', 'UNAVAILABLE'] = 'UNAVAILABLE'
+    blockchain_evidence: Literal['VERIFIED', 'PENDING', 'FAILED', 'UNAVAILABLE'] = 'UNAVAILABLE'
+    blockchain_checked_at: datetime | None = None
+    checked_at: datetime
+    max_upload_bytes: int
     message: str

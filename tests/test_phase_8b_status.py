@@ -185,11 +185,11 @@ def test_staff_detail_and_public_release_status(api, status, expected):
                       'entity_id', 'created_by_user_id', 'origin_node_id', 'event_uuid', PRIVATE):
         assert forbidden not in json.dumps(anchor)
     public = verify(api).json()
-    assert public['status'] == 'VERIFIED'
-    assert public['blockchain_status'] == ('PENDING' if expected == 'PROCESSING' else expected)
-    assert set(public) <= {'status', 'message', 'issuing_facility', 'report_date', 'version',
-                           'blockchain_status', 'blockchain_confirmed_at'}
-    assert ('blockchain_confirmed_at' in public) == (status == 'CONFIRMED')
+    assert public['status'] == 'REGISTERED'
+    assert public['blockchain_evidence'] == {'PENDING':'PENDING','PROCESSING':'PENDING','FAILED':'FAILED','DEAD':'FAILED','CONFIRMED':'UNAVAILABLE','LEGACY':'UNAVAILABLE'}[status]
+    assert not {'canonical_payload','patient_name','result_value','report_hash','transaction_id','source_msp'}.intersection(public)
+    assert 'blockchain_checked_at' not in public
+
 
 
 @pytest.mark.parametrize('transition', ['revoke', 'supersede'])
@@ -212,8 +212,9 @@ def test_later_lifecycle_never_hidden_by_confirmed_release(api, transition, stat
     assert body['anchoring']['release']['status'] == 'CONFIRMED'
     assert body['anchoring'][name]['status'] == body['anchoring']['status'] == expected
     public = verify(api).json()
-    assert public['status'] == 'REVOKED' and public['blockchain_status'] == expected
-    assert ('blockchain_confirmed_at' in public) == (status == 'CONFIRMED')
+    assert public['status'] == ('REVOKED' if transition == 'revoke' else 'SUPERSEDED')
+    assert public['blockchain_evidence'] == {'PENDING':'PENDING','CONFIRMED':'UNAVAILABLE','FAILED':'FAILED','DEAD':'FAILED'}[status]
+    assert 'blockchain_checked_at' not in public
 
 
 @pytest.mark.parametrize('status,expected', [('PENDING', 'PENDING'), ('PROCESSING', 'PENDING'),
@@ -243,7 +244,8 @@ def test_unknown_public_token_remains_neutral(api):
     for token in ('invalid', 'x' * 43):
         result = api.client.get('/api/v1/verify/' + token)
         assert result.status_code == 200
-        assert result.json() == {'status': 'NOT_FOUND', 'message': 'Verification record not found.'}
+        assert result.json()['status'] == 'NOT_FOUND'
+        assert 'report_code' not in result.json()
 
 
 def test_revoked_without_lifecycle_cannot_reuse_release_confirmation(api):
@@ -253,7 +255,7 @@ def test_revoked_without_lifecycle_cannot_reuse_release_confirmation(api):
         db.get(LabReport, 1).report_status = 'REVOKED'
     body = verify(api).json()
     assert body['status'] == 'REVOKED'
-    assert body['blockchain_status'] == 'NOT_ANCHORED'
+    assert body['blockchain_evidence'] == 'UNAVAILABLE'
     assert 'blockchain_confirmed_at' not in body
 
 
@@ -265,7 +267,8 @@ def test_pdf_integrity_is_independent_of_confirmed_evidence(api):
     artifact.chmod(0o600)
     artifact.write_bytes(b'synthetic altered PDF')
     body = verify(api).json()
-    assert body['status'] == 'ALTERED' and body['blockchain_status'] == 'CONFIRMED'
+    assert body['status'] == 'REGISTERED' and body['stored_artifact'] == 'MISMATCH'
+    assert body['blockchain_evidence'] == 'UNAVAILABLE'
 
 
 def test_expired_processing_report_is_pending(env):
@@ -386,3 +389,11 @@ def test_confirmation_requires_valid_receipt_fields(changes):
     result = status_service.lifecycle_status(row, NOW)
     assert result.status == 'FAILED'
     assert result.transaction_id is result.confirmed_at is result.block_number is None
+
+
+@pytest.fixture(autouse=True)
+def independent_ledger_unavailable(monkeypatch):
+    from app.services import blockchain_monitor_client as monitor
+    def unavailable(*args, **kwargs):
+        raise monitor.MonitorUnavailable()
+    monkeypatch.setattr(monitor, 'query', unavailable)

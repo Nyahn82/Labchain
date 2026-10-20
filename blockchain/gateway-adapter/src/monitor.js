@@ -240,6 +240,7 @@ export async function executeMonitor(request, cfg, open = openPeer, health = ord
     const anchor = parseAnchor(await session.query(CHAINCODE, 'LabchainAnchor:ReadAnchor', [request.anchor_id]), request.anchor_id);
     return { anchor_id: anchor.anchor_id, entity_reference: anchor.entity_reference, event_type: anchor.event_type,
       content_hash: anchor.content_hash, previous_hash: anchor.previous_hash, transaction_id: anchor.transaction_id,
+      source_node: anchor.source_node, source_msp: anchor.source_msp,
       source_peer: 'peer1', checked_at: checked };
   } finally { session.close(); }
 }

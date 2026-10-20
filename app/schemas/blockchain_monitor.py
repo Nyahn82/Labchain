@@ -86,6 +86,8 @@ class TransactionDetail(Transaction, Observation):
 
 
 class AnchorEvidence(Observation):
+    source_node: Literal['node1', 'node2', 'node3', 'node4'] | None = None
+    source_msp: Literal['Org1MSP', 'Org2MSP'] | None = None
     anchor_id: Annotated[str, Field(pattern=r'^[0-9a-f-]{36}$')]
     entity_reference: Annotated[str, Field(pattern=r'^[0-9a-f-]{36}$')]
     event_type: Literal['REPORT_RELEASED', 'REPORT_REVOKED', 'REPORT_SUPERSEDED']

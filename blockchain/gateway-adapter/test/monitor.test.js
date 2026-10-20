@@ -144,3 +144,14 @@ test('transport timeout and chaincode errors have finite, secret-free classifica
     session.close();
   }
 });
+
+test('anchor evidence retains validated organization binding without clinical payload', async () => {
+  const id = '00000000-0000-4000-8000-000000000001';
+  const anchor = { anchor_id: id, event_type: 'REPORT_RELEASED', entity_type: 'REPORT', entity_reference: '00000000-0000-4000-8000-000000000002', content_hash: H, previous_hash: null, created_at: '2026-10-19T00:00:00.000Z', source_node: 'node1', source_msp: 'Org1MSP', transaction_id: H };
+  const open = async () => ({ query: async () => Buffer.from(JSON.stringify(anchor)), close() {} });
+  const result = await executeMonitor({ action: 'anchor', anchor_id: id }, cfg, open);
+  assert.equal(result.source_node, 'node1'); assert.equal(result.source_msp, 'Org1MSP');
+  assert.deepEqual(Object.keys(result).sort(), ['anchor_id','entity_reference','event_type','content_hash','previous_hash','transaction_id','source_node','source_msp','source_peer','checked_at'].sort());
+  anchor.source_msp = 'Org2MSP';
+  await assert.rejects(executeMonitor({ action: 'anchor', anchor_id: id }, cfg, open));
+});

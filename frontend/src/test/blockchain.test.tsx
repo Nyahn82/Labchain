@@ -227,48 +227,20 @@ describe("patient safe anchoring", () => {
   });
 });
 
-describe("public anchoring remains secondary to official verification", () => {
-  const primary = [
-    ["VERIFIED", "Verified report"],
-    ["REVOKED", "Report revoked / no longer current"],
-    ["ALTERED", "Report integrity warning"],
-  ] as const;
-  for (const [status, title] of primary) {
-    it.each(safeStatuses)(`${status} with %s keeps primary semantics and safe fields`, async (blockchain_status, label) => {
-      const fetch = patientFetch((p) => p.startsWith("/api/v1/verify/") ? respond({
-        status,
-        message: '<script data-private="yes">PRIVATE-HTML</script>',
-        blockchain_status,
-        blockchain_confirmed_at: confirmedAt,
-        ...privateReceipt,
-        // Unexpected staff payload must not override the safe aggregate status.
-        anchoring: { release: { status: "CONFIRMED", ...privateReceipt }, revocation: { status: "PENDING" } },
-      }) : undefined, null);
-      portal("/verify/TOKEN");
-      expect(await screen.findByRole("heading", { name: title, level: 2 })).toBeVisible();
-      const panel = screen.getByRole("region", { name: "Blockchain anchoring" });
-      expect(within(panel).getByRole("heading", { level: 3 })).toBeVisible();
-      expect(within(panel).getByText(label)).toBeVisible();
-      expect(panel).toHaveTextContent("verification above remains based on the laboratory’s official report record");
-      expect(panel).not.toHaveTextContent(/Transaction ID|Block number|Your released report remains available/);
-      if (blockchain_status === "CONFIRMED") expect(panel).toHaveTextContent(timestamp(confirmedAt));
-      else expect(panel).not.toHaveTextContent(timestamp(confirmedAt));
-      expectPrivateFieldsHidden();
-      expect(fetch.mock.calls.some(([p]) => p.includes("/blockchain/") || p.includes("/reports/"))).toBe(false);
-    });
-  }
-  it.each([undefined, "CONFIRMED"])("keeps NOT_FOUND neutral even with unexpected safe status %s", async (blockchain_status) => {
-    patientFetch((p) => p.startsWith("/api/v1/verify/") ? respond({ status: "NOT_FOUND", message: "PRIVATE-MESSAGE", blockchain_status, ...privateReceipt }) : undefined, null);
+describe("public registration never trusts a MySQL anchoring badge", () => {
+  it.each(safeStatuses)("ignores legacy %s without independent ledger evidence", async (blockchain_status) => {
+    patientFetch(p => p.startsWith("/api/v1/verify/") ? respond({ status: "REGISTERED", message: "PRIVATE-MESSAGE", blockchain_status, ...privateReceipt }) : undefined, null);
     portal("/verify/TOKEN");
-    expect(await screen.findByRole("heading", { name: "Verification record not found." })).toBeVisible();
-    expect(screen.queryByRole("region", { name: "Blockchain anchoring" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Registered report" })).toBeVisible();
+    expect(screen.getByText("Blockchain verification unavailable")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Verified document match" })).not.toBeInTheDocument();
     expectPrivateFieldsHidden();
   });
-  it.each([undefined, null, "PRIVATE-UNKNOWN", "PROCESSING"])("does not invent a public state for %s", async (blockchain_status) => {
-    patientFetch((p) => p.startsWith("/api/v1/verify/") ? respond({ status: "VERIFIED", message: "", blockchain_status }) : undefined, null);
+  it("keeps absent reports neutral even with unexpected ledger data", async () => {
+    patientFetch(p => p.startsWith("/api/v1/verify/") ? respond({ status: "NOT_FOUND", message: "PRIVATE-MESSAGE", blockchain_evidence: "VERIFIED", ...privateReceipt }) : undefined, null);
     portal("/verify/TOKEN");
-    expect(await screen.findByRole("heading", { name: "Verified report" })).toBeVisible();
-    expect(screen.queryByRole("region", { name: "Blockchain anchoring" })).not.toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Verification record not found." })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Blockchain evidence" })).not.toBeInTheDocument();
     expectPrivateFieldsHidden();
   });
 });

@@ -198,31 +198,8 @@ def verification_metadata(db, report_id):
 
 
 def public_verification(db, token, ip_address):
-    neutral = s.PublicVerificationResponse(status='NOT_FOUND', message='Verification record not found.')
-    if not re.fullmatch(r'[A-Za-z0-9_-]{43}', token):
-        return neutral
-    with mutation(db):
-        found = db.scalar(select(ReportVerification).where(ReportVerification.verification_token == token))
-        # MySQL's default collation is case insensitive. Require exact token bytes.
-        if found is None or not hmac.compare_digest(found.verification_token, token):
-            return neutral
-        _, report, _ = locked_order_reports(db, found.report_id)
-        rows = verifications(db, report.report_id)
-        verification = next(row for row in rows if row.verification_id == found.verification_id)
-        if report.report_status == 'REVOKED' or verification.verification_status == 'REVOKED' or verification.revoked_at:
-            status, message = 'REVOKED', 'This report has been revoked.'
-        elif report.report_status != 'RELEASED' or len(rows) != 1:
-            return neutral
-        elif integrity_bytes(db, report, verification, None, ip_address) is None:
-            status, message = 'ALTERED', 'The stored report failed its integrity check or is unavailable.'
-        else:
-            status, message = 'VERIFIED', 'The released report matches the stored integrity record.'
-        facility = get_record(db, FacilityProfile, report.facility_id)
-        anchoring = safe_verification(report_anchoring(db, report, revoked=status == 'REVOKED'))
-        response = s.PublicVerificationResponse(status=status, message=message, issuing_facility=facility.facility_name,
-            blockchain_status=anchoring.status, blockchain_confirmed_at=anchoring.confirmed_at,
-            report_date=report.released_at.date() if report.released_at else None, version=report.version_no)
-    return response
+    from app.services.public_authenticity_service import public_verification as verify
+    return verify(db, token, ip_address)
 
 
 @retry_deadlocks

@@ -1,0 +1,11 @@
+.verification-page { width: 100%; max-width: 48rem; margin: 0 auto; overflow-wrap: anywhere; }
+.verification-page form { display: grid; gap: .75rem; margin: 1rem 0; }
+.verification-page label { display: grid; gap: .4rem; min-width: 0; }
+.verification-page input { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; }
+.verification-page dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .5rem 1rem; }
+.verification-page dd { margin: 0; }
+.verification-page dt { font-weight: 600; }
+.verification-page .document-outcome { padding: 1rem; border: 2px solid #64748b; border-radius: .5rem; }
+.verification-page .document-outcome.match { border-color: #166534; color: #14532d; background: #f0fdf4; }
+.verification-page .pdf-comparison { border-top: 1px solid #cbd5e1; padding-top: 1rem; }
+@media (max-width: 480px) { .verification-page dl { grid-template-columns: minmax(0, 1fr); } .verification-page dd { margin-bottom: .6rem; } }
