@@ -122,3 +122,30 @@ def list_reasons(db: Db, actor: Annotated[UserAccount, Depends(require_permissio
 def patch_reason(rejection_reason_id: Identifier, payload: s.ReasonPatch, request: Request, db: Db, actor: ReasonManager):
     return save_record(db, RejectionReason, payload, s.ReasonResponse, actor.user_id,
                        get_request_ip(request), 'REJECTION_REASON_UPDATE', record_id=rejection_reason_id)
+
+
+@router.get('/specimens/{specimen_id}/label', tags=['Specimens'])
+def specimen_label(specimen_id: Identifier, request: Request, db: Db, actor: SpecimenReader):
+    from app.services.auth_activity_service import staff_only
+    staff_only(db, actor.user_id)
+    from io import BytesIO
+    from fastapi.responses import Response
+    from reportlab.pdfgen.canvas import Canvas
+    from reportlab.graphics.barcode.code128 import Code128
+    from reportlab.lib.units import mm
+    from app.services.identity_service import audit, mutation
+    specimen = service.specimen_detail(db, specimen_id)
+    output = BytesIO()
+    canvas = Canvas(output, pagesize=(90*mm, 45*mm), pageCompression=1)
+    canvas.setFont('Helvetica', 8)
+    canvas.drawString(5*mm, 39*mm, 'RHU LabChain specimen accession')
+    canvas.drawString(5*mm, 34*mm, specimen.specimen_code)
+    canvas.drawString(5*mm, 29*mm, specimen.sample_type.sample_name[:55])
+    canvas.drawString(5*mm, 24*mm, 'Collected: ' + (specimen.collected_at.isoformat(' ') if specimen.collected_at else 'Pending'))
+    barcode = Code128(specimen.specimen_code, barHeight=12*mm, barWidth=.22*mm)
+    barcode.drawOn(canvas, 3*mm, 6*mm)
+    canvas.showPage(); canvas.save()
+    with mutation(db):
+        audit(db, actor.user_id, 'SPECIMEN_LABEL_VIEW', 'specimen', specimen_id, get_request_ip(request))
+    return Response(output.getvalue(), media_type='application/pdf', headers={
+        'Content-Disposition': f'attachment; filename="specimen-{specimen_id}-label.pdf"', 'Cache-Control':'no-store'})

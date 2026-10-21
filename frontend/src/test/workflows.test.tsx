@@ -157,10 +157,7 @@ describe("orders", () => {
     const fetch = mockFetch((p, o) => {
       if (o?.method === "POST") return respond({ order_id: 2 });
       if (p.includes("/patients?")) return respond(page([patient]));
-      if (p.includes("/lab/panels?"))
-        return respond(page([{ panel_id: 1, panel_name: "Chemistry" }]));
-      if (p.includes("/lab/tests?"))
-        return respond(page([{ test_id: 1, test_name: "Glucose" }]));
+      if (p.includes("/lab/catalog-browser")) return respond({departments: [], specimens: [], tests: [{test_id: 1, test_name: "Glucose", orderable: true, sample_type_ids: []}], panels: [{panel_id: 1, panel_name: "Chemistry", orderable: true, test_ids: [1]}]});
       return respond(page([]));
     });
     renderAuth(
@@ -172,8 +169,9 @@ describe("orders", () => {
     );
     await screen.findByRole("option", { name: "Test Patient" });
     await userEvent.selectOptions(screen.getByLabelText("Patient *"), "1");
-    await userEvent.click(await screen.findByLabelText("Chemistry"));
-    await userEvent.click(screen.getByLabelText("Glucose"));
+    await userEvent.click(await screen.findByLabelText("Select Glucose"));
+    await userEvent.selectOptions(screen.getByLabelText("Catalog entries"), "panels");
+    await userEvent.click(screen.getByLabelText("Select Chemistry"));
     await userEvent.click(screen.getByRole("button", { name: "Create order" }));
     expect(await screen.findByText("Order created")).toBeInTheDocument();
     const call = fetch.mock.calls.find(([, o]) => o?.method === "POST")!;
@@ -199,7 +197,7 @@ describe("orders", () => {
       "/orders/1",
     );
     expect(await screen.findByText("ORD-001")).toBeInTheDocument();
-    expect(screen.getByText("Glucose")).toBeInTheDocument();
+    expect(screen.getAllByText("Glucose").length).toBeGreaterThan(0);
     await userEvent.click(screen.getByRole("button", { name: "Cancel order" }));
     expect(fetch.mock.calls.some(([, o]) => o?.method === "POST")).toBe(false);
     await userEvent.type(
@@ -347,7 +345,7 @@ describe("results", () => {
     expect(fetch).toHaveBeenCalledWith(
       "/api/v1/lab-order-items/1/result",
       expect.objectContaining({
-        body: '{"result_value":"0.100","specimen_id":null,"remarks":null}',
+        body: '{"result_value":"0.100","structured_values":null,"specimen_id":null,"remarks":null}',
       }),
     );
   });
@@ -368,7 +366,7 @@ describe("results", () => {
       "/api/v1/results/1",
       expect.objectContaining({
         method: "PATCH",
-        body: '{"result_value":"5.200","specimen_id":null,"remarks":null}',
+        body: '{"result_value":"5.200","structured_values":null,"specimen_id":null,"remarks":null}',
       }),
     );
   });

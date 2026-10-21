@@ -11,7 +11,7 @@ from sqlalchemy import delete, inspect, or_, select
 from sqlalchemy.exc import OperationalError
 
 from app.models import (
-    LabDepartment, PanelSection, PanelTest, ReferenceRange, RejectionReason, SampleType,
+    LabOrderItem, LabResultItem, LabDepartment, PanelSection, PanelTest, ReferenceRange, RejectionReason, SampleType,
     TestCatalog, TestPanel, TestSampleType,
 )
 from app.schemas import laboratory as s
@@ -83,6 +83,33 @@ def save_record(db, model, payload, response_schema, actor_id, ip_address, actio
         changed = {key for key, value in values.items() if record is None or getattr(record, key) != value}
         merged = ({column.key: getattr(record, column.key) for column in inspect(model).columns}
                   if record is not None else {}) | values
+        if model in {TestCatalog, TestPanel}:
+            if record is None and merged.get('facility_status') is None:
+                values.update(facility_status='UNREVIEWED', is_active=False)
+                merged.update(values)
+            status = merged.get('facility_status')
+            if record is not None and record.facility_status is not None and status is None:
+                raise HTTPException(422, 'Facility review status cannot be cleared.')
+            if merged.get('is_active') and status not in (None, 'APPROVED'):
+                raise HTTPException(409, 'Approve facility capability before activation.')
+            if status == 'APPROVED' and (not merged.get('approval_note') or not merged['approval_note'].strip()):
+                raise HTTPException(422, 'Record facility approval, method/SOP and reference review in the approval note.')
+            if record is not None and record.facility_status == 'APPROVED' and changed & {'result_type','default_unit','methodology','result_schema','department_id'}:
+                values.update(facility_status='UNREVIEWED', is_active=False)
+                changed.update({'facility_status','is_active'})
+                merged.update(values)
+            metadata = merged.get('catalog_metadata') or {}
+            if metadata.get('restricted_workflow') and (status == 'APPROVED' or merged.get('is_active')):
+                raise HTTPException(409, 'This restricted service requires a dedicated approved confidentiality workflow and remains unavailable here.')
+            if model is TestCatalog and status == 'APPROVED' and (not merged.get('methodology') or
+                    (merged.get('result_type') == 'NUMERIC' and not merged.get('default_unit'))):
+                raise HTTPException(422, 'Configure the approved method and numeric unit before facility approval.')
+        if model is TestCatalog and record is not None and changed & {'result_type', 'default_unit', 'methodology', 'result_schema', 'department_id'}:
+            if db.scalar(select(LabOrderItem.order_item_id).where(LabOrderItem.test_id == record_id).limit(1).with_for_update(read=True)):
+                raise HTTPException(409, 'Referenced examination definitions are immutable; create a separately reviewed examination for a new method or schema.')
+        if model is ReferenceRange and record_id is not None and changed - {'is_active', 'effective_to'}:
+            if db.scalar(select(LabResultItem.result_item_id).where(LabResultItem.reference_range_id == record_id).limit(1).with_for_update(read=True)):
+                raise HTTPException(409, 'Referenced reference information cannot be rewritten; retire it and create a new approved interval.')
         validate_department(db, model, merged, changed if record is not None else None)
         if model is ReferenceRange:
             try:
@@ -168,7 +195,9 @@ def panel_detail(db, panel_id):
 @retry_deadlocks
 def replace_sample_types(db, test_id, payload, actor_id, ip_address):
     with mutation(db):
-        get_record(db, TestCatalog, test_id, lock=True)
+        parent = get_record(db, TestCatalog, test_id, lock=True)
+        if parent.facility_status == "APPROVED":
+            parent.facility_status, parent.is_active = "UNREVIEWED", False
         ids = [item.sample_type_id for item in payload.sample_types]
         if len(ids) != len(set(ids)):
             raise HTTPException(422, 'Duplicate sample type IDs.')
@@ -189,7 +218,9 @@ def replace_sample_types(db, test_id, payload, actor_id, ip_address):
 @retry_deadlocks
 def replace_panel_tests(db, panel_id, payload, actor_id, ip_address):
     with mutation(db):
-        get_record(db, TestPanel, panel_id, lock=True)
+        parent = get_record(db, TestPanel, panel_id, lock=True)
+        if parent.facility_status == "APPROVED":
+            parent.facility_status, parent.is_active = "UNREVIEWED", False
         ids = [item.test_id for item in payload.tests]
         if len(ids) != len(set(ids)):
             raise HTTPException(422, 'Duplicate test IDs.')

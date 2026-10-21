@@ -102,6 +102,7 @@ def render(report, verification_url, released_at, context):
                 p(line.result_value_snapshot, abnormal_style if abnormal else result_style),
                 p(line.unit_snapshot or ''), p(line.reference_range_snapshot or '')])
             notes = []
+            notes.extend(extra.get('structured_results') or [])
             for field, title in [('methodology', 'Method'), ('remarks', 'Remarks')]:
                 if extra.get(field): notes.append(f'{title}: {extra[field]}')
             for field, title in [('verified_at', 'Verified')]:

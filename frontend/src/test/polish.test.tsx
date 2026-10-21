@@ -15,7 +15,7 @@ describe("Phase 12A workflow navigation", () => {
     const nav = await navigation();
     expect(within(nav).getAllByRole("link").map(link => link.textContent)).toEqual([
       "Dashboard", "Patients", "Laboratory orders", "Specimens", "Results", "Reports",
-      "Analytics", "Authentication Activity", "Blockchain Monitor", "Laboratory setup",
+      "Analytics", "Report setup", "Authentication Activity", "Blockchain Monitor", "Laboratory setup",
       "Physicians", "Referring facilities", "Staff", "Accounts and roles",
     ]);
     expect(within(nav).getAllByRole("heading").map(h => h.textContent)).toEqual(["Overview", "Laboratory", "Administration"]);

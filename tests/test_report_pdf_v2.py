@@ -207,7 +207,7 @@ def test_logo_only_uses_safe_private_assets_and_is_frozen(api, tmp_path, monkeyp
 def test_presentation_migration_preserves_existing_rows_offline_and_sqlite():
     scripts = ScriptDirectory.from_config(config())
     migration = scripts.get_revision('20261018_01').module
-    assert scripts.get_heads() == ['20261019_01']
+    assert scripts.get_heads() == ['20261021_01']
     assert migration.down_revision == '20261015_01'
     output = StringIO()
     command.upgrade(config(output), '20261015_01:20261018_01', sql=True)

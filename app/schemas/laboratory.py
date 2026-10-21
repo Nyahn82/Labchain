@@ -1,5 +1,6 @@
 """Explicit Phase 3C contracts; identifiers and relationships are never PATCHable."""
 
+from app.schemas.catalog_configuration import CollectionGuidance
 from datetime import date
 from decimal import Decimal
 from typing import Annotated, ClassVar, Literal
@@ -7,6 +8,7 @@ from typing import Annotated, ClassVar, Literal
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.identity import Identifier, Input, text_field
+from app.schemas.catalog_configuration import FacilityStatus, ResultSchema
 
 ResultType = Literal['NUMERIC', 'TEXT', 'POS_NEG']
 RangeSex = Literal['M', 'F', 'ANY']
@@ -52,19 +54,26 @@ class DepartmentResponse(DepartmentCreate, Output):
 
 
 class SampleTypeCreate(DepartmentFields):
+    collection_guidance: CollectionGuidance | None = None
     sample_name: text_field(80)
 
 
 class SampleTypePatch(DepartmentFields, Partial):
+    collection_guidance: CollectionGuidance | None = None
     nonnull = {'sample_name', 'is_active'}
     sample_name: text_field(80) | None = None
 
 
 class SampleTypeResponse(SampleTypeCreate, Output):
     sample_type_id: int
+    specimen_code: str | None = None
 
 
 class TestFields(Input):
+    aliases: text_field(4000) | None = None
+    result_schema: ResultSchema | None = None
+    facility_status: FacilityStatus | None = None
+    approval_note: text_field(4000) | None = None
     default_unit: text_field(50) | None = None
     methodology: text_field(150) | None = None
     default_sort_order: SortOrder | None = None
@@ -87,6 +96,7 @@ class TestPatch(TestFields, Partial):
 class TestResponse(TestCreate, Output):
     test_id: int
     test_code: str
+    catalog_metadata: dict | None = None
 
 
 class SampleAssignment(Input):
@@ -112,6 +122,8 @@ class TestDetail(TestResponse):
 
 
 class PanelFields(DepartmentFields):
+    facility_status: FacilityStatus | None = None
+    approval_note: text_field(4000) | None = None
     department_id: Identifier | None = None
 
 
@@ -127,6 +139,7 @@ class PanelPatch(PanelFields, Partial):
 class PanelResponse(PanelCreate, Output):
     panel_id: int
     panel_code: str
+    catalog_metadata: dict | None = None
 
 
 class SectionCreate(Input):

@@ -160,10 +160,12 @@ def test_order_expansion_provenance_and_safe_detail(admin, priority):
     assert row['ordered_by_user_id'] == 1 and row['status'] == 'REQUESTED'
     assert row['order_date'] == row['created_at'] and row['updated_at'] is None
     assert row['physician']['physician_id'] == 1 and row['patient']['patient_id'] == 1
-    assert len(row['panels']) == 2 and len(row['items']) == 4
+    assert len(row['panels']) == 2 and len(row['items']) == 2
     panels = {p['panel_id']: p['order_panel_id'] for p in row['panels']}
     assert [(i['test_id'], i['order_panel_id']) for i in row['items']] == [
-        (1, panels[1]), (2, panels[1]), (1, panels[2]), (1, None)]
+        (1, panels[1]), (2, panels[1])]
+    assert {p['order_panel_id'] for p in row['items'][0]['definition_snapshot']['panels']} == set(panels.values())
+    assert row['items'][0]['definition_snapshot']['selected_individually']
     assert all(i['status'] == 'REQUESTED' and i['created_at'] for i in row['items'])
     assert all(p['status'] == 'REQUESTED' for p in row['panels'])
     assert row['payments'] == row['specimens'] == []
@@ -185,7 +187,7 @@ def test_panel_configuration_snapshot_and_inactive_component(admin):
     with admin.factory.begin() as db:
         db.delete(db.scalar(select(PanelTest).where(PanelTest.panel_id == 1, PanelTest.test_id == 2)))
     newer = order(admin)
-    assert len(newer['items']) == 3
+    assert len(newer['items']) == 1
     assert detail(admin, original['order_id'])['items'] == original['items']
 
 
@@ -235,7 +237,7 @@ def test_cancel_preserves_completed_children_specimens_and_history(admin, starte
     assert final['panels'][1]['status'] == 'CANCELLED'
     assert len(final['specimens']) == int(started)
     if started:
-        assert len(final['specimens'][0]['mappings']) == 4
+        assert len(final['specimens'][0]['mappings']) == 2
     assert call(admin, 'POST', '/lab-orders/1/cancel', {'reason': 'Again'}).status_code == 409
     with admin.factory() as db:
         log = db.scalar(select(AuditLog).where(AuditLog.action == 'LAB_ORDER_CANCEL'))
@@ -335,11 +337,11 @@ def test_register_mapping_and_selective_processing_without_payment(admin):
     assert [m['order_item_id'] for m in first['mappings']] == [row['items'][0]['order_item_id']]
     after = detail(admin)
     assert after['status'] == 'IN_PROGRESS' and after['updated_at']
-    assert [i['status'] for i in after['items']] == ['IN_PROGRESS', 'REQUESTED', 'REQUESTED', 'REQUESTED']
-    assert [p['status'] for p in after['panels']] == ['IN_PROGRESS', 'REQUESTED']
+    assert [i['status'] for i in after['items']] == ['IN_PROGRESS', 'REQUESTED']
+    assert [p['status'] for p in after['panels']] == ['IN_PROGRESS', 'IN_PROGRESS']
     assert after['payments'] == []
     assert transition(admin, 'collect').status_code == 200
-    second = specimen(admin, row, sample_type_id=2, order_item_ids=[row['items'][-1]['order_item_id']])
+    second = specimen(admin, row, sample_type_id=2, order_item_ids=[row['items'][0]['order_item_id']])
     assert second['specimen_code'] != first['specimen_code']
     page = call(admin, 'GET', '/lab-orders/1/specimens?page_size=1&page=2').json()
     assert page['items'] == [second] and page['total'] == 2
@@ -369,7 +371,7 @@ def test_transition_matrix(admin, initial, action, expected):
     assert row['specimen_status'] == target
     provenance = row['rejections'][0] if action == 'reject' else row
     assert provenance[prefix + '_by_user_id'] == 1 and provenance[prefix + '_at']
-    assert len(row['mappings']) == 4
+    assert len(row['mappings']) == 2
     assert transition(admin, action, body=REJECT if action == 'reject' else None).status_code == 409
     assert detail(admin)['status'] == 'IN_PROGRESS'
 
@@ -560,8 +562,8 @@ def test_code_collision_retry_whole_transaction(admin, monkeypatch, kind, exhaus
     assert response.status_code == (409 if exhausted else 201), response.text
     with admin.factory() as db:
         assert count(db, LabOrder if kind == 'order' else Specimen) == (1 if exhausted else 2)
-        assert count(db, LabOrderItem) == (8 if kind == 'order' and not exhausted else 4)
-        assert count(db, SpecimenOrderItem) == (6 if kind == 'specimen' and not exhausted else 4 if kind == 'specimen' else 0)
+        assert count(db, LabOrderItem) == (4 if kind == 'order' and not exhausted else 2)
+        assert count(db, SpecimenOrderItem) == (4 if kind == 'specimen' and not exhausted else 2 if kind == 'specimen' else 0)
 
 
 def test_all_audits_bootstrap_and_privacy(admin, caplog):
@@ -598,7 +600,7 @@ def test_openapi_phase4a_contract():
     phase = {path: methods for path, methods in paths.items() if path.startswith((
         BASE + '/lab-orders', BASE + '/specimens', BASE + '/lab/rejection-reasons'))
         and not path.endswith(('/results', '/reports'))}
-    assert sum(len(methods) for methods in phase.values()) == 15
+    assert sum(len(methods) for methods in phase.values()) == 16
     assert not any('result' in path for path in phase)
     for methods in phase.values():
         assert 'delete' not in methods and 'put' not in methods

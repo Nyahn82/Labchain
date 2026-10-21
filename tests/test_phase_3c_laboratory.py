@@ -198,14 +198,14 @@ def test_master_lifecycle_duplicate_pagination_search_audit(lab_admin, path, key
         assert call(lab_admin, 'GET', f'/{path}?{query}').status_code == 422
     response = call(lab_admin, 'PATCH', f'/{path}/{identifier}', {name: 'Revised synthetic', 'is_active': False})
     assert response.status_code == 200 and response.json()['is_active'] is False
-    assert call(lab_admin, 'GET', f'/{path}?is_active=false').json()['total'] == 1
+    assert call(lab_admin, 'GET', f'/{path}?is_active=false').json()['total'] == (2 if path in {'tests', 'panels'} else 1)
     assert call(lab_admin, 'PATCH', f'/{path}/{identifier}', {}).json()['is_active'] is False
     assert call(lab_admin, 'DELETE', f'/{path}/{identifier}').status_code == 405
     assert call(lab_admin, 'GET', f'/{path}/999').status_code == 404
     with lab_admin.factory() as db:
         logs = list(db.scalars(select(AuditLog).where(AuditLog.action.in_([action + '_CREATE', action + '_UPDATE']))))
         assert len(logs) == 4
-        assert logs[-2].new_value == {'changed_fields': sorted([name, 'is_active'])}
+        assert logs[-2].new_value == {'changed_fields': sorted([name] if path in {'tests', 'panels'} else [name, 'is_active'])}
         assert all(row.user_id == 1 and row.ip_address == '192.0.2.10' and row.created_at for row in logs)
         assert 'Revised synthetic' not in json.dumps([row.new_value for row in logs])
 
@@ -231,7 +231,7 @@ def test_result_type_exact_and_test_filters(lab_admin, result_type):
         assert response.status_code == 422
     else:
         assert response.status_code == 201
-        result = call(lab_admin, 'GET', f'/tests?result_type={result_type}&department_id=1&search=T&is_active=true').json()
+        result = call(lab_admin, 'GET', f'/tests?result_type={result_type}&department_id=1&search=T&is_active=false').json()
         assert any(row['test_id'] == response.json()['test_id'] for row in result['items'])
         assert call(lab_admin, 'GET', '/tests?department_id=999').json()['total'] == 0
     assert call(lab_admin, 'GET', '/tests?result_type=numeric').status_code == 422
@@ -247,7 +247,9 @@ def test_department_relationships_and_nullable_patch(lab_admin):
     assert call(lab_admin, 'GET', '/panels?department_id=1').json()['total'] == 1
     assert call(lab_admin, 'PATCH', '/panels/1', {'department_id': None}).json()['department_id'] is None
     assert call(lab_admin, 'PATCH', '/departments/1', {'is_active': False}).status_code == 200
-    assert call(lab_admin, 'POST', '/tests', {**body, 'department_id': 1}).status_code == 409
+    draft = call(lab_admin, 'POST', '/tests', {**body, 'department_id': 1})
+    assert draft.status_code == 201 and draft.json()['facility_status'] == 'UNREVIEWED'
+    assert draft.json()['is_active'] is False
     inactive = create(lab_admin, '/tests', {**body, 'department_id': 1, 'is_active': False})
     assert call(lab_admin, 'PATCH', f'/tests/{inactive["test_id"]}', {'is_active': True}).status_code == 409
     assert call(lab_admin, 'PATCH', '/tests/1', {'test_name': 'Updated retired department test'}).status_code == 200
@@ -532,7 +534,7 @@ def test_openapi_complete_and_scope():
     lab_paths = {path: methods for path, methods in paths.items()
                  if path.startswith(BASE + '/') and not path.startswith(BASE + '/rejection-reasons')}
     # Workstream E adds an authorized preview and a confirmed starter import.
-    assert sum(len(methods) for methods in lab_paths.values()) == 34
+    assert sum(len(methods) for methods in lab_paths.values()) == 37
     assert set(paths[BASE + '/starter-catalog']) == {'get', 'post'}
     for path, methods in lab_paths.items():
         assert 'delete' not in methods

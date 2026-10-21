@@ -25,7 +25,9 @@ from datetime import datetime,timezone
 engine=create_engine('sqlite:///'+str(P/'synthetic.sqlite'),hide_parameters=True)
 factory=sessionmaker(bind=engine,autoflush=False)
 database.engine=engine; database.SessionLocal=factory; auth.SessionLocal=factory
-main.FRONTEND_BUILD_DIR=Path('/tmp/rhu-scan-build')
+build=Path(sys.argv[2]).resolve() if len(sys.argv)>2 else Path('/tmp/rhu-scan-build')
+assert str(build).startswith('/tmp/rhu-') and (build/'index.html').is_file()
+main.FRONTEND_BUILD_DIR=build
 # Explicit synthetic Fabric double. Live Fabric is tested separately against the public site.
 def query(request,kind):
     with factory() as db:

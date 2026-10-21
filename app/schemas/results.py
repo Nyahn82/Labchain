@@ -12,12 +12,14 @@ ResultStatus = Literal['DRAFT', 'REVIEWED', 'VERIFIED']
 
 
 class ResultCreate(Input):
+    structured_values: dict | None = None
     result_value: text_field(100)
     specimen_id: Identifier | None = None
     remarks: text_field(16000) | None = None
 
 
 class ResultPatch(Partial):
+    structured_values: dict | None = None
     nonnull = {'result_value'}
     result_value: text_field(100) | None = None
     specimen_id: Identifier | None = None
@@ -30,6 +32,7 @@ class ActorSummary(Output):
 
 
 class ResultTestSummary(TestSummary):
+    result_schema: dict | None = None
     result_type: ResultType
     default_unit: str | None
 
@@ -59,6 +62,7 @@ class ResultRangeSummary(Output):
 
 
 class ResultResponse(Output):
+    structured_values: dict | None = None
     result_item_id: int
     order_item_id: int
     order_id: int

@@ -30,6 +30,13 @@ def before_outbox_metadata():
             table.c.account_status.type = sa.Enum('ACTIVE', 'INACTIVE', 'LOCKED', name='account_status')
         if table.name == 'auth_session':
             removed = {'last_activity_at'}
+        removed = removed | {
+            "sample_type": {"specimen_code", "collection_guidance"},
+            "test_catalog": {"aliases", "catalog_metadata", "result_schema", "facility_status", "approval_note"},
+            "test_panel": {"facility_status", "approval_note", "catalog_metadata"},
+            "order_panel": {"definition_snapshot"}, "lab_order_item": {"definition_snapshot"},
+            "lab_result_item": {"structured_values"},
+        }.get(table.name, set())
         for constraint in list(table.constraints):
             if set(constraint.columns.keys()) & removed or (table.name == 'blockchain_event' and isinstance(constraint, sa.CheckConstraint)):
                 table.constraints.remove(constraint)

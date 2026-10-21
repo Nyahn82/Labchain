@@ -250,6 +250,7 @@ export const resources: Record<string, Resource> = {
         lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", ""),
         required: true,
       }),
+      field("aliases", "Alternate names"),
       field("default_unit", "Unit"),
       field("result_type", "Result type", {
         type: "select",
@@ -258,6 +259,8 @@ export const resources: Record<string, Resource> = {
       }),
       field("methodology", "Methodology"),
       field("default_sort_order", "Sort order", { type: "number" }),
+      field("facility_status", "Facility review status", { type: "select", options: choices("UNREVIEWED", "APPROVED", "UNAVAILABLE", "REFERRAL_ONLY"), help: "Approval requires documented facility capability, method/SOP and reference review." }),
+      field("approval_note", "Facility approval and SOP reference", { type: "textarea" }),
       active,
     ],
     columns: [
@@ -292,6 +295,8 @@ export const resources: Record<string, Resource> = {
         lookup: lookup("/lab/departments", "department_id", "department_name", "LAB_MASTER_READ", ""),
       }),
       field("description", "Description", { type: "textarea" }),
+      field("facility_status", "Facility review status", { type: "select", options: choices("UNREVIEWED", "APPROVED", "UNAVAILABLE", "REFERRAL_ONLY"), help: "Approval requires documented facility capability, method/SOP and reference review." }),
+      field("approval_note", "Facility approval and SOP reference", { type: "textarea" }),
       active,
     ],
     columns: [

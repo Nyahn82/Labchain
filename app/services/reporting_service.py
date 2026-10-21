@@ -189,9 +189,10 @@ def verified_sources(db, order):
 
 
 def snapshot_lines(db, sources):
+    from app.services.clinical_catalog_service import test_definition
     ordered = []
     for item, result in sources:
-        test = related(db, TestCatalog, item.test_id)
+        test = test_definition(item, related(db, TestCatalog, item.test_id))
         reference = related(db, ReferenceRange, result.reference_range_id) if result.reference_range_id is not None else None
         if reference and reference.test_id != item.test_id:
             raise HTTPException(409, 'Result reference range belongs to another test.')
@@ -207,9 +208,13 @@ def snapshot_lines(db, sources):
                 section = db.scalar(current(select(PanelSection).where(
                     PanelSection.section_id == member.section_id, PanelSection.panel_id == panel_id)))
                 section_name = section.section_name if section else None
+        if item.definition_snapshot and item.definition_snapshot.get("panels"):
+            section_name = item.definition_snapshot["panels"][0].get("section_name")
+        frozen_member = (item.definition_snapshot or {}).get("panels", [])
+        member_sort = frozen_member[0]["sort_order"] if frozen_member else (member.sort_order if member else None)
         default_order = test.default_sort_order
         sort_key = (item.order_panel_id is None, item.order_panel_id or 0,
-                    member.sort_order if member else (default_order if default_order is not None else item.order_item_id),
+                    member_sort if member_sort is not None else (default_order if default_order is not None else item.order_item_id),
                     default_order if default_order is not None else item.order_item_id, item.order_item_id)
         ordered.append((sort_key, dict(result_item_id=result.result_item_id, panel_id_snapshot=panel_id,
             section_name_snapshot=section_name, test_name_snapshot=test.test_name,

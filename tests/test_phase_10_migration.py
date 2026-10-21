@@ -50,9 +50,11 @@ def disposable_mysql():
 
 
 def test_chain_and_offline_mysql_upgrade():
-    assert ScriptDirectory.from_config(config()).get_heads() == [CURRENT_HEAD] == ['20261018_01']
+    assert ScriptDirectory.from_config(config()).get_heads() == [CURRENT_HEAD] == ['20261021_01']
     assert HEAD == '20261005_01'
-    assert revision(CURRENT_HEAD).down_revision == '20261015_01'
+    assert revision(CURRENT_HEAD).down_revision == '20261019_01'
+    assert revision('20261019_01').down_revision == '20261018_01'
+    assert revision('20261018_01').down_revision == '20261015_01'
     assert revision('20261015_01').down_revision == HEAD
     assert revision(HEAD).down_revision == PHASE_8B
     output = StringIO()

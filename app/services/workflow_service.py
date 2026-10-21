@@ -10,11 +10,12 @@ from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models import (
-    LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
+    LabDepartment, LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
     RejectionReason, RequestingPhysician, SampleType, Specimen, SpecimenOrderItem,
     SpecimenRejection, TestCatalog, TestPanel, TestSampleType,
 )
 from app.schemas import workflow as s
+from app.services.clinical_catalog_service import require_orderable, capture_test, panel_membership, test_definition
 from app.services.auth_service import utc_now
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import related, retry_deadlocks
@@ -81,7 +82,7 @@ def active_related(db, model, identifier, label):
 def order_items(db, order_id, *, lock=False):
     statement = (select(LabOrderItem, TestCatalog).join(TestCatalog, TestCatalog.test_id == LabOrderItem.test_id)
                  .where(LabOrderItem.order_id == order_id).order_by(LabOrderItem.order_item_id))
-    return [s.OrderItemResponse(**fields(item), test=s.TestSummary.model_validate(test))
+    return [s.OrderItemResponse(**fields(item), test=s.TestSummary.model_validate(test_definition(item, test)))
             for item, test in db.execute(current(statement, lock))]
 
 
@@ -99,7 +100,7 @@ def specimen_views(db, specimens, *, lock=False):
                  .where(SpecimenOrderItem.specimen_id.in_(ids)).order_by(SpecimenOrderItem.specimen_order_item_id))
     for link, item, test in db.execute(current(statement, lock)):
         mappings[link.specimen_id].append(s.MappingResponse(**fields(link), order_item=s.OrderItemResponse(
-            **fields(item), test=s.TestSummary.model_validate(test))))
+            **fields(item), test=s.TestSummary.model_validate(test_definition(item, test)))))
     rejections = {identifier: [] for identifier in ids}
     statement = (select(SpecimenRejection, RejectionReason)
                  .join(RejectionReason, RejectionReason.rejection_reason_id == SpecimenRejection.rejection_reason_id)
@@ -123,7 +124,7 @@ def order_detail(db, order_id, *, lock=False):
     patient = db.scalar(current(select(Patient).where(Patient.patient_id == order.patient_id), lock))
     physician = (db.scalar(current(select(RequestingPhysician).where(
         RequestingPhysician.physician_id == order.physician_id), lock)) if order.physician_id else None)
-    panels = [s.OrderPanelResponse(**fields(op), panel=s.PanelSummary.model_validate(panel))
+    panels = [s.OrderPanelResponse(**fields(op), panel=s.PanelSummary.model_validate(op.definition_snapshot or panel))
               for op, panel in db.execute(current(select(OrderPanel, TestPanel)
                   .join(TestPanel, TestPanel.panel_id == OrderPanel.panel_id)
                   .where(OrderPanel.order_id == order_id).order_by(OrderPanel.order_panel_id), lock))]
@@ -169,17 +170,26 @@ def create_order(db, payload, actor_id, ip_address):
             active_related(db, RequestingPhysician, payload.physician_id, 'Physician')
         # Match master-data lock order: panel parents before composition/tests.
         for panel_id in sorted(payload.panel_ids):
-            active_related(db, TestPanel, panel_id, 'Panel')
+            require_orderable(active_related(db, TestPanel, panel_id, 'Panel'))
         composition = {}
         for panel_id in sorted(payload.panel_ids):
             members = list(db.scalars(current(select(PanelTest).where(PanelTest.panel_id == panel_id)
                            .order_by(PanelTest.sort_order, PanelTest.panel_test_id), True)))
             if not members:
                 raise HTTPException(409, f'Panel {panel_id} configuration is invalid: no tests.')
-            composition[panel_id] = [member.test_id for member in members]
-        panel_tests = {test_id for ids in composition.values() for test_id in ids}
+            composition[panel_id] = members
+        panel_tests = {member.test_id for members in composition.values() for member in members}
         for test_id in sorted(panel_tests | set(payload.test_ids)):
             test = related(db, TestCatalog, test_id)
+            if test.is_active:
+                require_orderable(test)
+            if test.facility_status is not None:
+                active_related(db, LabDepartment, test.department_id, 'Department')
+                available_sample = db.scalar(select(TestSampleType.test_sample_type_id).join(SampleType,
+                    TestSampleType.sample_type_id == SampleType.sample_type_id).where(
+                    TestSampleType.test_id == test_id, SampleType.is_active.is_(True)).limit(1))
+                if available_sample is None:
+                    raise HTTPException(409, 'Approve at least one compatible specimen type before ordering.')
             if not test.is_active:
                 if test_id in panel_tests:
                     raise HTTPException(409, 'Panel configuration is invalid: contains an inactive test.')
@@ -188,14 +198,28 @@ def create_order(db, payload, actor_id, ip_address):
         order = insert_coded(db, LabOrder, 'order_code', 'LAB',
                              **payload.model_dump(exclude={'panel_ids', 'test_ids'}),
                              ordered_by_user_id=actor_id, order_date=now, created_at=now, status='REQUESTED')
+        memberships, primary = {}, {}
         for panel_id in payload.panel_ids:
-            panel = OrderPanel(order_id=order.order_id, panel_id=panel_id, status='REQUESTED')
+            catalog_panel = related(db, TestPanel, panel_id)
+            panel = OrderPanel(order_id=order.order_id, panel_id=panel_id, status='REQUESTED',
+                definition_snapshot=dict(panel_id=panel_id, panel_name=catalog_panel.panel_name,
+                                         panel_code=catalog_panel.panel_code,
+                                         test_ids=[m.test_id for m in composition[panel_id]]))
             db.add(panel)
             db.flush()
-            db.add_all(LabOrderItem(order_id=order.order_id, test_id=test_id, order_panel_id=panel.order_panel_id,
-                                    status='REQUESTED', created_at=now) for test_id in composition[panel_id])
-        db.add_all(LabOrderItem(order_id=order.order_id, test_id=test_id, status='REQUESTED', created_at=now)
-                   for test_id in payload.test_ids)
+            for member in composition[panel_id]:
+                context = panel_membership(db, catalog_panel, member)
+                context['order_panel_id'] = panel.order_panel_id
+                memberships.setdefault(member.test_id, []).append(context)
+                primary.setdefault(member.test_id, panel.order_panel_id)
+        # One result-bearing item per distinct examination, retaining every panel association.
+        for test_id in sorted(panel_tests | set(payload.test_ids)):
+            test = related(db, TestCatalog, test_id)
+            definition = capture_test(db, test, memberships.get(test_id, []))
+            definition['selected_individually'] = test_id in payload.test_ids
+            db.add(LabOrderItem(order_id=order.order_id, test_id=test_id,
+                order_panel_id=primary.get(test_id), definition_snapshot=definition,
+                status='REQUESTED', created_at=now))
         db.flush()
         audit(db, actor_id, 'LAB_ORDER_CREATE', 'lab_order', order.order_id, ip_address,
               new={'status': 'REQUESTED', 'panel_ids': payload.panel_ids, 'test_ids': payload.test_ids})
@@ -248,6 +272,7 @@ def start_processing(db, order, items):
             item.status = 'IN_PROGRESS'
             if item.order_panel_id is not None:
                 panel_ids.add(item.order_panel_id)
+            panel_ids.update(p['order_panel_id'] for p in (item.definition_snapshot or {}).get('panels', []))
     for panel_id in sorted(panel_ids):
         panel = get_record(db, OrderPanel, panel_id, lock=True)
         if panel.status == 'REQUESTED':
@@ -275,11 +300,14 @@ def register_specimen(db, order_id, payload, actor_id, ip_address):
                 raise HTTPException(409, 'Cancelled or completed items cannot enter specimen processing.')
             items.append(item)
         # Shared test locks serialize compatibility checks with configuration PUT.
-        for test_id in sorted({item.test_id for item in items}):
-            related(db, TestCatalog, test_id)
-            compatible = db.scalar(current(select(TestSampleType.test_sample_type_id).where(
-                TestSampleType.test_id == test_id, TestSampleType.sample_type_id == payload.sample_type_id), True))
-            if compatible is None:
+        for item in items:
+            if item.definition_snapshot is not None:
+                compatible = payload.sample_type_id in {s['sample_type_id'] for s in item.definition_snapshot['specimens']}
+            else:
+                related(db, TestCatalog, item.test_id)
+                compatible = db.scalar(current(select(TestSampleType.test_sample_type_id).where(
+                    TestSampleType.test_id == item.test_id, TestSampleType.sample_type_id == payload.sample_type_id), True))
+            if not compatible:
                 raise HTTPException(409, 'Selected sample type is not allowed for every requested test.')
         specimen = insert_coded(db, Specimen, 'specimen_code', 'SP', order_id=order_id,
                                 sample_type_id=payload.sample_type_id, remarks=payload.remarks,

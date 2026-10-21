@@ -100,7 +100,7 @@ def list_tests(db: Db, actor: Reader, paging: Paging,
                   department_id: Identifier | None = None,
                   result_type: s.ResultType | None = None):
     return list_records(db, TestCatalog, **paging, search=search,
-                        search_fields=('test_code', 'test_name'),
+                        search_fields=('test_code', 'test_name', 'aliases'),
                         filters={'is_active': is_active, 'department_id': department_id, 'result_type': result_type})
 
 
@@ -266,3 +266,29 @@ def preview_starter_catalog(db: Db, actor: Reader):
 def import_starter_catalog(payload: starter.ImportRequest, request: Request, db: Db, actor: Reader):
     staff_only(db, actor.user_id)
     return starter.import_catalog(db, payload, actor.user_id, get_request_ip(request))
+
+
+@router.get('/clinical-catalog')
+def preview_clinical_catalog(db: Db, actor: Reader):
+    from app.services.clinical_catalog_service import load_catalog
+    staff_only(db, actor.user_id)
+    return starter.preview(db, catalog=load_catalog())
+
+
+@router.post('/clinical-catalog', dependencies=[
+    Depends(require_permission('LAB_DEPARTMENT_MANAGE')),
+    Depends(require_permission('SAMPLE_TYPE_MANAGE')),
+    Depends(require_permission('TEST_CATALOG_MANAGE')),
+    Depends(require_permission('TEST_PANEL_MANAGE')),
+])
+def import_clinical_catalog(payload: starter.ImportRequest, request: Request, db: Db, actor: Reader):
+    from app.services.clinical_catalog_service import load_catalog
+    staff_only(db, actor.user_id)
+    return starter.import_catalog(db, payload, actor.user_id, get_request_ip(request), catalog=load_catalog())
+
+
+@router.get('/catalog-browser')
+def browse_clinical_catalog(db: Db, actor: Reader):
+    from app.services.clinical_catalog_service import catalog_view
+    staff_only(db, actor.user_id)
+    return catalog_view(db)

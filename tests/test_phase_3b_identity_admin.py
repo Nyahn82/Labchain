@@ -535,7 +535,7 @@ def test_openapi_contract_and_migration_chain():
         assert schema['paths'][BASE + '/' + path]['get']['tags']
     assert 'password_hash' not in json.dumps(schema)
     assert '/api/v1/patients/{patient_id}/account' not in schema['paths']
-    assert ScriptDirectory.from_config(config()).get_heads() == ["20261018_01"]
+    assert ScriptDirectory.from_config(config()).get_heads() == ["20261021_01"]
     assert len(list(ScriptDirectory.from_config(config()).walk_revisions())) == 11
 
 

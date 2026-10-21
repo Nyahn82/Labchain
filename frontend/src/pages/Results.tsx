@@ -1,3 +1,5 @@
+import type { ClinicalSchema } from "../components/ResultSchemaEditor";
+import { SusceptibilityEntry, type Susceptibility } from "../components/SusceptibilityEntry";
 import { useState } from "react";
 import { api } from "../api/client";
 import { useResource } from "../api/useResource";
@@ -47,7 +49,7 @@ export function Results({
               columns={[
                 { key: "test.test_name", label: "Test" },
                 { key: "specimen.specimen_code", label: "Specimen" },
-                { key: "result_value", label: "Result" },
+                { key: "result_value", label: "Result", render: r => <><span>{String(r.result_value)}</span><StructuredObservations result={r} /></> },
                 { key: "unit", label: "Unit", render: r => String((r.reference_range as Row | null)?.unit ?? (r.test as Row).default_unit ?? "—") },
                 {
                   key: "reference_range",
@@ -193,7 +195,13 @@ export function ResultForm({
   const catalog = useResource<Row>(
     !result && can("LAB_MASTER_READ") ? `/lab/tests/${item.test_id}` : null,
   );
-  const test = result?.test || catalog.data;
+  const definition = item.definition_snapshot as { test?: Row } | null;
+  const test = result?.test || definition?.test || catalog.data;
+  const structured = result?.structured_values as Row | null;
+  const [susceptibility, setSusceptibility] = useState<Susceptibility[]>((structured?.susceptibility as Susceptibility[]) || []);
+  const schema = test?.result_schema as ClinicalSchema | null;
+  const extraFields = (schema?.fields || []).filter(f => f.key !== "result_value");
+  const scalar = schema?.fields.find(f => f.key === "result_value");
   const specimens = order.specimens.filter(
     (s) =>
       ["RECEIVED", "PROCESSED"].includes(s.specimen_status) &&
@@ -223,22 +231,29 @@ export function ResultForm({
           <Details row={result} fields={["status", "encoded_at", "remarks"]} />
         </>
       )}
+      {schema?.susceptibility && <SusceptibilityEntry rows={susceptibility} onChange={setSusceptibility} />}
       <Form
         fields={[
           field("result_value", "Result value", {
             type:
-              test.result_type === "NUMERIC"
+              scalar?.kind === "choice" ? "select" : test.result_type === "NUMERIC"
                 ? "decimal"
                 : test.result_type === "TEXT"
                   ? "textarea"
                   : "text",
             required: true,
             max: 100,
+            options: scalar?.choices.map(value => ({ value, label: value })),
             help:
               test.result_type === "NUMERIC"
                 ? "Enter a decimal value. Precision is preserved."
                 : "Enter the laboratory-approved result text.",
           }),
+          ...extraFields.map(f => field(`observation_${f.key}`, `${f.label}${f.unit ? ` (${f.unit})` : ""}`, {
+            type: f.kind === "choice" ? "select" as const : f.kind === "number" ? "decimal" as const : "textarea" as const,
+            options: f.choices?.map(value => ({value, label: value})), max: 1000,
+            help: f.required ? "Required before review; incomplete drafts may be saved." : "Optional observation",
+          })),
           field("specimen_id", "Specimen", {
             type: "select",
             options: specimens.map((s) => ({
@@ -248,7 +263,7 @@ export function ResultForm({
           }),
           field("remarks", "Remarks", { type: "textarea" }),
         ]}
-        initial={result || {}}
+        initial={{...result, ...Object.fromEntries(extraFields.map(f => [`observation_${f.key}`, structured?.[f.key] || ""]))}}
         onSubmit={async (body) => {
           await api(
             result
@@ -258,6 +273,10 @@ export function ResultForm({
               method: result ? "PATCH" : "POST",
               body: {
                 result_value: body.result_value,
+                structured_values: schema ? {
+                  ...Object.fromEntries(extraFields.filter(f => body[`observation_${f.key}`] != null && body[`observation_${f.key}`] !== "").map(f => [f.key, String(body[`observation_${f.key}`])])),
+                  ...(schema.susceptibility ? {susceptibility} : {}),
+                } : null,
                 specimen_id: body.specimen_id ? Number(body.specimen_id) : null,
                 remarks: body.remarks,
               },
@@ -268,4 +287,15 @@ export function ResultForm({
       />
     </>
   );
+}
+
+function StructuredObservations({ result }: { result: Row }) {
+  const values = result.structured_values as Record<string, unknown> | null;
+  const schema = (result.test as Row)?.result_schema as ClinicalSchema | null;
+  if (!values || !Object.keys(values).length) return null;
+  const susceptibility = (values.susceptibility || []) as Susceptibility[];
+  return <details><summary>Structured observations for review</summary>
+    <dl>{schema?.fields.filter(f => f.key !== "result_value").map(f => <div key={f.key}><dt>{f.label}</dt><dd>{String(values[f.key] ?? "Not recorded")} {f.unit || ""}</dd></div>)}</dl>
+    {susceptibility.map((r, i) => <p key={i}>{r.organism} · {r.antimicrobial}: {r.measurement} {r.unit} · {r.interpretation} · {r.method} · {r.standard}</p>)}
+  </details>;
 }

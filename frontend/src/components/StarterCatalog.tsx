@@ -19,7 +19,8 @@ type Preview = {
 type Imported = { created: { kind: string; name: string; code: string | null; record_id: number }[]; preserved_count: number; notice: string };
 const manage = ["LAB_DEPARTMENT_MANAGE", "SAMPLE_TYPE_MANAGE", "TEST_CATALOG_MANAGE", "TEST_PANEL_MANAGE"];
 
-export function StarterCatalog() {
+export function StarterCatalog({ expanded = false }: { expanded?: boolean }) {
+  const endpoint = expanded ? "/lab/clinical-catalog" : "/lab/starter-catalog";
   const { can, user } = useAuth();
   const [preview, setPreview] = useState<Preview>();
   const [result, setResult] = useState<Imported>();
@@ -30,7 +31,7 @@ export function StarterCatalog() {
   const editable = manage.every(can);
   async function load() {
     setBusy(true); setError(undefined); setPreview(undefined); setConfirmed(false); setResult(undefined);
-    try { setPreview(await api<Preview>("/lab/starter-catalog")); }
+    try { setPreview(await api<Preview>(endpoint)); }
     catch (e) { setError(e as Error); }
     finally { setBusy(false); }
   }
@@ -38,7 +39,7 @@ export function StarterCatalog() {
     if (!preview || !confirmed || preview.conflicts.length || busy) return;
     setBusy(true); setError(undefined);
     try {
-      setResult(await api<Imported>("/lab/starter-catalog", { method: "POST", body: {
+      setResult(await api<Imported>(endpoint, { method: "POST", body: {
         fingerprint: preview.fingerprint, acknowledge_inactive_review: true,
       } }));
       setPreview(undefined); setConfirmed(false);
@@ -48,7 +49,7 @@ export function StarterCatalog() {
   }
   const names = (kind: string, keys?: string[]) => keys?.map(key => preview?.items.find(i => i.kind === kind && i.key === key)?.name || key).join(", ");
   return <section className="card" aria-labelledby="starter-heading">
-    <h2 id="starter-heading">Philippine laboratory starter catalog</h2>
+    <h2 id="starter-heading">{expanded ? "Import Philippine clinical catalog" : "Philippine laboratory starter catalog"}</h2>
     <p>Review proposed departments, specimen types, tests and panels before adding them to your existing catalog. New entries remain inactive. Inclusion does not establish facility capability or authorization to perform a test.</p>
     <button disabled={busy} onClick={load}>Preview starter catalog</button>
     <State loading={busy} />

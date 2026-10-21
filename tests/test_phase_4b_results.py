@@ -198,10 +198,10 @@ def test_decimal_exactness_and_display_preservation(admin, display, expected):
     ('Non-reactive', 'NON-REACTIVE', 'NORMAL'), ('Anything approved', None, None),
 ])
 def test_qualitative_types_and_flags(admin, kind, value, normal, flag):
-    requested(admin)
     with admin.factory.begin() as db:
         db.get(Catalog, 1).result_type = kind
         db.get(ReferenceRange, 1).qualitative_normal = normal
+    requested(admin)
     row = result(admin, result_value=value)
     assert row['numeric_value'] is None and row['flag'] == flag and row['result_value'] == value.strip()
     assert row['reference_range_id'] == 1
@@ -212,9 +212,9 @@ def test_qualitative_types_and_flags(admin, kind, value, normal, flag):
 @pytest.mark.parametrize('kind', ['TEXT', 'POS_NEG'])
 @pytest.mark.parametrize('value', ['', ' ', None])
 def test_qualitative_requires_nonblank_text(admin, kind, value):
-    requested(admin)
     with admin.factory.begin() as db:
         db.get(Catalog, 1).result_type = kind
+    requested(admin)
     assert enter(admin, result_value=value).status_code == 422
 
 
@@ -485,7 +485,7 @@ def test_individual_panel_mixed_overlapping_completion(admin, panels, tests):
         assert after['status'] == ('COMPLETED' if index == len(row['items']) - 1 else 'IN_PROGRESS')
         assert [i['status'] for i in after['items']] == ['COMPLETED'] * (index + 1) + ['REQUESTED'] * (len(row['items']) - index - 1)
         for panel in after['panels']:
-            members = [i for i in after['items'] if i['order_panel_id'] == panel['order_panel_id']]
+            members = [i for i in after['items'] if any(p['order_panel_id'] == panel['order_panel_id'] for p in i['definition_snapshot']['panels'])]
             expected = 'COMPLETED' if all(i['status'] == 'COMPLETED' for i in members) else (
                 'IN_PROGRESS' if any(i['status'] == 'COMPLETED' for i in members) else 'REQUESTED')
             assert panel['status'] == expected
@@ -499,7 +499,6 @@ def test_cancelled_items_ignored_and_cancelled_panel_preserved(admin):
         db.get(OrderPanel, row['panels'][1]['order_panel_id']).status = 'CANCELLED'
     finish(admin, row['items'][0]['order_item_id'])
     assert detail(admin)['panels'][0]['status'] == 'COMPLETED'
-    finish(admin, row['items'][2]['order_item_id'])
     after = detail(admin)
     assert after['status'] == 'COMPLETED' and after['panels'][1]['status'] == 'CANCELLED'
     assert after['items'][1]['status'] == 'CANCELLED'
@@ -529,7 +528,7 @@ def test_order_results_pagination_and_no_unrelated_results(admin):
     other = requested(admin)
     result(admin, other['items'][0]['order_item_id'])
     page = call(admin, 'GET', '/lab-orders/1/results?page=2&page_size=2').json()
-    assert page == {'items': rows[2:], 'page': 2, 'page_size': 2, 'total': 4}
+    assert page == {'items': rows[2:], 'page': 2, 'page_size': 2, 'total': len(rows), 'occupied_item_ids': [i['order_item_id'] for i in row['items']]}
     assert call(admin, 'GET', '/lab-orders/1/results?page=999').json()['items'] == []
     for query in ('page=0', 'page_size=0', 'page_size=101'):
         assert call(admin, 'GET', '/lab-orders/1/results?' + query).status_code == 422

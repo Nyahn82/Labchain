@@ -1,0 +1,5128 @@
+{
+  "version": "ph-clinical-2026.10.21-v1",
+  "sources": {
+    "ph_services": {
+      "title": "DOH Don Jose S. Monfort Medical Center laboratory services (examples, not RHU licensing authority)",
+      "url": "https://djsmmc.doh.gov.ph/laboratory-pricelist/"
+    },
+    "cbc": {
+      "title": "Mayo Clinic Laboratories CBC with differential: components and whole blood",
+      "url": "https://www.mayocliniclabs.com/test-catalog/overview/9109"
+    },
+    "chemistry": {
+      "title": "Mayo Clinic Laboratories comprehensive metabolic panel, serum",
+      "url": "https://www.mayocliniclabs.com/test-catalog/overview/113631"
+    },
+    "lipids": {
+      "title": "Mayo Clinic Laboratories lipid testing",
+      "url": "https://news.mayocliniclabs.com/2024/10/23/dr-leslie-donato-discusses-lipid-testing-on-adlms-laborastories-the-podcast/"
+    },
+    "hba1c": {
+      "title": "Mayo Clinic Laboratories HbA1c, whole blood",
+      "url": "https://www.mayocliniclabs.com/api/sitecore/testcatalog/TestCatalogSetupPDF?testid=82080"
+    },
+    "urate": {
+      "title": "Mayo Clinic Laboratories uric acid, serum",
+      "url": "https://www.mayocliniclabs.com/test-catalog/Overview/8440"
+    },
+    "bilirubin": {
+      "title": "Labcorp bilirubin, total and direct, serum",
+      "url": "https://www.labcorp.com/tests/001214/bilirubin-total-and-direct?letter=L"
+    },
+    "abo": {
+      "title": "Cleveland Clinic Laboratories ABO Rh typing, whole blood",
+      "url": "https://clevelandcliniclabs.com/test/abo-rh-typing/"
+    },
+    "urine": {
+      "title": "Mayo Clinic urinalysis and urine specimen distinction",
+      "url": "https://www.mayoclinic.org/tests-procedures/urinalysis/about/pac-20384907"
+    },
+    "hbsag": {
+      "title": "Mayo Clinic Laboratories hepatitis B surface antigen, serum",
+      "url": "https://gi.testcatalog.org/show/HBAG"
+    },
+    "ns1": {
+      "title": "CDC dengue NS1 antigen testing, serum preferred",
+      "url": "https://www.cdc.gov/dengue/hcp/diagnosis-testing/dengue-virus-antigen-detection.html"
+    },
+    "dengue": {
+      "title": "CDC dengue serologic testing and interpretation limitations",
+      "url": "https://www.cdc.gov/dengue/hcp/diagnosis-testing/serologic-tests-for-dengue-virus.html"
+    },
+    "ph_routine": {
+      "title": "DOH CFERMTC laboratory service menu (service names only; not local authorization)",
+      "url": "https://cfermtc.doh.gov.ph/laboratory-services/"
+    },
+    "ph_special": {
+      "title": "DOH Bicol Medical Center serology service menu, May 2026 (names only)",
+      "url": "https://www.bmc.doh.gov.ph/rates-and-fees/laboratory/serology"
+    },
+    "ph_bataan": {
+      "title": "DOH Bataan General Hospital pathology and laboratory service menu",
+      "url": "https://bataanghmc.doh.gov.ph/pathology-and-laboratory/"
+    },
+    "ph_zamboanga": {
+      "title": "DOH Zamboanga City Medical Center laboratory menu (specialized examinations)",
+      "url": "https://zcmc.doh.gov.ph/laboratory-fees/"
+    },
+    "urinalysis": {
+      "title": "Cleveland Clinic Laboratories urinalysis with microscopic",
+      "url": "https://clevelandcliniclabs.com/test/urinalysis-with-microscopic/"
+    },
+    "culture": {
+      "title": "Mayo bacterial urine culture and antimicrobial susceptibilities; organism/specimen-specific SOP",
+      "url": "https://www.mayocliniclabs.com/test-catalog/overview/60515"
+    },
+    "collection": {
+      "title": "Mayo specimen collection: test-specific preparation required",
+      "url": "https://www.mayocliniclabs.com/specimen/collection-and-preparation"
+    },
+    "ph_micro": {
+      "title": "DOH Southern Philippines Medical Center pathology service coverage",
+      "url": "https://spmc.doh.gov.ph/pathology/"
+    },
+    "coagulation": {
+      "title": "Mayo coagulation specimen preparation guidance (test-specific SOP required)",
+      "url": "https://www.mayocliniclabs.com/test-notifications/attachment.php?id=1037"
+    },
+    "semen": {
+      "title": "Mayo semen analysis specimen and result information",
+      "url": "https://www.mayocliniclabs.com/test-catalog/Overview/81641"
+    },
+    "ph_chemistry": {
+      "title": "DOH Bicol Medical Center clinical chemistry service menu",
+      "url": "https://bmc.doh.gov.ph/rates-and-fees/laboratory/clinical-chemistry"
+    }
+  },
+  "departments": [
+    {
+      "key": "hematology",
+      "name": "Hematology",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "microscopy",
+      "name": "Clinical Microscopy",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "chemistry",
+      "name": "Clinical Chemistry",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "serology",
+      "name": "Immunology and Serology",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "microbiology",
+      "name": "Microbiology",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "coagulation",
+      "name": "Coagulation",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "blood_bank",
+      "name": "Blood Banking / Immunohematology",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    },
+    {
+      "key": "endocrinology",
+      "name": "Endocrinology and Specialized Testing",
+      "description": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "aliases": []
+    }
+  ],
+  "samples": [
+    {
+      "key": "whole_blood",
+      "name": "Whole Blood",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-WHOLE_BLOOD",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "serum",
+      "name": "Serum",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SERUM",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "plasma",
+      "name": "Plasma",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-PLASMA",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "urine",
+      "name": "Urine",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-URINE",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "stool",
+      "name": "Stool",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-STOOL",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "sputum",
+      "name": "Sputum",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SPUTUM",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "swab",
+      "name": "Swab",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SWAB",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "capillary",
+      "name": "Capillary Blood",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-CAPILLARY",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "csf",
+      "name": "Cerebrospinal Fluid",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-CSF",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "semen",
+      "name": "Semen",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SEMEN",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "tissue",
+      "name": "Tissue",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-TISSUE",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "pleural",
+      "name": "Pleural Fluid",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-PLEURAL",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "synovial",
+      "name": "Synovial Fluid",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SYNOVIAL",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "ascitic",
+      "name": "Ascitic Fluid",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-ASCITIC",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "blood_culture",
+      "name": "Blood for Culture",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-BLOOD_CULTURE",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "skin_scraping",
+      "name": "Skin / Nail Scraping",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-SKIN_SCRAPING",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "citrate_plasma",
+      "name": "Citrated Plasma",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-CITRATE_PLASMA",
+      "collection_guidance": {
+        "container": "Sodium citrate collection tube; validate concentration and fill against coagulation SOP",
+        "anticoagulant": "Sodium citrate",
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "GENERAL_REFERENCE_FACILITY_VALIDATION_REQUIRED",
+        "sources": [
+          "coagulation"
+        ]
+      }
+    },
+    {
+      "key": "edta_blood",
+      "name": "EDTA Whole Blood",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-EDTA_BLOOD",
+      "collection_guidance": {
+        "container": "EDTA collection tube; validate device and fill against facility SOP",
+        "anticoagulant": "EDTA",
+        "handling": "Keep whole blood; do not substitute serum or plasma.",
+        "rejection_rules": [
+          "Clotted specimen: reject for CBC per validated SOP",
+          "Gross hemolysis: assess/reject per validated CBC SOP"
+        ],
+        "review_status": "GENERAL_REFERENCE_FACILITY_VALIDATION_REQUIRED",
+        "sources": [
+          "cbc"
+        ]
+      }
+    },
+    {
+      "key": "timed_urine",
+      "name": "Timed Urine",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-TIMED_URINE",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    },
+    {
+      "key": "nasopharyngeal",
+      "name": "Nasopharyngeal Swab",
+      "aliases": [],
+      "description": "Not interchangeable with other specimen types. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "specimen_code": "SPT-NASOPHARYNGEAL",
+      "collection_guidance": {
+        "container": null,
+        "anticoagulant": null,
+        "handling": null,
+        "rejection_rules": [],
+        "review_status": "FACILITY_SOP_REQUIRED",
+        "sources": [
+          "collection"
+        ]
+      }
+    }
+  ],
+  "tests": [
+    {
+      "key": "hemoglobin",
+      "name": "Hemoglobin",
+      "aliases": [
+        "Hgb"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "g/dL",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hematocrit",
+      "name": "Hematocrit",
+      "aliases": [
+        "Hct"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rbc",
+      "name": "Red Blood Cell Count",
+      "aliases": [
+        "RBC Count"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^12/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "wbc",
+      "name": "White Blood Cell Count",
+      "aliases": [
+        "WBC Count"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "platelets",
+      "name": "Platelet Count",
+      "aliases": [
+        "PLT"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "mcv",
+      "name": "Mean Corpuscular Volume",
+      "aliases": [
+        "MCV"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "fL",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "mch",
+      "name": "Mean Corpuscular Hemoglobin",
+      "aliases": [
+        "MCH"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "pg",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "mchc",
+      "name": "Mean Corpuscular Hemoglobin Concentration",
+      "aliases": [
+        "MCHC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "g/dL",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rdw",
+      "name": "Red Cell Distribution Width",
+      "aliases": [
+        "RDW-CV"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "neutrophils",
+      "name": "Neutrophils",
+      "aliases": [
+        "Neutrophil Percentage"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "lymphocytes",
+      "name": "Lymphocytes",
+      "aliases": [
+        "Lymphocyte Percentage"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "monocytes",
+      "name": "Monocytes",
+      "aliases": [
+        "Monocyte Percentage"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "eosinophils",
+      "name": "Eosinophils",
+      "aliases": [
+        "Eosinophil Percentage"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "basophils",
+      "name": "Basophils",
+      "aliases": [
+        "Basophil Percentage"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "neutrophils_abs",
+      "name": "Absolute Neutrophil Count",
+      "aliases": [
+        "ANC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "lymphocytes_abs",
+      "name": "Absolute Lymphocyte Count",
+      "aliases": [
+        "ALC"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "monocytes_abs",
+      "name": "Absolute Monocyte Count",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "eosinophils_abs",
+      "name": "Absolute Eosinophil Count",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "basophils_abs",
+      "name": "Absolute Basophil Count",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "10^9/L",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "reticulocytes",
+      "name": "Reticulocyte Count",
+      "aliases": [
+        "Retic Count"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "esr",
+      "name": "Erythrocyte Sedimentation Rate",
+      "aliases": [
+        "ESR"
+      ],
+      "department": "hematology",
+      "samples": [
+        "whole_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mm/hour",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "Anticoagulant, tube and method require facility-specific validation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "smear",
+      "name": "Peripheral Blood Smear",
+      "aliases": [
+        "PBS"
+      ],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "cbc",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "malaria",
+      "name": "Malarial Smear",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "whole_blood",
+        "capillary"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hemoglobin_electrophoresis",
+      "name": "Hemoglobin Electrophoresis",
+      "aliases": [],
+      "department": "hematology",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_color",
+      "name": "Urine Color",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_appearance",
+      "name": "Urine Appearance",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_protein",
+      "name": "Urine Protein (Dipstick)",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_glucose",
+      "name": "Urine Glucose (Dipstick)",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_ketones",
+      "name": "Urine Ketones",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_bilirubin",
+      "name": "Urine Bilirubin",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_urobilinogen",
+      "name": "Urine Urobilinogen",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_blood",
+      "name": "Urine Blood (Dipstick)",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_nitrite",
+      "name": "Urine Nitrite",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_leukocyte",
+      "name": "Urine Leukocyte Esterase",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_rbc",
+      "name": "Urine RBC Microscopy",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_wbc",
+      "name": "Urine WBC Microscopy",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_epithelial",
+      "name": "Urine Epithelial Cells",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_casts",
+      "name": "Urine Casts",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_crystals",
+      "name": "Urine Crystals",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_bacteria",
+      "name": "Urine Bacteria",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_yeast",
+      "name": "Urine Yeast",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis",
+        "ph_micro"
+      ],
+      "review_note": "Specify method and reporting scale (e.g. cells/field vs cells/volume) locally; no automatic microscopy interpretation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_ph",
+      "name": "Urine pH",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "pH",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_sg",
+      "name": "Urine Specific Gravity",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ratio",
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urinalysis"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_color",
+      "name": "Stool Color",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_consistency",
+      "name": "Stool Consistency",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_rbc",
+      "name": "Stool RBC Microscopy",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_wbc",
+      "name": "Stool WBC Microscopy",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_ova",
+      "name": "Stool Ova and Parasites",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_other",
+      "name": "Stool Other Microscopic Findings",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "occult_blood",
+      "name": "Fecal Occult Blood",
+      "aliases": [
+        "FOBT"
+      ],
+      "department": "microscopy",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "POS_NEG",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Fecal Occult Blood",
+            "kind": "choice",
+            "choices": [
+              "Positive",
+              "Negative",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "pregnancy",
+      "name": "Urine Pregnancy Test",
+      "aliases": [
+        "Urine hCG"
+      ],
+      "department": "microscopy",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "POS_NEG",
+      "suggested_unit": null,
+      "service_tier": "ROUTINE",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Urine Pregnancy Test",
+            "kind": "choice",
+            "choices": [
+              "Positive",
+              "Negative",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "csf_cells",
+      "name": "Cerebrospinal Fluid Cell Count and Differential",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "csf"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "nucleated_cells",
+            "label": "Nucleated cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "rbc",
+            "label": "Red blood cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "differential",
+            "label": "Differential and morphology",
+            "kind": "text"
+          }
+        ]
+      },
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "pleural_cells",
+      "name": "Pleural Fluid Cell Count and Differential",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "pleural"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "nucleated_cells",
+            "label": "Nucleated cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "rbc",
+            "label": "Red blood cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "differential",
+            "label": "Differential and morphology",
+            "kind": "text"
+          }
+        ]
+      },
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "synovial_cells",
+      "name": "Synovial Fluid Cell Count and Differential",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "synovial"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "nucleated_cells",
+            "label": "Nucleated cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "rbc",
+            "label": "Red blood cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "differential",
+            "label": "Differential and morphology",
+            "kind": "text"
+          }
+        ]
+      },
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ascitic_cells",
+      "name": "Ascitic Fluid Cell Count and Differential",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "ascitic"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "nucleated_cells",
+            "label": "Nucleated cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "rbc",
+            "label": "Red blood cells",
+            "kind": "number",
+            "unit": "cells/uL"
+          },
+          {
+            "key": "differential",
+            "label": "Differential and morphology",
+            "kind": "text"
+          }
+        ]
+      },
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "semen_analysis",
+      "name": "Semen Analysis",
+      "aliases": [],
+      "department": "microscopy",
+      "samples": [
+        "semen"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "volume",
+            "label": "Volume",
+            "kind": "number",
+            "unit": "mL"
+          },
+          {
+            "key": "concentration",
+            "label": "Sperm concentration",
+            "kind": "number",
+            "unit": "million/mL"
+          },
+          {
+            "key": "motility",
+            "label": "Motility assessment",
+            "kind": "text",
+            "unit": null
+          },
+          {
+            "key": "morphology",
+            "label": "Morphology assessment",
+            "kind": "text",
+            "unit": null
+          },
+          {
+            "key": "collection",
+            "label": "Collection and examination timing",
+            "kind": "text",
+            "unit": null
+          }
+        ]
+      },
+      "sources": [
+        "ph_routine",
+        "semen"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "fbs",
+      "name": "Fasting Blood Sugar",
+      "aliases": [
+        "FBS"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rbs",
+      "name": "Random Blood Sugar",
+      "aliases": [
+        "RBS"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bun",
+      "name": "Blood Urea Nitrogen",
+      "aliases": [
+        "BUN"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "creatinine",
+      "name": "Creatinine",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "uric_acid",
+      "name": "Uric Acid",
+      "aliases": [
+        "BUA"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "urate",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "cholesterol",
+      "name": "Total Cholesterol",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "lipids",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "triglycerides",
+      "name": "Triglycerides",
+      "aliases": [
+        "TG"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "lipids",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hdl",
+      "name": "HDL Cholesterol",
+      "aliases": [
+        "HDL-C"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "lipids",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ldl",
+      "name": "LDL Cholesterol",
+      "aliases": [
+        "LDL-C"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "lipids",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "sodium",
+      "name": "Sodium",
+      "aliases": [
+        "Na"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mmol/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "potassium",
+      "name": "Potassium",
+      "aliases": [
+        "K"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mmol/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "chloride",
+      "name": "Chloride",
+      "aliases": [
+        "Cl"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mmol/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bicarbonate",
+      "name": "Bicarbonate",
+      "aliases": [
+        "Total CO2"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mmol/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "calcium",
+      "name": "Total Calcium",
+      "aliases": [
+        "Ca"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "magnesium",
+      "name": "Magnesium",
+      "aliases": [
+        "Mg"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "phosphate",
+      "name": "Inorganic Phosphate",
+      "aliases": [
+        "Phosphorus"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "albumin",
+      "name": "Albumin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "g/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "protein",
+      "name": "Total Protein",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "g/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bilirubin_total",
+      "name": "Total Bilirubin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "bilirubin",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bilirubin_direct",
+      "name": "Direct Bilirubin",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "bilirubin",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ast",
+      "name": "Aspartate Aminotransferase",
+      "aliases": [
+        "AST",
+        "SGOT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "alt",
+      "name": "Alanine Aminotransferase",
+      "aliases": [
+        "ALT",
+        "SGPT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "alp",
+      "name": "Alkaline Phosphatase",
+      "aliases": [
+        "ALP"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "chemistry",
+        "collection"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ggt",
+      "name": "Gamma Glutamyl Transferase",
+      "aliases": [
+        "GGT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "amylase",
+      "name": "Amylase",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "lipase",
+      "name": "Lipase",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ldh",
+      "name": "Lactate Dehydrogenase",
+      "aliases": [
+        "LDH"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ck",
+      "name": "Creatine Kinase",
+      "aliases": [
+        "CK"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "iron",
+      "name": "Serum Iron",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ug/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_zamboanga",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "tibc",
+      "name": "Total Iron Binding Capacity",
+      "aliases": [
+        "TIBC"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ug/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_zamboanga",
+        "collection",
+        "ph_chemistry"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hba1c",
+      "name": "Hemoglobin A1c",
+      "aliases": [
+        "HbA1c"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "%",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "hba1c"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ogtt",
+      "name": "Oral Glucose Tolerance Test",
+      "aliases": [
+        "OGTT"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "plasma"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "protocol",
+            "label": "Approved protocol / glucose load",
+            "kind": "text"
+          },
+          {
+            "key": "fasting",
+            "label": "Fasting glucose",
+            "kind": "number",
+            "unit": "mg/dL"
+          },
+          {
+            "key": "one_hour",
+            "label": "1-hour glucose (if protocol requires)",
+            "kind": "number",
+            "unit": "mg/dL",
+            "required": false
+          },
+          {
+            "key": "two_hour",
+            "label": "2-hour glucose",
+            "kind": "number",
+            "unit": "mg/dL"
+          },
+          {
+            "key": "collection_times",
+            "label": "Specimen codes and collection times at each time point",
+            "kind": "text"
+          }
+        ]
+      },
+      "sources": [
+        "ph_routine",
+        "collection"
+      ],
+      "review_note": "Each time point requires separately labeled specimen registration; record all codes/times. Local protocol and preanalytical controls required; no diagnostic cutoffs. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_albumin",
+      "name": "Urine Albumin Quantitative",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/L",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_creatinine",
+      "name": "Urine Creatinine",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_acr",
+      "name": "Urine Albumin / Creatinine Ratio",
+      "aliases": [
+        "UACR"
+      ],
+      "department": "chemistry",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/g",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_bataan"
+      ],
+      "review_note": "Enter a laboratory-validated ratio; no implicit unit conversion or automatic calculation. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_protein_quant",
+      "name": "Urine Protein Quantitative",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "timed_urine"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/24 h",
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "csf_glucose",
+      "name": "CSF Glucose",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "csf"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "csf_protein",
+      "name": "CSF Protein",
+      "aliases": [],
+      "department": "chemistry",
+      "samples": [
+        "csf"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hbsag",
+      "name": "Hepatitis B Surface Antigen",
+      "aliases": [
+        "HBsAg"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B Surface Antigen",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "anti_hbs",
+      "name": "Hepatitis B Surface Antibody",
+      "aliases": [
+        "Anti-HBs"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B Surface Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "anti_hbc_total",
+      "name": "Hepatitis B Core Total Antibody",
+      "aliases": [
+        "Anti-HBc Total"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B Core Total Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "anti_hbc_igm",
+      "name": "Hepatitis B Core IgM Antibody",
+      "aliases": [
+        "Anti-HBc IgM"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B Core IgM Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hbeag",
+      "name": "Hepatitis B e Antigen",
+      "aliases": [
+        "HBeAg"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B e Antigen",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "anti_hbe",
+      "name": "Hepatitis B e Antibody",
+      "aliases": [
+        "Anti-HBe"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis B e Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hav_igm",
+      "name": "Hepatitis A IgM Antibody",
+      "aliases": [
+        "Anti-HAV IgM"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis A IgM Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hav_igg",
+      "name": "Hepatitis A IgG Antibody",
+      "aliases": [
+        "Anti-HAV IgG"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis A IgG Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hcv",
+      "name": "Hepatitis C Antibody",
+      "aliases": [
+        "Anti-HCV"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Hepatitis C Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ns1",
+      "name": "Dengue NS1 Antigen",
+      "aliases": [
+        "Dengue NS1"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Dengue NS1 Antigen",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "igm",
+      "name": "Dengue IgM Antibody",
+      "aliases": [
+        "Dengue IgM"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Dengue IgM Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "igg",
+      "name": "Dengue IgG Antibody",
+      "aliases": [
+        "Dengue IgG"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Dengue IgG Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "A single IgG result is not evidence of acute dengue. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rpr",
+      "name": "Rapid Plasma Reagin",
+      "aliases": [
+        "RPR"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Rapid Plasma Reagin",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "syphilis_tp",
+      "name": "Treponemal Antibody",
+      "aliases": [
+        "Syphilis TP"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Treponemal Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ana",
+      "name": "Antinuclear Antibody Screen",
+      "aliases": [
+        "ANA"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Antinuclear Antibody Screen",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "leptospira",
+      "name": "Leptospira Antibody",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Leptospira Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "h_pylori",
+      "name": "Helicobacter pylori Antibody",
+      "aliases": [
+        "H. pylori Antibody"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "GENERAL",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Helicobacter pylori Antibody",
+            "kind": "choice",
+            "choices": [
+              "Reactive",
+              "Nonreactive",
+              "Indeterminate",
+              "Invalid"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "ph_special",
+        "ph_bataan"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "crp",
+      "name": "C-Reactive Protein",
+      "aliases": [
+        "CRP"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/L",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rf",
+      "name": "Rheumatoid Factor",
+      "aliases": [
+        "RF"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "IU/mL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "aso",
+      "name": "Antistreptolysin O",
+      "aliases": [
+        "ASO"
+      ],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "IU/mL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "c3",
+      "name": "Complement C3",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ferritin",
+      "name": "Ferritin",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "procalcitonin",
+      "name": "Procalcitonin",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "hiv_screen",
+      "name": "HIV-1/2 Screening",
+      "aliases": [],
+      "department": "serology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": "HIV: dedicated consent, confidential access and nationally approved testing/referral workflow required; unavailable in general ordering.",
+      "result_schema": null,
+      "sources": [
+        "ph_routine"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "gram",
+      "name": "Gram Stain",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "sputum",
+        "swab",
+        "csf",
+        "tissue"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "afb",
+      "name": "Acid-Fast Bacilli Smear",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "sputum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "tb_molecular",
+      "name": "Tuberculosis Molecular Examination",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "sputum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "koh",
+      "name": "Fungal Direct Microscopy (KOH)",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "skin_scraping"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "india_ink",
+      "name": "India Ink Examination",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "csf"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "ph_micro"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bacterial_culture",
+      "name": "Bacterial Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "swab",
+        "tissue"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "culture_sensitivity",
+      "name": "Culture and Susceptibility",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "swab",
+        "tissue"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "urine_culture",
+      "name": "Urine Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "urine"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "blood_culture",
+      "name": "Blood Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "blood_culture"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "stool_culture",
+      "name": "Stool Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "stool"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "sputum_culture",
+      "name": "Sputum Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "sputum"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "swab_culture",
+      "name": "Swab Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "swab"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "csf_culture",
+      "name": "CSF Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "csf"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "fungal_culture",
+      "name": "Fungal Culture",
+      "aliases": [],
+      "department": "microbiology",
+      "samples": [
+        "skin_scraping",
+        "tissue"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "fields": [
+          {
+            "key": "growth",
+            "label": "Culture growth findings",
+            "kind": "text"
+          },
+          {
+            "key": "organisms",
+            "label": "Organism identification / no isolate",
+            "kind": "text"
+          },
+          {
+            "key": "method",
+            "label": "Identification method",
+            "kind": "text"
+          },
+          {
+            "key": "interpretation",
+            "label": "Authorized laboratory interpretation",
+            "kind": "text",
+            "required": false
+          }
+        ],
+        "susceptibility": true
+      },
+      "sources": [
+        "culture",
+        "ph_micro"
+      ],
+      "review_note": "Referral/service capability must be approved. Susceptibility is organism- and specimen-specific; enter measured values and the laboratory-approved method/standard version. No automatic antibiotic recommendations. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "pt",
+      "name": "Prothrombin Time",
+      "aliases": [
+        "PT"
+      ],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "s",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "inr",
+      "name": "International Normalized Ratio",
+      "aliases": [
+        "INR"
+      ],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ratio",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "aptt",
+      "name": "Activated Partial Thromboplastin Time",
+      "aliases": [
+        "APTT"
+      ],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "s",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "fibrinogen",
+      "name": "Fibrinogen",
+      "aliases": [],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mg/dL",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "d_dimer",
+      "name": "D-Dimer",
+      "aliases": [],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": null,
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "thrombin_time",
+      "name": "Thrombin Time",
+      "aliases": [],
+      "department": "coagulation",
+      "samples": [
+        "citrate_plasma"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "s",
+      "service_tier": "SPECIALIZED",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_routine",
+        "ph_bataan",
+        "coagulation"
+      ],
+      "review_note": "Citrate concentration, fill volume and assay requirements require local validation. D-dimer unit/FEU versus DDU must be configured explicitly. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "abo",
+      "name": "ABO Blood Group",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "ABO Blood Group",
+            "kind": "choice",
+            "choices": [
+              "A",
+              "B",
+              "AB",
+              "O",
+              "Indeterminate"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "rh",
+      "name": "Rh(D) Typing",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": {
+        "version": 1,
+        "fields": [
+          {
+            "key": "result_value",
+            "label": "Rh(D) Typing",
+            "kind": "choice",
+            "choices": [
+              "Positive",
+              "Negative",
+              "Indeterminate"
+            ],
+            "required": true
+          }
+        ],
+        "susceptibility": false
+      },
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "crossmatch",
+      "name": "Compatibility / Crossmatch",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "antibody_screen",
+      "name": "Red Cell Antibody Screen",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "dat",
+      "name": "Direct Antiglobulin Test",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "iat",
+      "name": "Indirect Antiglobulin Test",
+      "aliases": [],
+      "department": "blood_bank",
+      "samples": [
+        "edta_blood"
+      ],
+      "result_type": "TEXT",
+      "suggested_unit": null,
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "abo",
+        "ph_bataan"
+      ],
+      "review_note": "Specialized blood-bank authorization, identity checks and validated transfusion workflow required. This catalog does not authorize transfusion. General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "tsh",
+      "name": "Thyroid Stimulating Hormone",
+      "aliases": [
+        "TSH"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mIU/L",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ft3",
+      "name": "Free Triiodothyronine",
+      "aliases": [
+        "FT3"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "pg/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ft4",
+      "name": "Free Thyroxine",
+      "aliases": [
+        "FT4"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "t3",
+      "name": "Total Triiodothyronine",
+      "aliases": [
+        "T3"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "t4",
+      "name": "Total Thyroxine",
+      "aliases": [
+        "T4"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ug/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "fsh",
+      "name": "Follicle Stimulating Hormone",
+      "aliases": [
+        "FSH"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "IU/L",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "lh",
+      "name": "Luteinizing Hormone",
+      "aliases": [
+        "LH"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "IU/L",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "estradiol",
+      "name": "Estradiol",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "pg/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "progesterone",
+      "name": "Progesterone",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "testosterone",
+      "name": "Testosterone",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "prolactin",
+      "name": "Prolactin",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "cortisol",
+      "name": "Cortisol",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ug/dL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "insulin",
+      "name": "Insulin",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "uIU/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "pth",
+      "name": "Intact Parathyroid Hormone",
+      "aliases": [
+        "PTH"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "pg/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "bhcg",
+      "name": "Beta hCG Quantitative",
+      "aliases": [
+        "BHCG"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "mIU/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "psa",
+      "name": "Prostate Specific Antigen",
+      "aliases": [
+        "PSA"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "afp",
+      "name": "Alpha Fetoprotein",
+      "aliases": [
+        "AFP"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "cea",
+      "name": "Carcinoembryonic Antigen",
+      "aliases": [
+        "CEA"
+      ],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ca125",
+      "name": "CA 125",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ca199",
+      "name": "CA 19-9",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "ca153",
+      "name": "CA 15-3",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "U/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    },
+    {
+      "key": "vitamin_d",
+      "name": "25-Hydroxy Vitamin D",
+      "aliases": [],
+      "department": "endocrinology",
+      "samples": [
+        "serum"
+      ],
+      "result_type": "NUMERIC",
+      "suggested_unit": "ng/mL",
+      "service_tier": "REFERRAL_ONLY",
+      "restricted_workflow": null,
+      "result_schema": null,
+      "sources": [
+        "ph_special",
+        "ph_zamboanga"
+      ],
+      "review_note": "General catalog information only. Facility must validate capability, method, collection SOP, reporting units and reference applicability before approval. No reference interval supplied.",
+      "reference_policy": "UNSET: facility-reviewed, method/instrument/population-specific intervals only."
+    }
+  ],
+  "panels": [
+    {
+      "key": "cbc",
+      "name": "Complete Blood Count Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "hematology",
+      "tests": [
+        "hemoglobin",
+        "hematocrit",
+        "rbc",
+        "wbc",
+        "platelets",
+        "mcv",
+        "mch",
+        "mchc",
+        "rdw"
+      ]
+    },
+    {
+      "key": "cbc_diff",
+      "name": "CBC with Differential Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "hematology",
+      "tests": [
+        "hemoglobin",
+        "hematocrit",
+        "rbc",
+        "wbc",
+        "platelets",
+        "mcv",
+        "mch",
+        "mchc",
+        "rdw",
+        "neutrophils",
+        "lymphocytes",
+        "monocytes",
+        "eosinophils",
+        "basophils",
+        "neutrophils_abs",
+        "lymphocytes_abs",
+        "monocytes_abs",
+        "eosinophils_abs",
+        "basophils_abs"
+      ]
+    },
+    {
+      "key": "diff",
+      "name": "Differential Count Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "hematology",
+      "tests": [
+        "neutrophils",
+        "lymphocytes",
+        "monocytes",
+        "eosinophils",
+        "basophils"
+      ]
+    },
+    {
+      "key": "hb_hct",
+      "name": "Hemoglobin and Hematocrit Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "hematology",
+      "tests": [
+        "hemoglobin",
+        "hematocrit"
+      ]
+    },
+    {
+      "key": "urinalysis",
+      "name": "Routine Urinalysis Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "urine_color",
+        "urine_appearance",
+        "urine_protein",
+        "urine_glucose",
+        "urine_ketones",
+        "urine_bilirubin",
+        "urine_urobilinogen",
+        "urine_blood",
+        "urine_nitrite",
+        "urine_leukocyte",
+        "urine_rbc",
+        "urine_wbc",
+        "urine_epithelial",
+        "urine_casts",
+        "urine_crystals",
+        "urine_bacteria",
+        "urine_yeast",
+        "urine_ph",
+        "urine_sg"
+      ],
+      "sections": {
+        "Physical examination": [
+          "urine_color",
+          "urine_appearance"
+        ],
+        "Chemical examination": [
+          "urine_protein",
+          "urine_glucose",
+          "urine_ketones",
+          "urine_bilirubin",
+          "urine_urobilinogen",
+          "urine_blood",
+          "urine_nitrite",
+          "urine_leukocyte",
+          "urine_ph",
+          "urine_sg"
+        ],
+        "Microscopic examination": [
+          "urine_rbc",
+          "urine_wbc",
+          "urine_epithelial",
+          "urine_casts",
+          "urine_crystals",
+          "urine_bacteria",
+          "urine_yeast"
+        ]
+      }
+    },
+    {
+      "key": "urine_microscopy",
+      "name": "Urine Microscopy Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "urine_rbc",
+        "urine_wbc",
+        "urine_epithelial",
+        "urine_casts",
+        "urine_crystals",
+        "urine_bacteria",
+        "urine_yeast"
+      ]
+    },
+    {
+      "key": "urine_chemistry",
+      "name": "Urine Dipstick Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "urine_ph",
+        "urine_sg",
+        "urine_protein",
+        "urine_glucose",
+        "urine_ketones",
+        "urine_bilirubin",
+        "urine_urobilinogen",
+        "urine_blood",
+        "urine_nitrite",
+        "urine_leukocyte"
+      ]
+    },
+    {
+      "key": "fecalysis",
+      "name": "Routine Fecalysis Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "stool_color",
+        "stool_consistency",
+        "stool_rbc",
+        "stool_wbc",
+        "stool_ova",
+        "stool_other"
+      ],
+      "sections": {
+        "Physical examination": [
+          "stool_color",
+          "stool_consistency"
+        ],
+        "Microscopic examination": [
+          "stool_rbc",
+          "stool_wbc",
+          "stool_ova",
+          "stool_other"
+        ]
+      }
+    },
+    {
+      "key": "stool_microscopy",
+      "name": "Stool Microscopy Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "stool_rbc",
+        "stool_wbc",
+        "stool_ova",
+        "stool_other"
+      ]
+    },
+    {
+      "key": "lipid",
+      "name": "Lipid Profile",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "cholesterol",
+        "triglycerides",
+        "hdl",
+        "ldl"
+      ]
+    },
+    {
+      "key": "liver",
+      "name": "Liver Function Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "alt",
+        "ast",
+        "alp",
+        "albumin",
+        "protein",
+        "bilirubin_total",
+        "bilirubin_direct"
+      ]
+    },
+    {
+      "key": "renal",
+      "name": "Renal Function Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "bun",
+        "creatinine",
+        "sodium",
+        "potassium",
+        "chloride",
+        "bicarbonate",
+        "calcium",
+        "phosphate",
+        "albumin"
+      ]
+    },
+    {
+      "key": "electrolytes",
+      "name": "Electrolyte Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "sodium",
+        "potassium",
+        "chloride",
+        "bicarbonate"
+      ]
+    },
+    {
+      "key": "basic_metabolic",
+      "name": "Basic Metabolic Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "rbs",
+        "bun",
+        "creatinine",
+        "sodium",
+        "potassium",
+        "chloride",
+        "bicarbonate",
+        "calcium"
+      ]
+    },
+    {
+      "key": "comprehensive_metabolic",
+      "name": "Comprehensive Metabolic Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "rbs",
+        "bun",
+        "creatinine",
+        "sodium",
+        "potassium",
+        "chloride",
+        "bicarbonate",
+        "calcium",
+        "albumin",
+        "protein",
+        "bilirubin_total",
+        "alp",
+        "ast",
+        "alt"
+      ]
+    },
+    {
+      "key": "bilirubin",
+      "name": "Bilirubin Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "bilirubin_total",
+        "bilirubin_direct"
+      ]
+    },
+    {
+      "key": "protein",
+      "name": "Serum Protein Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "protein",
+        "albumin"
+      ]
+    },
+    {
+      "key": "iron",
+      "name": "Iron Studies Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "iron",
+        "tibc",
+        "ferritin"
+      ]
+    },
+    {
+      "key": "urine_albumin_creatinine",
+      "name": "Urine Albumin and Creatinine Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "urine_albumin",
+        "urine_creatinine",
+        "urine_acr"
+      ]
+    },
+    {
+      "key": "csf_analysis",
+      "name": "CSF Laboratory Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "microscopy",
+      "tests": [
+        "csf_cells",
+        "csf_glucose",
+        "csf_protein"
+      ]
+    },
+    {
+      "key": "coagulation",
+      "name": "Coagulation Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "coagulation",
+      "tests": [
+        "pt",
+        "inr",
+        "aptt"
+      ]
+    },
+    {
+      "key": "thyroid",
+      "name": "Thyroid Function Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "endocrinology",
+      "tests": [
+        "tsh",
+        "ft4",
+        "ft3"
+      ]
+    },
+    {
+      "key": "hepatitis_b",
+      "name": "Hepatitis B Serology Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "serology",
+      "tests": [
+        "hbsag",
+        "anti_hbs",
+        "anti_hbc_total"
+      ]
+    },
+    {
+      "key": "hepatitis_acute",
+      "name": "Acute Hepatitis Serology Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "serology",
+      "tests": [
+        "hav_igm",
+        "hbsag",
+        "anti_hbc_igm",
+        "hcv"
+      ]
+    },
+    {
+      "key": "dengue",
+      "name": "Dengue Antigen and Antibody Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "serology",
+      "tests": [
+        "ns1",
+        "igm",
+        "igg"
+      ]
+    },
+    {
+      "key": "abo_rh",
+      "name": "ABO and Rh Typing Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "blood_bank",
+      "tests": [
+        "abo",
+        "rh"
+      ]
+    },
+    {
+      "key": "glycemic",
+      "name": "Glycemic Assessment Panel",
+      "aliases": [],
+      "description": "Proposed component grouping, not a diagnostic/reflex protocol. Each component and its specimen SOP requires facility approval; mixed specimen requirements remain separate.",
+      "department": "chemistry",
+      "tests": [
+        "fbs",
+        "hba1c"
+      ]
+    }
+  ]
+}

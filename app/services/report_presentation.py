@@ -5,6 +5,8 @@ from io import BytesIO
 from PIL import Image
 
 from app.config import settings
+from app.services.clinical_catalog_service import test_definition
+from app.services.structured_results import presentation as structured_presentation
 from app.models import LabDepartment, OrderPanel, SampleType, Specimen, Staff, TestCatalog, TestPanel
 from app.schemas.reporting import FacilityResponse, TemplateResponse
 from app.services.laboratory_service import related
@@ -36,14 +38,15 @@ def logo_snapshot(path):
 def capture_presentation(db, order, sources, facility, template):
     results = {}
     for item, result in sources:
-        test = related(db, TestCatalog, item.test_id)
+        test = test_definition(item, related(db, TestCatalog, item.test_id))
         department = related(db, LabDepartment, test.department_id) if test.department_id else None
         panel = related(db, OrderPanel, item.order_panel_id) if item.order_panel_id else None
         catalog_panel = related(db, TestPanel, panel.panel_id) if panel else None
         specimen = related(db, Specimen, result.specimen_id) if result.specimen_id else None
         results[str(result.result_item_id)] = {
-            'department': department.department_name if department else None,
-            'panel': catalog_panel.panel_name if catalog_panel else None,
+            'department': (item.definition_snapshot or {}).get('department', department.department_name if department else None),
+            'panel': ' / '.join(p['panel_name'] for p in item.definition_snapshot['panels']) if item.definition_snapshot else (catalog_panel.panel_name if catalog_panel else None),
+            'structured_results': structured_presentation(test.result_schema, result.structured_values),
             'methodology': test.methodology, 'remarks': result.remarks,
             'verified_at': stamp(result.verified_at),
             'specimen_code': specimen.specimen_code if specimen else None,

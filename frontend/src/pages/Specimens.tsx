@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api } from "../api/client";
+import { api, pdf } from "../api/client";
 import { useResource } from "../api/useResource";
 import { PermissionGuard, useAuth } from "../auth/Auth";
 import {
@@ -111,7 +111,7 @@ export function RegisterSpecimen({
           label="Sample type"
           required
           value={sample}
-          onChange={setSample}
+          onChange={value => { setSample(value); setIds([]); }}
         />
         <fieldset>
           <legend>Map order items</legend>
@@ -124,6 +124,7 @@ export function RegisterSpecimen({
               <input
                 type="checkbox"
                 checked={ids.includes(Number(item.order_item_id))}
+                disabled={!!item.definition_snapshot && !(item.definition_snapshot as {specimens: Row[]}).specimens.some(s => Number(s.sample_type_id) === Number(sample))}
                 onChange={(e) =>
                   setIds(
                     e.target.checked
@@ -135,6 +136,7 @@ export function RegisterSpecimen({
               {String((item.test as Row).test_name)} · Item #
               {String(item.order_item_id)}{" "}
               {item.order_panel_id ? "(panel request)" : "(individual)"}
+              {!!item.definition_snapshot && <> · {(item.definition_snapshot as {specimens: Row[]}).specimens.map(s => String(s.sample_name)).join(" / ")}</>}
             </label>
           ))}
         </fieldset>
@@ -183,6 +185,7 @@ function SpecimenContent() {
         <>
           <section className="card">
             <Badge>{state.data.specimen_status}</Badge>
+            <Action label="Download barcode label" onDone={() => {}} description="Download the accession barcode label for this specimen. Check the printed label against the collected sample." run={() => pdf(`/specimens/${id}/label`, `specimen-${id}-label.pdf`)} />
             <Details
               row={state.data}
               fields={[

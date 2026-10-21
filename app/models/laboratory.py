@@ -5,7 +5,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     BigInteger, Boolean, Date, Enum, ForeignKey, ForeignKeyConstraint, Index,
-    Integer, Numeric, String, Text, UniqueConstraint, text,
+    Integer, JSON, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -24,8 +24,11 @@ class LabDepartment(Base):
 
 class SampleType(Base):
     __tablename__ = "sample_type"
+    __table_args__ = (Index("uq_sample_type_specimen_code", "specimen_code", unique=True), Base.__table_args__)
 
     sample_type_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    specimen_code: Mapped[str | None] = mapped_column(String(40))
+    collection_guidance: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     sample_name: Mapped[str] = mapped_column(String(80), unique=True)
     description: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=text("1"))
@@ -36,6 +39,11 @@ class TestCatalog(Base):
 
     test_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     test_code: Mapped[str] = mapped_column(String(30), unique=True)
+    aliases: Mapped[str | None] = mapped_column(Text)
+    catalog_metadata: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
+    result_schema: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
+    facility_status: Mapped[str | None] = mapped_column(String(24), index=True)
+    approval_note: Mapped[str | None] = mapped_column(Text)
     test_name: Mapped[str] = mapped_column(String(150))
     department_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("lab_department.department_id"), index=True
@@ -68,6 +76,9 @@ class TestPanel(Base):
 
     panel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     panel_code: Mapped[str] = mapped_column(String(30), unique=True)
+    facility_status: Mapped[str | None] = mapped_column(String(24))
+    approval_note: Mapped[str | None] = mapped_column(Text)
+    catalog_metadata: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     panel_name: Mapped[str] = mapped_column(String(120))
     department_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("lab_department.department_id"), index=True

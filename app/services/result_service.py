@@ -8,6 +8,8 @@ from app.models import (
     Specimen, SpecimenOrderItem, TestCatalog, UserAccount,
 )
 from app.schemas import results as s
+from app.services.clinical_catalog_service import test_definition
+from app.services import structured_results
 from app.services.auth_service import utc_now
 from app.services.identity_service import audit, get_record, mutation
 from app.services.laboratory_service import related, resolve_reference_range, retry_deadlocks
@@ -35,7 +37,7 @@ def result_views(db, records, *, lock=False):
         select(UserAccount.user_id, UserAccount.username).where(UserAccount.user_id.in_(actor_ids)), lock))}
     return [s.ResultResponse(
         **fields(record), order_id=items[record.order_item_id][0].order_id,
-        test=s.ResultTestSummary.model_validate(items[record.order_item_id][1]),
+        test=s.ResultTestSummary.model_validate(test_definition(*items[record.order_item_id])),
         specimen=specimens.get(record.specimen_id), reference_range=ranges.get(record.reference_range_id),
         encoded_by=actors[record.encoded_by_user_id], reviewed_by=actors.get(record.reviewed_by_user_id),
         verified_by=actors.get(record.verified_by_user_id),
@@ -80,7 +82,7 @@ def lock_result_context(db, result_item_id):
     records = current_results(db, item_id)
     if len(records) != 1 or records[0].result_item_id != result_item_id:
         raise HTTPException(409, 'Phase 4B requires one current result per order item.')
-    return order, item, records[0], related(db, TestCatalog, item.test_id)
+    return order, item, records[0], test_definition(item, related(db, TestCatalog, item.test_id))
 
 
 def validate_specimen(db, order, item, specimen_id):
@@ -149,7 +151,10 @@ def create_result(db, order_item_id, payload, actor_id, ip_address):
         order, item = lock_item_order(db, order_item_id)
         if current_results(db, order_item_id):
             raise HTTPException(409, 'A result already exists for this order item.')
-        test = related(db, TestCatalog, item.test_id)
+        test = test_definition(item, related(db, TestCatalog, item.test_id))
+        structured_results.validate(test.result_schema, payload.result_value, payload.structured_values)
+        if (item.definition_snapshot or {}).get('test', {}).get('facility_status') is not None and payload.specimen_id is None:
+            raise HTTPException(422, "A compatible received specimen is required.")
         specimen = validate_specimen(db, order, item, payload.specimen_id)
         derived = derive_result(db, order, test, payload.result_value)
         result = LabResultItem(order_item_id=order_item_id, **payload.model_dump(), **derived,
@@ -171,6 +176,9 @@ def update_result(db, result_item_id, payload, actor_id, ip_address):
         if result.status != 'DRAFT':
             raise HTTPException(409, 'Only DRAFT results may be edited.')
         values = payload.model_dump(exclude_unset=True)
+        structured_results.validate(test.result_schema, values.get('result_value', result.result_value), values.get('structured_values', result.structured_values))
+        if (item.definition_snapshot or {}).get('test', {}).get('facility_status') is not None and values.get('specimen_id', result.specimen_id) is None:
+            raise HTTPException(422, 'A compatible received specimen is required.')
         changed = sorted(field for field, value in values.items() if getattr(result, field) != value)
         specimen = validate_specimen(db, order, item, values.get('specimen_id', result.specimen_id))
         old_flag = result.flag
@@ -204,8 +212,10 @@ def recalculate_panel(db, order_panel_id):
     panel = get_record(db, OrderPanel, order_panel_id, lock=True)
     if panel.status == 'CANCELLED':
         return
-    items = list(db.scalars(select(LabOrderItem).where(LabOrderItem.order_panel_id == order_panel_id)
+    items = list(db.scalars(select(LabOrderItem).where(LabOrderItem.order_id == panel.order_id)
                            .with_for_update().execution_options(populate_existing=True)))
+    items = [item for item in items if item.order_panel_id == order_panel_id or
+             any(p['order_panel_id'] == order_panel_id for p in (item.definition_snapshot or {}).get('panels', []))]
     panel.status = progress_status(items)
 
 
@@ -230,6 +240,7 @@ def transition_result(db, result_item_id, action, actor_id, ip_address):
             raise HTTPException(409, f'Result must be {expected} for this transition.')
         validate_specimen(db, order, item, result.specimen_id)
         validate_stored_result(db, item, result, test)
+        structured_results.validate(test.result_schema, result.result_value, result.structured_values, complete=True)
         result.status = target
         if action == 'REVIEW':
             result.reviewed_by_user_id, result.reviewed_at = actor_id, utc_now()
@@ -241,6 +252,9 @@ def transition_result(db, result_item_id, action, actor_id, ip_address):
         if action == 'VERIFY':
             if item.order_panel_id is not None:
                 recalculate_panel(db, item.order_panel_id)
+            for panel in (item.definition_snapshot or {}).get('panels', []):
+                if panel['order_panel_id'] != item.order_panel_id:
+                    recalculate_panel(db, panel['order_panel_id'])
             recalculate_order(db, order)
             db.flush()
         audit(db, actor_id, 'LAB_RESULT_' + action, 'lab_result_item', result_item_id, ip_address,

@@ -1,3 +1,6 @@
+import { SpecimenGuidance } from "../components/SpecimenGuidance";
+import { ClinicalCatalogBrowser } from "../components/ClinicalCatalogBrowser";
+import { ResultSchemaEditor } from "../components/ResultSchemaEditor";
 import { StarterCatalog } from "../components/StarterCatalog";
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -27,7 +30,8 @@ export function Laboratory() {
         Configure the catalog and approved reference information used by your
         laboratory.
       </p>
-      <StarterCatalog />
+      <ClinicalCatalogBrowser />
+      <StarterCatalog expanded />
       <div className="setup-grid">
         {["departments", "samples", "tests", "panels", "reasons"]
           .filter((k) => can(resources[k].read))
@@ -85,14 +89,23 @@ function LabContent({ kind }: { kind: "tests" | "panels" }) {
             <p>Inactive entries are unavailable for new orders. Before enabling a test or panel, qualified laboratory personnel must approve facility capability, specimen collection instructions, result format, units, methodology, reference applicability and panel membership. An active flag records availability, not a clinical accreditation.</p>
             <p>Review specimen types separately from containers and additives. Leave unsupported services inactive; disabling an entry preserves historical results.</p>
             <Link to="/laboratory/departments">Review departments</Link>{" · "}<Link to="/laboratory/samples">Review sample types</Link>
-            {kind === "tests" && state.data.result_type === "TEXT" && <p>Text results allow a 100-character summary with separate remarks. For multi-component examinations, approve complete reporting or configure component tests and a panel before activation.</p>}
+            {kind === "tests" && state.data.result_type === "TEXT" && <p>Text results use a summary plus configured structured fields. Complete all required observations before review.</p>}
             <Details
               row={state.data}
-              fields={resourceDetailFields(config)}
+              fields={[...resourceDetailFields(config), "facility_status", "approval_note", "aliases"]}
             />
           </section>
+          {!!state.data.catalog_metadata && <section className="card">
+            <h2>Catalog provenance and clinical review</h2>
+            <p>{String((state.data.catalog_metadata as Row).service_tier || "Proposed panel grouping")} · {String((state.data.catalog_metadata as Row).review_status)}</p>
+            <p>{String((state.data.catalog_metadata as Row).review_note || "Review each component and specimen requirement before facility approval.")}</p>
+            <p>{String((state.data.catalog_metadata as Row).reference_policy || "Reference intervals require separate facility review.")}</p>
+            {!!(state.data.catalog_metadata as Row).restricted_workflow && <p role="note">{String((state.data.catalog_metadata as Row).restricted_workflow)}</p>}
+            {((state.data.catalog_metadata as Row).source_references as Row[] || []).map(source => <p key={String(source.url)}><a href={String(source.url)} target="_blank" rel="noreferrer">{String(source.title)}</a></p>)}
+          </section>}
           {kind === "tests" ? (
             <>
+              {can("TEST_CATALOG_MANAGE") && <ResultSchemaEditor key={JSON.stringify(state.data.result_schema)} test={state.data} done={state.reload} />}
               <SampleMapping
                 key={JSON.stringify(state.data.sample_types)}
                 test={state.data}
@@ -151,6 +164,7 @@ function SampleMapping({ test, done }: { test: Row; done: () => void }) {
         { key: "sample_type.description", label: "Specimen guidance" },
         { key: "sample_type.is_active", label: "Status", badge: true },
       ]} />
+      {mappings.map(m => <SpecimenGuidance key={String(m.sample_type_id)} specimen={m.sample_type as Row} done={done} />)}
       {can("TEST_CATALOG_MANAGE") ? (
         <>
           <Lookup

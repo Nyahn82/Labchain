@@ -117,7 +117,7 @@ describe("existing catalog integration", () => {
     expect(await screen.findByText("Use approved container SOP")).toBeVisible();
     expect(screen.getByText(/qualified laboratory personnel must approve/)).toBeVisible();
     expect(screen.getByText("TST-0008")).toBeVisible();
-    if (resultType === "TEXT") expect(screen.getByText(/Text results allow a 100-character summary/)).toBeVisible();
+    if (resultType === "TEXT") expect(screen.getByText(/Text results use a summary/)).toBeVisible();
     await userEvent.click(screen.getByRole("button", { name: "Edit metadata" }));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).queryByLabelText(/Test code/)).not.toBeInTheDocument();

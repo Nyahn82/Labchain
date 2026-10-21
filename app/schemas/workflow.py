@@ -146,6 +146,7 @@ class OrderListItem(Output):
 
 
 class OrderPanelResponse(Output):
+    definition_snapshot: dict | None = None
     order_panel_id: int
     order_id: int
     panel_id: int
@@ -154,6 +155,7 @@ class OrderPanelResponse(Output):
 
 
 class OrderItemResponse(Output):
+    definition_snapshot: dict | None = None
     order_item_id: int
     order_id: int
     test_id: int

@@ -1,3 +1,5 @@
+import { OrderedExaminations } from "../components/OrderedExaminations";
+import { ClinicalCatalogBrowser, type CatalogSelection } from "../components/ClinicalCatalogBrowser";
 import { useState } from "react";
 import { Link, NavLink, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
@@ -189,6 +191,7 @@ export function CreateOrder() {
   );
 }
 function OrderForm() {
+  const [selection, setSelection] = useState<CatalogSelection>({test_ids: [], panel_ids: []});
   const [params] = useSearchParams();
   const candidate = params.get("patient_id") || "";
   const patientId = /^\d+$/.test(candidate) && Number.isSafeInteger(Number(candidate)) && Number(candidate) > 0 ? Number(candidate) : undefined;
@@ -203,19 +206,20 @@ function OrderForm() {
           Select panels, individual tests, or both. Panel expansion and request
           provenance are handled by the laboratory service.
         </p>
+        <ClinicalCatalogBrowser selection={selection} onChange={setSelection} />
         <Form
-          fields={orderFields}
+          fields={orderFields.filter(f => !["panel_ids", "test_ids"].includes(f.name))}
           initial={patientId ? { patient_id: patientId } : {}}
           submit="Create order"
           onSubmit={async (body) => {
             if (
-              !(body.panel_ids as number[]).length &&
-              !(body.test_ids as number[]).length
+              !selection.panel_ids.length &&
+              !selection.test_ids.length
             )
               throw new Error("Select at least one panel or individual test.");
             const result = await api<Row>("/lab-orders", {
               method: "POST",
-              body,
+              body: { ...body, ...selection },
             });
             navigate(`/orders/${result.order_id}`);
           }}
@@ -276,6 +280,7 @@ function OrderContent({ tab }: { tab: string }) {
             </nav>
           </section>
           <LaboratoryProgress order={order} />
+          <OrderedExaminations items={order.items} />
           {tab === "overview" ? (
             <>
               <section className="card">

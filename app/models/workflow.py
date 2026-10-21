@@ -9,7 +9,7 @@ from decimal import Decimal
 
 from sqlalchemy import (
     BigInteger, Boolean, DateTime, Enum, ForeignKey, ForeignKeyConstraint,
-    Index, Numeric, String, Text, UniqueConstraint, text,
+    Index, JSON, Numeric, String, Text, UniqueConstraint, text,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -53,6 +53,7 @@ class OrderPanel(Base):
     order_panel_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lab_order.order_id"))
     panel_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("test_panel.panel_id"), index=True)
+    definition_snapshot: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     status: Mapped[str] = mapped_column(Enum(
         "REQUESTED", "IN_PROGRESS", "COMPLETED", "CANCELLED", name="order_panel_status"
     ))
@@ -73,6 +74,7 @@ class LabOrderItem(Base):
     order_item_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     order_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("lab_order.order_id"), index=True)
     test_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("test_catalog.test_id"), index=True)
+    definition_snapshot: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     order_panel_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("order_panel.order_panel_id"))
     status: Mapped[str] = mapped_column(Enum(
         "REQUESTED", "IN_PROGRESS", "COMPLETED", "CANCELLED", name="lab_order_item_status"
@@ -173,6 +175,7 @@ class LabResultItem(Base):
     reference_range_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("reference_range.range_id"), index=True
     )
+    structured_values: Mapped[dict | None] = mapped_column(JSON(none_as_null=True))
     result_value: Mapped[str] = mapped_column(String(100))
     numeric_value: Mapped[Decimal | None] = mapped_column(Numeric(12, 3))
     flag: Mapped[str | None] = mapped_column(Enum(
