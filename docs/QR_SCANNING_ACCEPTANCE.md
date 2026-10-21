@@ -107,7 +107,8 @@ identities, channels and ledger storage are not restarted or altered.
 
 ## Deployed website and real ledger evidence
 
-**Deployment: SUCCESS. Physical phone and owner's live staff acceptance: pending.**
+**Deployment: SUCCESS. Public phone and live staff walkthroughs: owner-reported PASS.
+Live staff audit corroboration and device details: unresolved/pending.**
 Application code `1a493ec055da8e728e5857f703ea2f0421ebc510` is deployed at
 [labchain.online](https://labchain.online/). Public scanner:
 [Verify](https://labchain.online/#/verify). Personnel scanner:
@@ -139,9 +140,12 @@ Fabric infrastructure were not restarted. Database identity/revision remained
 | Edge safeguards | Upload over 1 MiB streams successfully, 10 MiB cap returns 413; verification probe token absent from API/Nginx access logs |
 
 Live browser evidence is separate from the synthetic staff/Fabric-double evidence.
-The owner confirmed availability to perform the real staff and physical phone walkthrough;
-results are requested and remain unconfirmed in this record. Automated video input and
-viewport resizing do not certify Android, iPhone, Safari, optics or printed-paper quality.
+On 21 October 2026 (Asia/Singapore), the owner reported both native-camera and built-in
+public scans passed, and the staff PDF/evidence workflow passed. These are owner-reported
+results, separate from agent-observed automation. Device/OS/browser versions, screen
+versus printed source and the exact walkthrough time remain pending. Automated video
+input and viewport resizing do not certify Android, iPhone, Safari, optics or printed-paper
+quality. The live audit discrepancy below prevents claiming fully corroborated acceptance.
 
 ### Backup and recovery
 
@@ -168,9 +172,47 @@ retained honestly rather than represented as live clinical or physical-camera pr
 
 ## Owner's physical and live-staff acceptance
 
-Physical Android/iPhone, printed-paper scanning and a real authorized live staff browser
-session are pending unless explicitly recorded below. Chromium automation with controlled
-camera video does not establish physical-camera, Safari/WebKit or real-device behavior.
+### Owner-reported results — 21 October 2026 (Asia/Singapore)
+
+For **RPT-20261008-4D938ED495115106, version 1**, the owner answered:
+
+- Native camera and built-in public scanner: “Both scans passed; I’ll provide device details”.
+- Authorized staff original PDF and evidence workflow: “Staff PDF and evidence workflow passed”.
+  The question covered the embedded original, full-PDF opening and scanning again. No
+  separate per-step observations or device metadata were supplied.
+
+Record these as owner-reported passes, not independently observed physical-device tests.
+Specific Android/iPhone/Safari coverage, printed-paper versus screen source, camera-switching
+and physical permission-denial behavior are not established by these replies. The historical
+issuer remains LEGACY_UNAVAILABLE; no missing historical issuer context was invented.
+
+### Live audit reconciliation — unresolved
+
+At **21 October 2026, 12:42:36 Asia/Singapore** (04:42:36 UTC), a read-only check of
+`rhu_labchain` found **zero REPORT_QR_VERIFY events across the entire audit history**.
+There were six historical REPORT_DOWNLOAD events; the latest was
+20 October 2026, 16:58:54 UTC, before this deployment. No audit events of any action were
+present after traffic resumed at 20 October 2026, 23:10:34 UTC. Broader aggregate queries
+removed report/entity/time filters to rule out an overly narrow scanner query; the database
+clock was UTC. The running API uses `/opt/rhu-labchain` with no DB_* environment overrides
+of the checked application configuration. API, worker and monitor were active, and the
+database revision remained `20261019_01`.
+
+The implementation commits REPORT_QR_VERIFY before returning a successful staff resolution;
+the protected PDF endpoint records REPORT_DOWNLOAD. Focused synthetic tests previously
+verified both writes. The available live audit evidence therefore does **not** corroborate
+the reported live staff walkthrough. Its website URL and approximate time have been requested
+for reconciliation. This is an unresolved evidence discrepancy, not a diagnosed audit defect
+or proof that the owner's UI observations failed. No audit records, clinical fixtures or
+acceptance events were fabricated; no runtime changes, restart, migration or full regression
+were performed for this documentation follow-up. Final end-to-end live audit acceptance
+remains open until the discrepancy is resolved.
+
+### Walkthrough reference
+
+Chromium automation with controlled camera video does not establish physical-camera,
+Safari/WebKit or real-device behavior. The following remains the complete walkthrough;
+the owner's replies above do not independently certify every optional/negative step.
 
 1. Sign in through the normal staff login with existing report read/download permissions.
    Open historical report **RPT-20261008-4D938ED495115106, version 1** from Reports and
