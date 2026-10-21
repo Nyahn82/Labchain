@@ -107,8 +107,8 @@ identities, channels and ledger storage are not restarted or altered.
 
 ## Deployed website and real ledger evidence
 
-**Deployment: SUCCESS. Public phone and live staff walkthroughs: owner-reported PASS.
-Live staff audit corroboration and device details: unresolved/pending.**
+**Deployment: SUCCESS. Android native-camera link opening in Chrome: owner-reported PASS.
+Physical built-in scanner and authorized live staff PDF/evidence acceptance: pending.**
 Application code `1a493ec055da8e728e5857f703ea2f0421ebc510` is deployed at
 [labchain.online](https://labchain.online/). Public scanner:
 [Verify](https://labchain.online/#/verify). Personnel scanner:
@@ -140,12 +140,13 @@ Fabric infrastructure were not restarted. Database identity/revision remained
 | Edge safeguards | Upload over 1 MiB streams successfully, 10 MiB cap returns 413; verification probe token absent from API/Nginx access logs |
 
 Live browser evidence is separate from the synthetic staff/Fabric-double evidence.
-On 21 October 2026 (Asia/Singapore), the owner reported both native-camera and built-in
-public scans passed, and the staff PDF/evidence workflow passed. These are owner-reported
-results, separate from agent-observed automation. Device/OS/browser versions, screen
-versus printed source and the exact walkthrough time remain pending. Automated video
-input and viewport resizing do not certify Android, iPhone, Safari, optics or printed-paper
-quality. The live audit discrepancy below prevents claiming fully corroborated acceptance.
+On 21 October 2026 (Asia/Singapore), the owner clarified that the phone scanner produced
+a link which they opened in Chrome and which took them to the website. The device was
+described as Android; no exact model or OS/browser versions were supplied. This confirms
+native-camera QR-to-website navigation only. It supersedes the earlier broad pass replies:
+physical use of the website's built-in scanner and the authenticated original-PDF/evidence
+workflow remain unconfirmed. Screen versus paper and the exact test time are unknown.
+Automated video input and viewport resizing do not certify other devices or paper quality.
 
 ### Backup and recovery
 
@@ -174,19 +175,28 @@ retained honestly rather than represented as live clinical or physical-camera pr
 
 ### Owner-reported results — 21 October 2026 (Asia/Singapore)
 
-For **RPT-20261008-4D938ED495115106, version 1**, the owner answered:
+The requested walkthrough concerned **RPT-20261008-4D938ED495115106, version 1**.
+Earlier brief replies reported both public scans and the staff workflow passed. On follow-up,
+the owner clarified: “just scan with my phone scarn which give me link and i click the link
+and it redirect me to chrome and into the website”. The device description was “android
+one connected to google”; this does not establish a manufacturer/model or Android One branding.
 
-- Native camera and built-in public scanner: “Both scans passed; I’ll provide device details”.
-- Authorized staff original PDF and evidence workflow: “Staff PDF and evidence workflow passed”.
-  The question covered the embedded original, full-PDF opening and scanning again. No
-  separate per-step observations or device metadata were supplied.
+The clarified evidence supersedes the broad pass interpretation:
 
-Record these as owner-reported passes, not independently observed physical-device tests.
-Specific Android/iPhone/Safari coverage, printed-paper versus screen source, camera-switching
-and physical permission-denial behavior are not established by these replies. The historical
-issuer remains LEGACY_UNAVAILABLE; no missing historical issuer context was invented.
+| Owner-observed step | Acceptance |
+| --- | --- |
+| Android phone scanner decodes a QR and offers a link | Reported PASS |
+| Tapping that link opens Chrome and reaches the website | Reported PASS |
+| Exact report/version and blockchain evidence inspected on the destination page | Not confirmed by the clarification |
+| Website's built-in public Scan QR Code on a physical phone | Pending |
+| Signed-in staff scan, original PDF beside evidence, full PDF and another scan | Pending |
+| Live staff verification and PDF-access audit events | Pending an actual staff walkthrough |
 
-### Live audit reconciliation — unresolved
+Exact phone model, OS/Chrome versions, screen versus printed source and test time remain
+unknown. No iPhone/Safari, camera-switching or physical permission-denial coverage is claimed.
+The historical issuer remains LEGACY_UNAVAILABLE; no historical issuer context was invented.
+
+### Live audit reconciliation — consistent with clarified public-only workflow
 
 At **21 October 2026, 12:42:36 Asia/Singapore** (04:42:36 UTC), a read-only check of
 `rhu_labchain` found **zero REPORT_QR_VERIFY events across the entire audit history**.
@@ -200,13 +210,13 @@ database revision remained `20261019_01`.
 
 The implementation commits REPORT_QR_VERIFY before returning a successful staff resolution;
 the protected PDF endpoint records REPORT_DOWNLOAD. Focused synthetic tests previously
-verified both writes. The available live audit evidence therefore does **not** corroborate
-the reported live staff walkthrough. Its website URL and approximate time have been requested
-for reconciliation. This is an unresolved evidence discrepancy, not a diagnosed audit defect
-or proof that the owner's UI observations failed. No audit records, clinical fixtures or
-acceptance events were fabricated; no runtime changes, restart, migration or full regression
-were performed for this documentation follow-up. Final end-to-end live audit acceptance
-remains open until the discrepancy is resolved.
+verified both writes. The clarified phone-camera-to-public-page workflow does not invoke
+those staff endpoints, so absent staff audit events are consistent with the owner's actual
+steps. The clarification resolves the earlier mismatch in the acceptance description; it
+does not establish live staff audit success or an audit defect. Staff PDF/evidence and audit
+acceptance remain pending an authorized signed-in walkthrough. No audit records, clinical
+fixtures or acceptance events were fabricated. These documentation follow-ups did not
+change runtime code, restart services, migrate data or repeat the full regression suite.
 
 ### Walkthrough reference
 
