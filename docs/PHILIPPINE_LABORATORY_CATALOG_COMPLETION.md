@@ -2,13 +2,13 @@
 
 ## Release status
 
-Implementation and isolated acceptance completed/in progress as recorded below; operational deployment evidence will be appended after the coordinated update. Do not infer that proposed services are clinically approved. No new live patient, result, signature, report release or Fabric submission is part of this update.
+Deployment SUCCESS; acceptance PARTIAL pending the owner’s authenticated live catalog/order walkthrough and physical built-in scanner/staff acceptance. Implementation, controlled import, automated acceptance and operational verification are complete as recorded below. Do not infer that proposed services are clinically approved. No new live patient, result, signature, report release or Fabric submission is part of this update.
 
 Baseline: `main` and `origin/main` at `549207111c854985ed598825de759a767c55712c`; clean before implementation. Last running application artifact: `1a493ec055da8e728e5857f703ea2f0421ebc510` (subsequent baseline commits documented acceptance). Active MySQL: `rhu_labchain`, revision `20261019_01`, server UUID verified before maintenance. API, delivery worker and read-only monitor were active; inactive legacy API unit was also identified. Nginx serves `/var/www/rhu-labchain`, while proxied assets also require the matching `frontend/dist` artifact.
 
 ## Gap inventory and coverage
 
-| Database entity | Original | Expected after controlled import | New definitions |
+| Database entity | Original | Actual after controlled import | New definitions |
 |---|---:|---:|---:|
 | Departments | 1 | 9 | 8 |
 | Tests / analytes | 1 | 167 | 166 |
@@ -65,7 +65,7 @@ Real Chromium automation against an isolated HTTPS backend passed actual login, 
 
 The owner's earlier phone report established Android native scanner → Chrome → website only. It did not establish a signed-in staff scanner walkthrough. No live staff session has been invented for acceptance; authenticated live catalog/order acceptance remains a qualified operator walkthrough after deployment. New services must first receive legitimate local approval; synthetic approvals stay isolated.
 
-Final test totals, deployed commit, backup references, actual database counts, asset hashes and live historical/Fabric checks are recorded below after verification.
+Final test totals and operational evidence follow.
 
 ## Coordinated recovery procedure
 
@@ -88,3 +88,44 @@ Recovery is a coordinated decision using the tested encrypted pre-update set. Re
 | Chromium clinical workflow and public/staff QR regression | Passed with synthetic data and explicit Fabric double |
 
 These sets overlap; counts must not be summed as distinct tests. No known unresolved failure remains in the listed scopes. Framework deprecation warnings and the Vite large-chunk advisory are nonblocking. Broader testing was performed at the integration milestone, followed by targeted corrections rather than repeated full regression cycles. Native MySQL verified import idempotency and preservation; no live database has been used for synthetic tests.
+
+
+## Operational deployment — 21 October 2026
+
+Deployed application commit: `8204a5486602b5000f707b1e96f1ab9d6b4e0a3c`.
+Database: `rhu_labchain`, verified revision `20261021_01`.
+Normal traffic resumed at **22:58:06 Asia/Singapore** (14:58:06 UTC).
+Final operational verification: **23:03:36 Asia/Singapore**.
+
+The database now contains **9 departments, 167 tests/analytes, 27 panels and 21 specimen types**. Import inserted 221 master records, updated zero and rejected zero; it also created 160 panel memberships, five sections and 173 test/specimen mappings. Repeat preview proposes zero creations. Every new test/panel is inactive and `UNREVIEWED`; the one previously available legacy test remains orderable. No live clinical approval, patient, order, result, signature, report or ledger event was fabricated.
+
+Writer exclusion covered the actual API and blockchain-delivery units, the inactive legacy API unit, application database accounts and the discovered `debian-sys-maint` database account. No application cron writer or MySQL event was found. Accounts were locked and the scheduler disabled while migration/import ran through a bounded host-DBA socket connection targeting the application-configured database. The read-only monitor and Fabric infrastructure stayed running. Previous account locks, event scheduler state and unit restart policies were restored.
+
+Recovery set:
+
+- Encrypted archive: `/var/backups/rhu-labchain/20261021-clinical-catalog/recovery.tar.enc`.
+- SHA-256: `7f11a6878076bd3e587edec1ab840308ce4126343853d60cf0b2d68902a92114`.
+- Separate root-only key reference: `/var/backups/rhu-labchain-keys/20261021-clinical-catalog.key`.
+- Before migration, all 54 tables restored with exact hashes into a fresh socket-only MySQL server; database restore took 2.64 seconds. The historical PDF, frontend and protected configuration matched, and encrypted decryption/checksum verification passed.
+- Sanitized durable deployment report: `/var/log/rhu-labchain-deployments/20261021-clinical-catalog.md`. Protected manifests, stage scripts, import summary, tests and browser evidence are retained with the backup.
+
+Historical-column projections matched after migration/import and before traffic resumed. Existing account, patient, clinical/report, original audit and blockchain/outbox data remained intact. Only new catalog allocations advanced DEPARTMENT by 8, TEST by 166 and PANEL by 27; the other four code counters stayed unchanged. Original generated identifiers and private report files were unchanged.
+
+After traffic resumed, an ordinary login added a session/login record and changed an account’s `last_login_at`. A separate comparison against the encrypted pre-update backup, restored to another isolated MySQL instance, confirmed that **all other account fields remained identical**. Final integrity checks permit these observed post-resume authentication additions and the advancing worker heartbeat; they do not describe the live database as byte-for-byte unchanged.
+
+Frontend activation preserved existing Nginx configuration, HTTPS and directory permissions. The same staged files were installed in `/var/www/rhu-labchain` and `frontend/dist`; public HTTPS responses matched all staged SHA-256 hashes:
+
+| Asset | SHA-256 |
+|---|---|
+| `index.html` | `d56dd97206c4d2c06cffe6536eb487afe6e84fa11067d6a164727e36b519637f` |
+| `assets/index-japnnnYz.js` | `2ad5bdbb7c6296648ed9cb8b73874de4f546910b572aad7b6b7b33ce12eca9ec` |
+| `assets/index-0O6uKZgj.css` | `3481335bac0c51e483fc0277a41f154728ff92b9f7deb6b036c637b7867d2555` |
+| `assets/esm-CuJYLdlD.js` | `02759e6503485affa4dd1ba65a61d96c737e69f2aaf871a1eda12588e04ce78d` |
+
+HTTPS, API health and MySQL readiness returned 200. API, delivery worker and monitor are active with zero restart failures; API retains on-failure/5 seconds, worker and monitor on-failure/10 seconds. The worker’s healthy heartbeat advanced. Catalog and specimen-label endpoints returned 401 to anonymous clients. The catalog service/API projection against active MySQL returned the exact counts above; the full authenticated browser workflow was tested against the isolated backend, not by manufacturing a live session.
+
+The historical released PDF remains an exact stored-byte match. Public comparison accepted the official bytes and rejected an altered in-memory copy. Real Fabric queries independently verified the historical anchors; four peers and the orderer remain ONLINE at height 7, and the same two outbox entries remain CONFIRMED. No Fabric infrastructure or cryptographic material was changed. The historical report still correctly reports `LEGACY_UNAVAILABLE` issuer context; no historical issuer was invented.
+
+Real Chromium against **the running HTTPS website** passed ZXing camera-video decoding, QR extraction from the historical full PDF rendered at 150 DPI, independent Fabric evidence, absence of a public private-PDF viewer, repeated image scanning, unrelated-QR rejection, manual fallback, camera-denial handling and desktop/mobile overflow checks. Camera input was controlled video, not a physical phone. Temporary historical PDF derivatives were removed after verification.
+
+Remaining acceptance: the owner has offered to perform the live staff catalog/order walkthrough; results have not yet been reported. Physical built-in camera scanning and the live signed-in staff original-PDF/evidence workflow remain unverified. The previous Android native-camera-to-Chrome observation is preserved without expanding its meaning. Clinical activation remains a separate qualified facility decision, as required; unsupported services and unknown reference intervals remain disabled/unset.
