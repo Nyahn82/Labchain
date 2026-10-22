@@ -4,8 +4,8 @@
 @import url("./blockchain.css");
 @import url("./monitor.css");
 @import url("./analytics.css");
-@import url("./polish.css");
 @import url("./dashboard.css");
 @import url("./laboratory-workspace.css");
+@import url("./polish.css");
 
 .auth-user-agent { display: block; max-width: 24rem; overflow-wrap: anywhere; white-space: pre-wrap; }

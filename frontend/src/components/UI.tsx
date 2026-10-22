@@ -15,7 +15,7 @@ export function Alert({ error }: { error?: Error | null }) {
 export function statusTone(value: string): "success" | "warning" | "danger" | "neutral" {
   value = value.toUpperCase().replaceAll(" ", "_");
   if (["ONLINE", "NORMAL", "RELEASED", "VERIFIED", "COMPLETED", "ACTIVE", "RECEIVED", "PAID", "AUTHENTIC", "SUCCESS", "CONFIRMED", "VALID", "PROCESSED"].includes(value)) return "success";
-  if (["DEGRADED", "PENDING", "PROCESSING", "REQUESTED", "HIGH", "LOW", "ABNORMAL", "COLLECTED", "IN_PROGRESS", "REVIEWED", "APPROVED"].includes(value)) return "warning";
+  if (["DEGRADED", "PENDING", "PROCESSING", "REQUESTED", "HIGH", "LOW", "ABNORMAL", "COLLECTED", "IN_PROGRESS", "REVIEWED", "APPROVED", "UNREVIEWED"].includes(value)) return "warning";
   if (["OFFLINE", "FAILED", "DEAD", "MISMATCH", "CRITICAL_HIGH", "CRITICAL_LOW", "REJECTED", "REVOKED", "CANCELLED", "LOCKED", "SUSPENDED", "DISABLED"].includes(value)) return "danger";
   return "neutral";
 }
@@ -59,7 +59,7 @@ export function State({
   empty?: boolean;
 }) {
   return loading ? (
-    <p role="status" className="empty empty-state">
+    <p role="status" aria-live="polite" className="empty empty-state loading-state">
       Loading records…
     </p>
   ) : error ? (
@@ -109,7 +109,7 @@ export function Table({
           {rows.map((row, i) => (
             <tr key={i}>
               {columns.map((c) => (
-                <td key={c.key}>
+                <td key={c.key} className={c.key.endsWith("_code") ? "record-code" : undefined}>
                   {c.render ? (
                     c.render(row)
                   ) : c.badge ? (
@@ -168,7 +168,9 @@ export function Dialog({
   children,
   onClose,
   busy = false,
+  size = "standard",
 }: {
+  size?: "standard" | "wide";
   title: string;
   children: ReactNode;
   onClose: () => void;
@@ -187,6 +189,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
+      className={size === "wide" ? "dialog-wide" : undefined}
       aria-label={title}
       onCancel={(e) => {
         e.preventDefault();

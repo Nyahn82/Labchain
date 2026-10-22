@@ -74,23 +74,7 @@ function ResourceContent({
         </p>
       )}
       <div className="card">
-        <div className="toolbar">
-          {r.path === "/patients" && <button onClick={reload} disabled={loading}>Refresh patients</button>}
-          {activationAccess && <>
-            <label>Portal activation group<select value={filters.activation_group || ""} onChange={e => { setFilters({ ...filters, activation_group: e.target.value }); setPage(1); }}>
-              <option value="">All groups</option><option value="ACTIVATED">Activated</option><option value="NOT_ACTIVATED">Not activated</option>
-            </select></label>
-            <label>Activation state<select value={filters.activation_state || ""} onChange={e => { setFilters({ ...filters, activation_state: e.target.value }); setPage(1); }}>
-              <option value="">All activation states</option>{Object.entries(activationLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
-            </select></label>
-          </>}
-          {patientDirectory && <>
-            <label>Sort patients<select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
-              <option value="patient_id">Registration order</option><option value="name">Name</option><option value="patient_code">Permanent code</option>
-              {activationAccess && <option value="activation">Activation state</option>}
-            </select></label>
-            <label>Sort direction<select value={direction} onChange={e => { setDirection(e.target.value); setPage(1); }}><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
-          </>}
+        <div className="toolbar directory-search">
           {r.searchable !== false && (
             <label>
               Search {r.title.toLowerCase()}
@@ -105,6 +89,8 @@ function ResourceContent({
               />
             </label>
           )}
+
+          {r.path === "/patients" && <button onClick={reload} disabled={loading}>Refresh patients</button>}
           {r.filters?.map((f) => f.lookup ? (
             <Lookup key={f.name} spec={f.lookup} label={f.label}
               value={filters[f.name] || null}
@@ -129,6 +115,24 @@ function ResourceContent({
             </label>
           ))}
         </div>
+        {patientDirectory && <details className="directory-options" open={!!filters.activation_group || !!filters.activation_state || undefined}>
+          <summary>Activation filters and sorting</summary><div className="toolbar">
+          {activationAccess && <>
+            <label>Portal activation group<select value={filters.activation_group || ""} onChange={e => { setFilters({ ...filters, activation_group: e.target.value }); setPage(1); }}>
+              <option value="">All groups</option><option value="ACTIVATED">Activated</option><option value="NOT_ACTIVATED">Not activated</option>
+            </select></label>
+            <label>Activation state<select value={filters.activation_state || ""} onChange={e => { setFilters({ ...filters, activation_state: e.target.value }); setPage(1); }}>
+              <option value="">All activation states</option>{Object.entries(activationLabels).map(([value, label]) => <option value={value} key={value}>{label}</option>)}
+            </select></label>
+          </>}
+          {patientDirectory && <>
+            <label>Sort patients<select value={sort} onChange={e => { setSort(e.target.value); setPage(1); }}>
+              <option value="patient_id">Registration order</option><option value="name">Name</option><option value="patient_code">Permanent code</option>
+              {activationAccess && <option value="activation">Activation state</option>}
+            </select></label>
+            <label>Sort direction<select value={direction} onChange={e => { setDirection(e.target.value); setPage(1); }}><option value="asc">Ascending</option><option value="desc">Descending</option></select></label>
+          </>}
+          </div></details>}
         <State
           loading={loading}
           error={error}
@@ -138,6 +142,7 @@ function ResourceContent({
           <>
             <Table
               rows={data.items}
+              caption={r.title}
               columns={activationAccess
                 ? [...r.columns, { key: "activation_status", label: "Portal activation", render: row => <ActivationBadge value={row.activation_status} /> }]
                 : r.columns}

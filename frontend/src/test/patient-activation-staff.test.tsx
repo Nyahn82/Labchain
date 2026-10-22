@@ -118,7 +118,7 @@ describe("staff patient activation", () => {
     let status = "TOKEN_ACTIVE";
     mockFetch(handler(() => status));
     renderAuth(<AppRoutes />, "/patients");
-    expect(await screen.findByText("Awaiting activation")).toBeVisible();
+    expect(await screen.findByText("Awaiting activation", { selector: ".activation-badge" })).toBeVisible();
     status = "ACTIVATED";
     await userEvent.click(screen.getByRole("button", { name: "Refresh patients" }));
     expect(await screen.findByText("Portal activated", { selector: ".activation-badge" })).toBeVisible();

@@ -35,7 +35,7 @@ export function Results({
   };
   return (
     <>
-      <section className="card">
+      <section className="card result-workbench">
         <h2>Laboratory results</h2>
         <p className="muted">
           Flags and reference context are calculated by the laboratory service.
@@ -124,7 +124,7 @@ export function Results({
           </section>
         )}
       {edit && (
-        <Dialog
+        <Dialog size="wide"
           title={edit.result ? "Edit draft result" : "Enter result"}
           onClose={() => setEdit(undefined)}
         >
@@ -256,6 +256,7 @@ export function ResultForm({
           })),
           field("specimen_id", "Specimen", {
             type: "select",
+            help: "Only received or processed specimens mapped to this examination can be selected.",
             options: specimens.map((s) => ({
               value: s.specimen_id,
               label: s.specimen_code,

@@ -1,4 +1,4 @@
-import { Fragment, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { useResource } from "../api/useResource";
 import { useAuth } from "../auth/Auth";
 import { Alert, State } from "./UI";
@@ -209,6 +209,8 @@ export function Form({
   submit?: string;
   children?: React.ReactNode;
 }) {
+  const formId = useId();
+  const errorRef = useRef<HTMLDivElement>(null);
   const [values, setValues] = useState<Row>(() =>
     Object.fromEntries(
       fields.map((f) => [
@@ -221,6 +223,7 @@ export function Form({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error>();
+  useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   const change = (name: string, v: unknown) =>
     setValues((old) => ({ ...old, [name]: v }));
   async function save(e: FormEvent) {
@@ -248,8 +251,8 @@ export function Form({
     }
   }
   return (
-    <form onSubmit={save}>
-      <Alert error={error} />
+    <form onSubmit={save} aria-busy={busy}>
+      {error && <div ref={errorRef} tabIndex={-1} className="form-error-summary"><Alert error={error} /></div>}
       <fieldset disabled={busy} className="form-grid">
         {fields.map((f) => (
           <Fragment key={f.name}>
@@ -285,6 +288,7 @@ export function Form({
                   {f.required ? " *" : ""}
                   {f.type === "select" ? (
                     <select
+                      aria-describedby={f.help ? `${formId}-${f.name}-help` : undefined}
                       required={f.required}
                       value={String(values[f.name] ?? "")}
                       onChange={(e) => change(f.name, e.target.value)}
@@ -299,6 +303,7 @@ export function Form({
                   ) : f.type === "textarea" ? (
                     <textarea
                       maxLength={f.max || 16000}
+                      aria-describedby={f.help ? `${formId}-${f.name}-help` : undefined}
                       required={f.required}
                       value={String(values[f.name] ?? "")}
                       onChange={(e) => change(f.name, e.target.value)}
@@ -316,6 +321,7 @@ export function Form({
                       autoComplete={
                         f.type === "password" ? "new-password" : "off"
                       }
+                      aria-describedby={f.help ? `${formId}-${f.name}-help` : undefined}
                       required={f.required}
                       maxLength={f.max || undefined}
                       step={f.type === "number" ? "1" : undefined}
@@ -325,7 +331,7 @@ export function Form({
                   )}
                 </label>
               )}
-              {f.help && <small>{f.help}</small>}
+              {f.help && <small id={`${formId}-${f.name}-help`}>{f.help}</small>}
             </div>
           </Fragment>
         ))}

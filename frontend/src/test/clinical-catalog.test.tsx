@@ -42,6 +42,27 @@ describe("clinical catalog integration", () => {
     await userEvent.selectOptions(screen.getByLabelText("Service availability"), "all");
     expect(screen.getByRole("checkbox", {name: "Select Creatinine"})).toBeDisabled();
   });
+  it("keeps simulation availability visibly distinct from clinical approval", async () => {
+    const simulation = structuredClone(catalog);
+    simulation.tests[1].orderable = true;
+    mockFetch(p => p === "/api/v1/lab/catalog-browser" ? respond(simulation) : undefined);
+    renderAuth(<Picker />);
+    expect(await screen.findByRole("checkbox", { name: "Select Creatinine" })).toBeEnabled();
+    expect(screen.getByText("Simulation only · not clinically approved")).toBeVisible();
+    expect(screen.getByText("UNREVIEWED")).toBeVisible();
+  });
+  it("removes a selected panel while retaining an individually selected component", async () => {
+    mockFetch(p => p === "/api/v1/lab/catalog-browser" ? respond(catalog) : undefined);
+    renderAuth(<Picker />);
+    await userEvent.click(await screen.findByRole("checkbox", {name: "Select Hemoglobin"}));
+    await userEvent.selectOptions(screen.getByLabelText("Catalog entries"), "panels");
+    await userEvent.click(screen.getByRole("checkbox", {name: "Select Synthetic blood panel"}));
+    await userEvent.click(screen.getByRole("button", {name: "Remove Synthetic blood panel"}));
+    expect(screen.getByRole("heading", {name: "Selected examinations (1 unique)"})).toBeVisible();
+    expect(screen.getByRole("button", {name: "Remove Hemoglobin"})).toBeVisible();
+    await userEvent.click(screen.getByRole("button", {name: "Remove Hemoglobin"}));
+    expect(screen.getByRole("heading", {name: "Selected examinations (0 unique)"})).toBeVisible();
+  });
   it("submits selections through the existing order endpoint", async () => {
     const fetch = mockFetch(p => p === "/api/v1/lab/catalog-browser" ? respond(catalog) : p === "/api/v1/lab-orders" ? respond(order, 201) : undefined);
     renderAuth(<AppRoutes />, "/orders/new?patient_id=1");

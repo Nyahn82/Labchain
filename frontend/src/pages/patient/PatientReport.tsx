@@ -238,7 +238,7 @@ export function PatientPdf({
         {busy && <span role="status">Checking and opening your PDF…</span>}
       </div>
       {url && (
-        <Dialog title="Report PDF" onClose={release}>
+        <Dialog size="wide" title="Report PDF" onClose={release}>
           <p>If the preview is unavailable, use Download PDF.</p>
           <iframe
             className="patient-pdf"

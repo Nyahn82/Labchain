@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { AppRoutes } from "../App";
@@ -116,6 +116,7 @@ describe("Phase 10 account access administration", () => {
     let resolve!: (value: Response) => void;
     mockFetch(p => p.includes("/auth-activity?") ? new Promise<Response>(r => { resolve = r; }) : standard(p)); open();
     expect(await screen.findByText("Loading records…")).toBeVisible();
+    await waitFor(() => expect(resolve).toBeTypeOf("function"));
     resolve(respond(page([])));
     expect(await screen.findByText("No records found.")).toBeVisible();
   });

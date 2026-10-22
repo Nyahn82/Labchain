@@ -166,7 +166,7 @@ function OrderList({ mode }: { mode: string }) {
   );
 }
 export const orderFields = [
-  field("patient_id", "Patient", { lookup: patientLookup, required: true }),
+  field("patient_id", "Patient", { lookup: patientLookup, required: true, group: "01 · Patient and request" }),
   field("physician_id", "Requesting physician", { lookup: physicianLookup }),
   field("priority", "Priority", {
     type: "select",
@@ -201,12 +201,7 @@ function OrderForm() {
       <Title title="New laboratory order">
         <Link to="/orders">All orders</Link>
       </Title>
-      <section className="card">
-        <p>
-          Select panels, individual tests, or both. Panel expansion and request
-          provenance are handled by the laboratory service.
-        </p>
-        <ClinicalCatalogBrowser selection={selection} onChange={setSelection} />
+      <section className="card order-entry">
         <Form
           fields={orderFields.filter(f => !["panel_ids", "test_ids"].includes(f.name))}
           initial={patientId ? { patient_id: patientId } : {}}
@@ -223,7 +218,9 @@ function OrderForm() {
             });
             navigate(`/orders/${result.order_id}`);
           }}
-        />
+        >
+          <div className="wide"><ClinicalCatalogBrowser selection={selection} onChange={setSelection} /></div>
+        </Form>
       </section>
     </>
   );
@@ -279,8 +276,8 @@ function OrderContent({ tab }: { tab: string }) {
               )}
             </nav>
           </section>
-          <LaboratoryProgress order={order} />
-          <OrderedExaminations items={order.items} />
+          {tab === "overview" ? <LaboratoryProgress order={order} /> : <details className="workspace-reference"><summary>Workflow status and guidance</summary><LaboratoryProgress order={order} /></details>}
+          {tab === "overview" && <OrderedExaminations items={order.items} />}
           {tab === "overview" ? (
             <>
               <section className="card">
@@ -393,6 +390,7 @@ function OrderContent({ tab }: { tab: string }) {
               <OrderReports order={order} />
             </PermissionGuard>
           )}
+          {tab !== "overview" && <details className="workspace-reference"><summary>Examination definitions and specimen requirements ({order.items.length})</summary><OrderedExaminations items={order.items} /></details>}
         </>
       )}
     </>

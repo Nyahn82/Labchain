@@ -81,7 +81,6 @@ function Summary() {
             </article>;
           })}
         </div>
-        <MonitoringMetrics data={data} />
         {!available.length && !can("PATIENT_READ") && <p className="empty">No workflow summaries are available for your permissions.</p>}
         {validGroups.length > 0 && <section className="card overview-pending" aria-labelledby="pending-work-heading">
           <div><p className="eyebrow">NEXT STEPS</p><h2 id="pending-work-heading">Pending work</h2>
@@ -91,13 +90,18 @@ function Summary() {
           {pending.filter(([key]) => validGroups.some(group => group.key === key)).every(([key, status]) => data[key]!.statuses[status] === 0) &&
             <p className="overview-clear">No pending work in the stages you can view.</p>}
         </section>}
-        <div className="overview-workflows">{validGroups.map(item => <WorkflowPanel key={item.key} title={item.title} group={data[item.key]!} states={item.states} note={item.note} to={["orders", "reports"].includes(item.key) ? item.to : undefined} />)}</div>
+
       </>}
+    {can("LAB_ORDER_READ") && <RecentOrders />}
+    {data && <MonitoringMetrics data={data} />}
+    {validGroups.length > 0 && <section className="card overview-breakdown"><h2>Workflow status</h2>
+      <div className="overview-workflows">{validGroups.map(item => <WorkflowPanel key={item.key} title={item.title} group={data![item.key]!} states={item.states} note={item.note} to={["orders", "reports"].includes(item.key) ? item.to : undefined} />)}</div>
+    </section>}
   </section>;
 }
 
 function WorkflowPanel({ title, group, states, note, to }: { title: string; group: WorkflowCounts; states: readonly string[]; note: string; to?: string }) {
-  return <section className="card overview-workflow" aria-label={`${title} status breakdown`}>
+  return <section className="overview-workflow" aria-label={`${title} status breakdown`}>
     <h3>{title} by status</h3><p className="small muted">{note}</p>
     {group.total === 0 ? <p className="empty">No {title.toLowerCase()} recorded.</p> : <dl>{states.map(status => <div key={status}>
       <dt>{to ? <Link to={`${to}?status=${status}`}><Badge>{status}</Badge></Link> : <Badge>{status}</Badge>}</dt><dd>{group.statuses[status].toLocaleString()}<span className="sr-only"> {label(status)} {title.toLowerCase()}</span></dd>
@@ -107,7 +111,7 @@ function WorkflowPanel({ title, group, states, note, to }: { title: string; grou
 }
 
 function Metric({ title, value, to, note }: { title: string; value?: number; to?: string; note?: string }) {
-  return <article className="card overview-metric" aria-label={title}><h3>{title}</h3>
+  return <article className="overview-detail-metric" aria-label={title}><h3>{title}</h3>
     <strong>{Number.isSafeInteger(value) && value! >= 0 ? value!.toLocaleString() : "Unavailable"}</strong>
     {note && <p className="small muted">{note}</p>}{to && <Link to={to}>View details →</Link>}</article>;
 }
@@ -116,7 +120,7 @@ function MonitoringMetrics({ data }: { data: Overview }) {
   const { can } = useAuth();
   const now = useObservationClock();
   return <>
-    <div className="overview-metrics">
+    {(can("AUTH_ACTIVITY_VIEW") || can("ACCOUNT_READ") || can("REPORT_READ") || (can("PATIENT_READ") && can("PATIENT_ACCOUNT_ACTIVATE"))) && <section className="overview-secondary" aria-label="Report and account attention"><h2>Report and account attention</h2><div className="overview-detail-metrics">
       {can("AUTH_ACTIVITY_VIEW") && <>
         <Metric title="Recently active staff" value={data.presence?.recently_active} to="/administration/activity"
           note="Distinct staff accounts with authenticated server activity in the last 5 minutes and a valid session. This does not prove physical presence." />
@@ -137,7 +141,7 @@ function MonitoringMetrics({ data }: { data: Overview }) {
         <Metric title="Reports awaiting signature" value={data.signing?.awaiting_signature} to="/reports?signing_stage=awaiting_signature" />
         <Metric title="Signed reports awaiting approval" value={data.signing?.awaiting_approval} to="/reports?signing_stage=awaiting_approval" note="All assigned signatures complete. Approval still validates report prerequisites." />
       </>}
-    </div>
+    </div></section>}
     {can("BLOCKCHAIN_STATUS_VIEW") && <section className="card" aria-label="Service attention">
       <h2>Service attention</h2><p>Application and database reflect this request. Worker activity expires after 5 minutes; an idle queue does not prove worker health.</p>
       {data.services ? <ul>{data.services.map(service => <li key={service.name}>
@@ -198,17 +202,13 @@ export function Dashboard() {
     <Title title="Laboratory overview" eyebrow="DASHBOARD" description="Follow laboratory work from request to released report.">
       <button onClick={() => setRefresh(value => value + 1)}><RefreshCw size={16} aria-hidden="true" /> Refresh overview</button>
     </Title>
-    <section className="welcome overview-welcome"><div><p className="eyebrow">YOUR WORKSPACE</p>
-      <h2>Welcome, {user?.staff?.first_name || user?.username}.</h2><p>See what needs attention and continue where your team left off.</p></div>
-      {can("ANALYTICS_VIEW") && <Link className="button" to="/administration/analytics">Explore trends <ArrowUpRight size={16} aria-hidden="true" /></Link>}
-    </section>
+    <p className="dashboard-greeting">Welcome, {user?.staff?.first_name || user?.username}. <span className="muted">Here is your laboratory’s current workload.</span></p>
     <div key={`${permissions}:${refresh}`} className="overview-content">
-      <Summary />
-      <section className="card"><div className="section-heading"><h2>Quick actions</h2><span className="muted">Available for your role</span></div>
-        {actions.length ? <div className="quick-actions">{actions.map(action => <Link className="button" key={action.to} to={action.to}>{action.label}<ArrowUpRight size={16} aria-hidden="true" /></Link>)}</div> :
+      <section className="dashboard-actions"><div className="section-heading"><h2>Quick actions</h2><span className="muted">Available for your role</span></div>
+        {actions.length ? <div className="quick-actions">{actions.map(action => <Link className={action.to === "/orders/new" ? "button primary" : "button"} key={action.to} to={action.to}>{action.label}<ArrowUpRight size={16} aria-hidden="true" /></Link>)}</div> :
           <p className="muted">No quick actions are available for your permissions.</p>}
       </section>
-      {can("LAB_ORDER_READ") && <RecentOrders />}
+      <Summary />
       {(can("BLOCKCHAIN_STATUS_VIEW") || can("BLOCKCHAIN_EXPLORER_VIEW")) && <div className="overview-health">
         {can("BLOCKCHAIN_STATUS_VIEW") && <BlockchainQueue />}
         {can("BLOCKCHAIN_EXPLORER_VIEW") && <FabricHealth />}

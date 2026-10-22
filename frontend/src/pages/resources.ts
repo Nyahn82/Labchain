@@ -57,13 +57,13 @@ export const field = (
 ): Field => ({ name, label, ...extra });
 const active = field("is_active", "Active", { type: "boolean", default: true });
 const names = [
-  field("first_name", "First name", { required: true, max: 60 }),
+  field("first_name", "First name", { required: true, max: 60, group: "Personal information" }),
   field("middle_name", "Middle name", { max: 60 }),
   field("last_name", "Last name", { required: true, max: 60 }),
   field("suffix", "Suffix", { max: 20 }),
 ];
 const contact = [
-  field("contact_number", "Contact number", { max: 30 }),
+  field("contact_number", "Contact number", { max: 30, group: "Contact details" }),
   field("email", "Email", { type: "email", max: 254 }),
 ];
 const nameColumns: Column[] = [
@@ -93,7 +93,7 @@ export const resources: Record<string, Resource> = {
     detail: "patients",
     fields: [
       ...names,
-      field("birth_date", "Birth date", { type: "date" }),
+      field("birth_date", "Birth date", { type: "date", group: "Demographics" }),
       field("sex", "Sex", {
         type: "select",
         options: choices("M", "F", "Other"),

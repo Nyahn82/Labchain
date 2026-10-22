@@ -30,9 +30,7 @@ export function Laboratory() {
         Configure the catalog and approved reference information used by your
         laboratory.
       </p>
-      <ClinicalCatalogBrowser />
-      <StarterCatalog expanded />
-      <div className="setup-grid">
+      <div className="setup-grid catalog-shortcuts">
         {["departments", "samples", "tests", "panels", "reasons"]
           .filter((k) => can(resources[k].read))
           .map((k) => (
@@ -52,6 +50,8 @@ export function Laboratory() {
           </div>
         )}
       </div>
+      <ClinicalCatalogBrowser />
+      <details className="workspace-reference"><summary>Catalog import tools</summary><StarterCatalog expanded /></details>
     </>
   );
 }
