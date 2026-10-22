@@ -38,3 +38,15 @@ Protected backup location: `/var/backups/rhu-labchain/20261022-no-billing`. It c
 Live acceptance uses the existing synthetic laboratory identity for read-only views and unsaved examination selection, then restores its original disabled state/credential and revokes its sessions. Financial GET/POST requests are tested only against the removed route and must return 404. No live clinical record is created or modified. Final verification compares historical financial/clinical tables, permission grants, automatic codes, PDF files and environment bytes, checks served asset hashes and health/readiness, and validates the existing released report against actual Fabric evidence.
 
 Local evidence is under `/tmp/rhu-scan-no-billing`, `/tmp/rhu-no-billing-deploy`, and `/tmp/rhu-no-billing-*.log`; durable copies are preserved in the protected deployment backup. Deployment metadata is recorded in `/var/log/rhu-labchain-deployments/20261022-no-billing.json`.
+
+## Completed live acceptance
+
+Source commit `83970f77fc67b2ddc91a9273818f9f4396b80ca9` is deployed on `https://labchain.online`. Public HTML, CSS and JavaScript hashes match the tested release. Health and readiness are successful; the API, blockchain worker, monitor and Nginx are active.
+
+Authenticated Chromium checked 14 live views across 390px and 1280px, including the dashboard, existing synthetic order, specimen/result/report workspaces, new-order selection and catalog. No billing controls, financial requests, page overflow or browser errors were detected. CBC selection and Create order remain available. The former financial GET and POST endpoints returned 404 for authenticated staff. Live OpenAPI has no financial routes or schemas, and every unrelated route contract matches the pre-deployment baseline. No live clinical writes were used for this verification.
+
+The existing released report still passes official-PDF comparison and live Fabric verification; altered PDF bytes produce MISMATCH, invalid PDF input returns 415, and anonymous private-document access is denied. All four peers and the orderer are ONLINE at ledger height 7, with both existing outbox events CONFIRMED.
+
+Final integrity checks preserved all 49 non-operational database tables, including the **one historical financial record**, all permission/grant rows, automatic codes and clinical records. Historical PDF files and environment bytes are unchanged. Only expected authentication/audit/service-observation activity changed. The synthetic account's original password hash and disabled state were restored, and every synthetic session was revoked. Worker, monitor and Nginx PIDs are unchanged; only FastAPI was restarted. No migration or Fabric restart occurred.
+
+Live verification was briefly interrupted by the approval service's usage limit, then resumed and completed. No approval check was bypassed. Durable verification evidence is archived with the deployment backup.
