@@ -224,3 +224,105 @@ def test_manual_service_requires_explicit_facility_review(api):
     assert approved.status_code==200 and approved.json()['is_active']
     changed=call(api,'PATCH',path,{'default_unit':'mmol/L'})
     assert changed.status_code==200 and changed.json()['facility_status']=='UNREVIEWED' and not changed.json()['is_active']
+
+
+def activate_unreviewed_fixture(api):
+    """Mirror controlled activation in isolated SQLite; never fabricate approval."""
+    imported(api)
+    mapping = ids(api)
+    with api.factory.begin() as db:
+        for (kind, _), record_id in mapping.items():
+            model = {'test_catalog': Catalog, 'test_panel': Panel,
+                     'lab_department': LabDepartment, 'sample_type': SampleType}[kind]
+            row = db.get(model, record_id)
+            if not (getattr(row, 'catalog_metadata', None) or {}).get('restricted_workflow'):
+                row.is_active = True
+    return mapping
+
+
+@pytest.mark.parametrize('environment,enabled,available',[
+    ('development', True, True), ('development', False, False),
+    ('production', True, False), ('test', True, False), ('staging', True, False),
+])
+def test_simulation_ordering_requires_development_and_explicit_opt_in(api, monkeypatch, environment, enabled, available):
+    from app.config import settings
+    mapping = activate_unreviewed_fixture(api)
+    monkeypatch.setattr(settings, 'environment', environment)
+    monkeypatch.setattr(settings, 'development_catalog_ordering_enabled', enabled)
+    catalog = call(api, 'GET', '/lab/catalog-browser').json()
+    tid = mapping['test_catalog', 'hemoglobin']
+    pid = mapping['test_panel', 'cbc_diff']
+    for collection, key, value in [('tests', 'test_id', tid), ('panels', 'panel_id', pid)]:
+        row = next(r for r in catalog[collection] if r[key] == value)
+        assert row['facility_status'] == 'UNREVIEWED'
+        assert row['orderable'] is available
+    for payload in [{'test_ids': [tid]}, {'panel_ids': [pid]}]:
+        response = call(api, 'POST', '/lab-orders', {'patient_id': 1, 'priority': 'ROUTINE', **payload})
+        assert response.status_code == (201 if available else 409), response.text
+
+
+@pytest.mark.parametrize('panel_key', ['cbc_diff', 'urinalysis', 'fecalysis', 'lipid'])
+def test_development_panels_save_with_compatible_specimens_without_approval(api, monkeypatch, panel_key):
+    from app.config import settings
+    mapping = activate_unreviewed_fixture(api)
+    monkeypatch.setattr(settings, 'environment', 'development')
+    monkeypatch.setattr(settings, 'development_catalog_ordering_enabled', True)
+    with api.factory() as db:
+        codes = {r.sequence_key: r.current_value for r in db.scalars(select(CodeSequence))}
+    order = create(api, '/lab-orders', {'patient_id': 1, 'priority': 'ROUTINE',
+                                      'panel_ids': [mapping['test_panel', panel_key]]})
+    assert order['items']
+    grouped = {}
+    for item in order['items']:
+        assert item['definition_snapshot']['test']['facility_status'] == 'UNREVIEWED'
+        sid = item['definition_snapshot']['specimens'][0]['sample_type_id']
+        grouped.setdefault(sid, []).append(item['order_item_id'])
+    assert call(api, 'POST', f"/lab-orders/{order['order_id']}/specimens",
+                {'sample_type_id': 1, 'order_item_ids': [i['order_item_id'] for i in order['items']]}).status_code == 409
+    for sid, items in grouped.items():
+        create(api, f"/lab-orders/{order['order_id']}/specimens", {'sample_type_id': sid, 'order_item_ids': items})
+    saved = call(api, 'GET', f"/lab-orders/{order['order_id']}").json()
+    assert [(i['order_item_id'], i['definition_snapshot']) for i in saved['items']] == [
+        (i['order_item_id'], i['definition_snapshot']) for i in order['items']]
+    assert len(saved['specimens']) == len(grouped)
+    with api.factory() as db:
+        assert all(r.facility_status == 'UNREVIEWED' for r in db.scalars(select(Catalog).where(Catalog.catalog_metadata.is_not(None))))
+        assert db.get(Panel, mapping['test_panel', panel_key]).facility_status == 'UNREVIEWED'
+        after = {r.sequence_key: r.current_value for r in db.scalars(select(CodeSequence))}
+        assert after == codes
+
+
+def test_development_ordering_retains_restrictions_and_active_dependencies(api, monkeypatch):
+    from app.config import settings
+    mapping = activate_unreviewed_fixture(api)
+    monkeypatch.setattr(settings, 'environment', 'development')
+    monkeypatch.setattr(settings, 'development_catalog_ordering_enabled', True)
+    tid = mapping['test_catalog', 'hemoglobin']
+    pid = mapping['test_panel', 'cbc_diff']
+    hiv = mapping['test_catalog', 'hiv_screen']
+    with api.factory.begin() as db:
+        db.get(Catalog, hiv).is_active = True  # Even accidental activation cannot bypass restriction.
+    assert call(api, 'POST', '/lab-orders', {'patient_id':1,'priority':'ROUTINE','test_ids':[hiv]}).status_code == 409
+    for failure in ['inactive_test','inactive_department','inactive_specimens','unavailable_status']:
+        with api.factory.begin() as db:
+            test = db.get(Catalog, tid)
+            test.is_active = failure != 'inactive_test'
+            test.facility_status = 'UNAVAILABLE' if failure == 'unavailable_status' else 'UNREVIEWED'
+            db.get(LabDepartment, test.department_id).is_active = failure != 'inactive_department'
+            for sid in db.scalars(select(TestSampleType.sample_type_id).where(TestSampleType.test_id == tid)):
+                db.get(SampleType, sid).is_active = failure != 'inactive_specimens'
+        catalog = call(api, 'GET', '/lab/catalog-browser').json()
+        assert not next(t for t in catalog['tests'] if t['test_id'] == tid)['orderable']
+        assert not next(p for p in catalog['panels'] if p['panel_id'] == pid)['orderable']
+        for payload in [{'test_ids':[tid]}, {'panel_ids':[pid]}]:
+            assert call(api, 'POST', '/lab-orders', {'patient_id':1,'priority':'ROUTINE',**payload}).status_code == 409
+
+
+@pytest.mark.skipif(not __import__('os').environ.get('RHU_DEVELOPMENT_CATALOG_EXPORT'), reason='Explicit isolated browser export only')
+def test_export_unreviewed_development_browser_fixture(api):
+    import os, shutil
+    from pathlib import Path
+    target = Path(os.environ['RHU_DEVELOPMENT_CATALOG_EXPORT']).resolve()
+    assert str(target).startswith('/tmp/rhu-scan-') and target.is_dir()
+    activate_unreviewed_fixture(api)
+    shutil.copyfile(api.engine.url.database, target/'synthetic.sqlite')

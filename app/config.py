@@ -11,6 +11,8 @@ from app.blockchain_config import BlockchainSettings
 class Settings(BlockchainSettings):
     app_name: str = "RHU LabChain"
     environment: str = "production"
+    # Simulation ordering only; facility review status is never changed.
+    development_catalog_ordering_enabled: bool = False
 
     node_id: str
     node_name: str

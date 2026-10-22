@@ -30,6 +30,7 @@ os.environ.update({
     "REPORT_SIGNATURE_DIR": "/tmp/rhu-test-signatures-unconfigured",
     "APP_NAME": "RHU LabChain Test",
     "ENVIRONMENT": "test",
+    "DEVELOPMENT_CATALOG_ORDERING_ENABLED": "false",
     "BLOCKCHAIN_DELIVERY_ENABLED": "false",
     "BLOCKCHAIN_MONITOR_SOCKET": "/run/rhu-labchain-monitor/monitor.sock",
     "BLOCKCHAIN_GATEWAY_ENDPOINT": "127.0.0.1:7051",

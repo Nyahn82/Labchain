@@ -2,13 +2,18 @@
 from types import SimpleNamespace
 from fastapi import HTTPException
 from sqlalchemy import select
+from app.config import settings
 from app.models import LabDepartment, PanelSection, TestSampleType, SampleType
 from app.schemas.laboratory import TestResponse
 
 
 def orderable(record):
     metadata = record.catalog_metadata or {}
-    return bool(record.is_active and record.facility_status in (None, 'APPROVED')
+    development_available = (settings.environment.lower() == 'development'
+                             and settings.development_catalog_ordering_enabled
+                             and record.facility_status == 'UNREVIEWED')
+    return bool(record.is_active
+                and (record.facility_status in (None, 'APPROVED') or development_available)
                 and not metadata.get('restricted_workflow'))
 
 
