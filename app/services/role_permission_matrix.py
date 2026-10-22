@@ -6,12 +6,12 @@ import json
 from sqlalchemy import select
 
 from app.models import Permission, Role, RolePermission, UserRole
-from app.services.permission_catalog import PERMISSION_CATALOG
+from app.services.permission_catalog import PERMISSION_CATALOG, RETIRED_PERMISSION_CODES
 
-ROLE_PERMISSION_MATRIX_VERSION = "1.0.0"
+ROLE_PERMISSION_MATRIX_VERSION = "1.1.0"
 _STAFF = (
     "PATIENT_READ", "PATIENT_CREATE", "PATIENT_UPDATE", "PHYSICIAN_READ",
-    "LAB_MASTER_READ", "LAB_ORDER_READ", "LAB_ORDER_CREATE", "PAYMENT_READ",
+    "LAB_MASTER_READ", "LAB_ORDER_READ", "LAB_ORDER_CREATE",
     "SPECIMEN_READ", "SPECIMEN_REGISTER", "SPECIMEN_COLLECT", "SPECIMEN_RECEIVE",
     "LAB_RESULT_READ", "LAB_RESULT_ENTER", "REPORT_READ", "REPORT_DOWNLOAD", "REPORT_PRINT",
 )
@@ -38,7 +38,7 @@ def validate_matrix():
     forbidden = {
         "REPORT_SIGN", "ACCOUNT_READ", "ACCOUNT_CREATE", "ACCOUNT_STATUS_UPDATE", "ROLE_READ",
         "ROLE_ASSIGN", "AUTH_ACTIVITY_VIEW", "SESSION_MANAGE", "ACCOUNT_MFA_RESET",
-        "PATIENT_ACCOUNT_ACTIVATE", "PAYMENT_RECORD", "LAB_DEPARTMENT_MANAGE", "SAMPLE_TYPE_MANAGE",
+        "PATIENT_ACCOUNT_ACTIVATE", "LAB_DEPARTMENT_MANAGE", "SAMPLE_TYPE_MANAGE",
         "TEST_CATALOG_MANAGE", "TEST_PANEL_MANAGE", "REFERENCE_RANGE_MANAGE",
         "INTERPRETATION_RULE_MANAGE", "BLOCKCHAIN_EXPLORER_VIEW", "BLOCKCHAIN_INTEGRITY_VERIFY",
     }
@@ -46,8 +46,8 @@ def validate_matrix():
             or len(_STAFF + _SUPERVISOR_ADDITIONS) != len(set(_STAFF + _SUPERVISOR_ADDITIONS))
             or set(ROLE_PERMISSION_MATRIX) != {"LAB_SIGNER", "LAB_STAFF", "LAB_SUPERVISOR"}
             or ROLE_PERMISSION_MATRIX["LAB_SIGNER"] != {"REPORT_SIGN"}
-            or len(ROLE_PERMISSION_MATRIX["LAB_STAFF"]) != 17
-            or len(ROLE_PERMISSION_MATRIX["LAB_SUPERVISOR"]) != 32
+            or len(ROLE_PERMISSION_MATRIX["LAB_STAFF"]) != 16
+            or len(ROLE_PERMISSION_MATRIX["LAB_SUPERVISOR"]) != 31
             or not ROLE_PERMISSION_MATRIX["LAB_STAFF"] <= ROLE_PERMISSION_MATRIX["LAB_SUPERVISOR"]
             or forbidden & ROLE_PERMISSION_MATRIX["LAB_SUPERVISOR"]
             or any(not codes <= set(catalog) for codes in ROLE_PERMISSION_MATRIX.values())):
@@ -75,7 +75,7 @@ def inspect_matrix(db, *, locked=False):
     coordination = rows(select(Role.role_id).where(Role.role_code == "SYSTEM_ADMIN"))
     if len(coordination) != 1:
         errors.append("Administrative coordination role is missing or ambiguous.")
-    if len(by_code) != len(permissions) or set(by_code) != catalog:
+    if len(by_code) != len(permissions) or set(by_code) - RETIRED_PERMISSION_CODES != catalog:
         errors.append("Permission catalog/database code sets differ; bootstrap/refine metadata separately.")
     roles = rows(select(Role.role_id, Role.role_code, Role.is_active)
                  .where(Role.role_code.in_(sorted(ROLE_PERMISSION_MATRIX))).order_by(Role.role_code))
@@ -90,7 +90,8 @@ def inspect_matrix(db, *, locked=False):
             .where(RolePermission.role_id == rid).order_by(RolePermission.permission_id))
         assignments = [] if rid is None else rows(select(UserRole.user_role_id, UserRole.user_id)
             .where(UserRole.role_id == rid).order_by(UserRole.user_role_id))
-        current = [by_id.get(pid, "UNKNOWN_PERMISSION") for _, pid in grants]
+        current = [by_id.get(pid, "UNKNOWN_PERMISSION") for _, pid in grants
+                   if by_id.get(pid) not in RETIRED_PERMISSION_CODES]
         extra = sorted(set(current) - expected)
         if extra or len(current) != len(set(current)):
             errors.append(f"Unexpected or duplicate grants on {code}; automatic removal is forbidden.")

@@ -1,7 +1,6 @@
 """Subprocess only uses the disposable socket; no production connection/config."""
 
 from concurrent.futures import ThreadPoolExecutor
-from decimal import Decimal
 from pathlib import Path
 import stat
 import sys
@@ -13,7 +12,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import sessionmaker
 
 from app.models import (
-    AuditLog, Base, LabDepartment, LabOrder, LabOrderItem, LabPayment, OrderPanel,
+    AuditLog, Base, LabDepartment, LabOrder, LabOrderItem, OrderPanel,
     PanelTest, Patient, RejectionReason, SampleType, Specimen, SpecimenOrderItem,
     SpecimenRejection, TestCatalog, TestPanel, TestSampleType, UserAccount,
 )
@@ -29,7 +28,7 @@ def main(socket, scenario):
     assert socket_path.parent.name.startswith('rhu-phase3b-mysql-')
     assert stat.S_ISSOCK(socket_path.stat().st_mode)
     assert scenario in {'collect', 'receive', 'reject', 'register_cancel', 'collect_cancel', 'register_twice',
-                        'panel_snapshot', 'sample_snapshot', 'code_collisions', 'rollback_decimal'}
+                        'panel_snapshot', 'sample_snapshot', 'code_collisions', 'rollback'}
     options = {'hide_parameters': True, 'connect_args': {'unix_socket': str(socket_path), 'connect_timeout': 5}}
     engine = create_engine('mysql+pymysql://root@localhost/', **options)
     with engine.begin() as db:
@@ -55,20 +54,21 @@ def main(socket, scenario):
         order_input = s.OrderCreate(patient_id=1, priority='ROUTINE', panel_ids=[1], test_ids=[1])
         with factory() as db:
             order = service.create_order(db, order_input, 1, None)
+        assert len(order.items) == 1  # Panel and individual request share one examination.
         ids = [item.order_item_id for item in order.items]
         register = s.SpecimenCreate(sample_type_id=1, order_item_ids=ids)
         rejection = s.RejectRequest(rejection_reason_id=1, recollection_required=True)
         specimen = None
-        if scenario in {'collect', 'receive', 'reject', 'collect_cancel', 'code_collisions', 'rollback_decimal'}:
+        if scenario in {'collect', 'receive', 'reject', 'collect_cancel', 'code_collisions', 'rollback'}:
             with factory() as db:
                 specimen = service.register_specimen(db, order.order_id, register, 1, None)
-            if scenario in {'receive', 'reject', 'rollback_decimal'}:
+            if scenario in {'receive', 'reject', 'rollback'}:
                 with factory() as db:
                     service.transition_specimen(db, specimen.specimen_id, 'COLLECT', 1, None)
 
         if scenario in {'panel_snapshot', 'sample_snapshot'}:
             # Freeze the caller's old snapshot, commit a master-data replacement,
-            # then ensure the workflow uses current configuration, not stale data.
+            # New orders use current configuration; existing orders retain their captured specimen requirements.
             with factory() as old:
                 list(old.scalars(select(PanelTest)))
                 list(old.scalars(select(TestSampleType)))
@@ -80,16 +80,13 @@ def main(socket, scenario):
                         master.replace_sample_types(editor, 1, lab.SampleReplacement(sample_types=[]), 1, None)
                 if scenario == 'panel_snapshot':
                     created = service.create_order(old, order_input, 1, None)
-                    assert [item.test_id for item in created.items] == [2, 1]
+                    assert {item.test_id for item in created.items} == {1, 2}
                 else:
-                    try:
-                        service.register_specimen(old, order.order_id, register, 1, None)
-                        raise AssertionError('Stale compatibility was accepted')
-                    except HTTPException as exc:
-                        assert exc.status_code == 409
+                    captured = service.register_specimen(old, order.order_id, register, 1, None)
+                    assert {m.order_item_id for m in captured.mappings} == set(ids)
             with factory() as db:
-                assert len(service.order_detail(db, order.order_id).items) == 2
-                assert db.scalar(select(func.count()).select_from(Specimen)) == 0
+                assert len(service.order_detail(db, order.order_id).items) == 1
+                assert db.scalar(select(func.count()).select_from(Specimen)) == (1 if scenario == 'sample_snapshot' else 0)
         elif scenario == 'code_collisions':
             original = service.generated_code
             for kind, existing in [('order', order.order_code), ('specimen', specimen.specimen_code)]:
@@ -110,14 +107,11 @@ def main(socket, scenario):
             with factory() as db:
                 for model in (LabOrder, OrderPanel, Specimen):
                     assert db.scalar(select(func.count()).select_from(model)) == 2
-                assert db.scalar(select(func.count()).select_from(LabOrderItem)) == 4
-                assert db.scalar(select(func.count()).select_from(SpecimenOrderItem)) == 4
+                assert db.scalar(select(func.count()).select_from(LabOrderItem)) == 2
+                assert db.scalar(select(func.count()).select_from(SpecimenOrderItem)) == 2
                 assert db.scalar(select(func.count()).select_from(AuditLog)) == 4
-        elif scenario == 'rollback_decimal':
+        elif scenario == 'rollback':
             with factory() as db:
-                service.record_payment(db, order.order_id, s.PaymentCreate(payment_status='PAID', amount='9999999999.99'), 1, None)
-            with factory() as db:
-                assert db.scalar(select(LabPayment.amount)) == Decimal('9999999999.99')
                 before = service.order_detail(db, order.order_id).model_dump()
                 audit_count = db.scalar(select(func.count()).select_from(AuditLog))
             def fail_audit(connection, cursor, statement, params, context, executemany):
@@ -125,7 +119,7 @@ def main(socket, scenario):
                     raise SQLAlchemyError('synthetic failure')
             event.listen(engine, 'before_cursor_execute', fail_audit)
             try:
-                for action in ('create', 'register', 'reject', 'cancel', 'payment'):
+                for action in ('create', 'register', 'reject', 'cancel'):
                     with factory() as db:
                         try:
                             if action == 'create':
@@ -136,8 +130,6 @@ def main(socket, scenario):
                                 service.transition_specimen(db, specimen.specimen_id, 'REJECT', 1, None, rejection)
                             elif action == 'cancel':
                                 service.cancel_order(db, order.order_id, s.CancelRequest(reason='Synthetic'), 1, None)
-                            else:
-                                service.record_payment(db, order.order_id, s.PaymentCreate(payment_status='WAIVED'), 1, None)
                             raise AssertionError('Expected audit failure')
                         except SQLAlchemyError:
                             pass
@@ -184,12 +176,12 @@ def main(socket, scenario):
                     assert final.status == 'IN_PROGRESS'
                     assert all(item.status == 'IN_PROGRESS' for item in final.items)
                 if scenario == 'register_twice':
-                    assert len(final.specimens) == 2 and all(len(row.mappings) == 2 for row in final.specimens)
+                    assert len(final.specimens) == 2 and all(len(row.mappings) == 1 for row in final.specimens)
                     assert len({row.specimen_code for row in final.specimens}) == 2
                 elif scenario == 'reject':
                     assert db.scalar(select(func.count()).select_from(SpecimenRejection)) == 1
                     assert final.specimens[0].specimen_status == 'REJECTED'
-                    assert len(final.specimens[0].mappings) == 2
+                    assert len(final.specimens[0].mappings) == 1
                 elif scenario in {'collect', 'receive'}:
                     assert final.specimens[0].specimen_status == {'collect': 'COLLECTED', 'receive': 'RECEIVED'}[scenario]
                     action_count = db.scalar(select(func.count()).select_from(AuditLog).where(AuditLog.action == 'SPECIMEN_' + scenario.upper()))

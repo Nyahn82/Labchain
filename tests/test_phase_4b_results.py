@@ -424,7 +424,7 @@ def test_review_verify_provenance_and_immutability_same_actor_allowed(admin):
     assert verified['encoded_at'] == original['encoded_at'] and verified['reviewed_at'] == reviewed['reviewed_at']
     assert verified['reviewed_by'] == verified['verified_by'] == original['encoded_by']
     assert detail(admin)['items'][0]['status'] == detail(admin)['status'] == 'COMPLETED'
-    assert detail(admin)['payments'] == []
+    assert 'payments' not in detail(admin)
     for action in ('review', 'verify'):
         assert advance(admin, action).status_code == 409
     assert call(admin, 'PATCH', '/results/1', {'result_value': '14'}).status_code == 409
@@ -489,7 +489,7 @@ def test_individual_panel_mixed_overlapping_completion(admin, panels, tests):
             expected = 'COMPLETED' if all(i['status'] == 'COMPLETED' for i in members) else (
                 'IN_PROGRESS' if any(i['status'] == 'COMPLETED' for i in members) else 'REQUESTED')
             assert panel['status'] == expected
-    assert detail(admin)['payments'] == []
+    assert 'payments' not in detail(admin)
 
 
 def test_cancelled_items_ignored_and_cancelled_panel_preserved(admin):

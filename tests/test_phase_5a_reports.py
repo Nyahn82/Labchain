@@ -347,9 +347,12 @@ def test_range_formatting(low, high, kind, normal, expected):
 @pytest.mark.parametrize('selected,default,has_range,expected', [('unit', 'fallback', True, 'unit'),
     (None, 'fallback', True, 'fallback'), (None, None, True, None), (None, 'fallback', False, 'fallback')])
 def test_unit_precedence_missing_range(admin, selected, default, has_range, expected):
-    completed(admin)
+    # The fallback unit is captured when the order is requested.
     with admin.factory.begin() as db:
         db.get(Catalog, 1).default_unit = default
+    completed(admin)
+    with admin.factory.begin() as db:
+        db.get(Catalog, 1).default_unit = 'later-master-edit'
         db.get(ReferenceRange, 1).unit = selected
         if not has_range:
             db.get(LabResultItem, 1).reference_range_id = None
@@ -374,10 +377,12 @@ def test_panel_section_fallback_order_and_cancelled_items(admin):
     response = generate(admin)
     assert response.status_code == 201, response.text
     lines = response.json()['result_snapshots']
-    assert len(lines) == 3 and [x['sort_order'] for x in lines] == [1, 2, 3]
-    assert [x['result_item_id'] for x in lines] == [2, 1, 3]
-    assert [x['panel_id_snapshot'] for x in lines] == [1, 1, 2]
-    assert [x['section_name_snapshot'] for x in lines] == ['Seed section 1', 'Seed section 1', None]
+    # Two unique examinations were ordered; the second was cancelled. Later
+    # master edits cannot regroup the remaining examination's captured section.
+    assert len(lines) == 1 and lines[0]['sort_order'] == 1
+    assert lines[0]['result_item_id'] == 1
+    assert lines[0]['panel_id_snapshot'] == 1
+    assert lines[0]['section_name_snapshot'] is None
 
 
 def test_report_lists_search_filters_and_pagination(admin):

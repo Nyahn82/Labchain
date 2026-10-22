@@ -14,6 +14,8 @@ from app.services.identity_service import audit, get_record, mutation
 from app.security.passwords import hash_password
 from app.services.rbac_service import SYSTEM_ADMIN_ROLE_CODE
 
+from app.services.permission_catalog import RETIRED_PERMISSION_CODES
+
 ACCOUNT_LOAD_OPTIONS = (
     selectinload(UserAccount.user_roles).selectinload(UserRole.role),
     selectinload(UserAccount.staff_link).selectinload(StaffAccountLink.staff),
@@ -49,6 +51,7 @@ def current_roles(db, user_id):
 
 def role_permissions(db, role_ids):
     return set(db.scalars(select(Permission.permission_code)
+                         .where(Permission.permission_code.not_in(RETIRED_PERMISSION_CODES))
                          .join(RolePermission, RolePermission.permission_id == Permission.permission_id)
                          .where(RolePermission.role_id.in_(role_ids)).with_for_update()))
 

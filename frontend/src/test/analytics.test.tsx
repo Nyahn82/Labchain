@@ -21,7 +21,7 @@ const data: Record<string, AnalyticsData> = {
   tests: { ...base, breakdowns: [group("top_tests", "Top requested tests", "Synthetic test"), { ...group("departments", "Department workload", "Chemistry"), items: [{ ...group("x","x","x").items[0], label: "Chemistry", drafted: 2, reviewed: 1, verified: 2 }] }] },
   specimens: { ...base, metrics: [metric("registered", "Specimens registered", 4)], breakdowns: [group("rejection_reasons", "Top rejection reasons", "Clotted")] },
   reports: { ...base, metrics: [metric("released", "Report versions released", 3)], turnaround: [{ key: "tat", label: "Order created → report released", definition: "Valid stages only", average_seconds: 86400, sample_count: 2, excluded_count: 1, candidate_count: 3 }] },
-  operations: { ...base, breakdowns: [group("facilities", "Top referring facilities", "Referral Alpha"), group("weekday", "Order arrival pattern by weekday", "Monday")], metrics: [{ ...metric("amount", "Latest recorded amount", 150), unit: "amount" }] },
+  operations: { ...base, breakdowns: [group("facilities", "Top referring facilities", "Referral Alpha"), group("weekday", "Order arrival pattern by weekday", "Monday")], metrics: [] },
   system: { ...base, metrics: [metric("logins", "Successful logins", 3)], breakdowns: [group("anchors", "Current anchor status", "CONFIRMED")] },
 };
 function route(p: string) { return p.split("/analytics/")[1]?.split("?")[0]; }
@@ -33,7 +33,8 @@ describe("Phase 11 analytics", () => {
     mockFetch(standard); open();
     expect(await screen.findByRole("heading", { name: "Laboratory Analytics" })).toBeVisible();
     expect(await screen.findByText("Synthetic test")).toBeVisible();
-    for (const text of ["Chemistry", "Clotted", "Referral Alpha", "Monday", "CONFIRMED", "Successful logins", "Latest recorded amount", "Report versions released"]) expect(screen.getByText(text)).toBeVisible();
+    for (const text of ["Chemistry", "Clotted", "Referral Alpha", "Monday", "CONFIRMED", "Successful logins", "Report versions released"]) expect(screen.getByText(text)).toBeVisible();
+    expect(screen.queryByText(/payment|recorded amount|billing/i)).not.toBeInTheDocument();
     expect(screen.getByRole("article", { name: "Orders created" })).toHaveTextContent("No previous baseline");
     expect(screen.getByRole("article", { name: "Patients served" })).toHaveTextContent("+100%");
     expect(screen.getByRole("article", { name: "Average TAT" })).toHaveTextContent("No eligible samples");

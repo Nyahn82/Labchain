@@ -21,7 +21,7 @@ export function presetRange(preset: string, now = new Date()) {
 const sections = [
   ["overview", "Selected period at a glance"], ["patients", "Patient trends"], ["orders", "Orders"],
   ["tests", "Test demand & department workload"], ["specimens", "Specimens & rejection events"],
-  ["reports", "Reports, results & turnaround"], ["operations", "Referrals, arrival patterns & payments"], ["system", "System operations"],
+  ["reports", "Reports, results & turnaround"], ["operations", "Referrals & arrival patterns"], ["system", "System operations"],
 ];
 
 export function Analytics() {

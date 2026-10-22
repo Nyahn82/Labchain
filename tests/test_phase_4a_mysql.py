@@ -12,7 +12,7 @@ from test_phase_3b_mysql import disposable_mysql
 
 @pytest.mark.parametrize('scenario', [
     'collect', 'receive', 'reject', 'register_cancel', 'collect_cancel', 'register_twice',
-    'panel_snapshot', 'sample_snapshot', 'code_collisions', 'rollback_decimal',
+    'panel_snapshot', 'sample_snapshot', 'code_collisions', 'rollback',
 ])
 def test_mysql_workflow_integrity(disposable_mysql, scenario):
     root = Path(__file__).resolve().parents[1]

@@ -83,6 +83,10 @@ class LabOrderItem(Base):
 
 
 class LabPayment(Base):
+    """Archived financial records only; no application API, service or workflow uses this table.
+
+    Retain its mapping and original migration to preserve historical data and schema metadata.
+    """
     __tablename__ = "lab_payment"
 
     payment_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)

@@ -3,6 +3,9 @@
 from sqlalchemy import select
 from app.models import Permission
 
+# Keep historical permission/grant rows, but never expose or authorize these retired capabilities.
+RETIRED_PERMISSION_CODES = frozenset({"PAYMENT_READ", "PAYMENT_RECORD"})
+
 PERMISSION_CATALOG = (
     ('ANALYTICS_VIEW', 'View laboratory analytics', 'Read aggregate laboratory and operational analytics; no clinical values or authentication details.'),
     ('BLOCKCHAIN_EXPLORER_VIEW', 'View administrative blockchain explorer', 'Read sanitized Fabric probes, ledger metadata and application anchors.'),
@@ -39,8 +42,6 @@ PERMISSION_CATALOG = (
     ('LAB_ORDER_READ', 'Read laboratory orders', 'View orders and their workflow details.'),
     ('LAB_ORDER_CREATE', 'Create laboratory orders', 'Request individual tests and expand panels.'),
     ('LAB_ORDER_CANCEL', 'Cancel laboratory orders', 'Cancel unfinished laboratory orders.'),
-    ('PAYMENT_READ', 'Read payment history', 'View laboratory order payment history.'),
-    ('PAYMENT_RECORD', 'Record payment history', 'Append laboratory payment status records.'),
     ('SPECIMEN_READ', 'Read specimens', 'View specimens, mappings and rejection history.'),
     ('SPECIMEN_REGISTER', 'Register specimens', 'Register specimens mapped to requested tests.'),
     ('SPECIMEN_COLLECT', 'Collect specimens', 'Record specimen collection.'),

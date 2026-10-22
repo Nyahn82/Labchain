@@ -8,7 +8,6 @@ import { PermissionGuard, useAuth } from "../auth/Auth";
 import {
   Action,
   Badge,
-  Dialog,
   Pagination,
   State,
   Table,
@@ -355,7 +354,6 @@ function OrderContent({ tab }: { tab: string }) {
                   ]}
                 />
               </section>
-              {can("PAYMENT_READ") && <Payments order={order} />}{" "}
               {can("SPECIMEN_READ") && (
                 <section className="card">
                   <h2>Specimens</h2>
@@ -394,75 +392,5 @@ function OrderContent({ tab }: { tab: string }) {
         </>
       )}
     </>
-  );
-}
-function Payments({ order }: { order: Order }) {
-  const { can } = useAuth();
-  const [page, setPage] = useState(1);
-  const [open, setOpen] = useState(false);
-  const state = useResource<Page>(
-    `/lab-orders/${order.order_id}/payments?page=${page}&page_size=20`,
-  );
-  return (
-    <section className="card">
-      <div className="section-heading">
-        <h2>Payment history</h2>
-        {can("PAYMENT_RECORD") && (
-          <button onClick={() => setOpen(true)}>Record payment</button>
-        )}
-      </div>
-      <p className="muted">
-        Entries are append-only. Previous records remain visible.
-      </p>
-      <State {...state} empty={!state.data?.items.length} />
-      {state.data && (
-        <>
-          <Table
-            rows={state.data.items}
-            columns={[
-              { key: "payment_status", label: "Status", badge: true },
-              { key: "amount", label: "Amount" },
-              { key: "payment_method", label: "Method" },
-              { key: "reference_number", label: "Reference" },
-              { key: "recorded_at", label: "Recorded", date: true },
-            ]}
-          />
-          <Pagination page={page} total={state.data.total} onPage={setPage} />
-        </>
-      )}
-      {open && (
-        <Dialog title="Record payment" onClose={() => setOpen(false)}>
-          <Form
-            fields={[
-              field("payment_status", "Payment status", {
-                type: "select",
-                required: true,
-                options: choices(
-                  "PENDING",
-                  "PAID",
-                  "FREE",
-                  "WAIVED",
-                  "SUBSIDIZED",
-                ),
-              }),
-              field("amount", "Amount", {
-                type: "decimal",
-                help: "Decimal amount, for example 125.00",
-              }),
-              field("payment_method", "Payment method"),
-              field("reference_number", "Reference number"),
-            ]}
-            onSubmit={async (body) => {
-              await api(`/lab-orders/${order.order_id}/payments`, {
-                method: "POST",
-                body,
-              });
-              setOpen(false);
-              state.reload();
-            }}
-          />
-        </Dialog>
-      )}
-    </section>
   );
 }

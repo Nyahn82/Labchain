@@ -67,7 +67,6 @@ READ_ROUTES = [
 PLAN = (
     "PatientCreate: synthetic patient; DOB, contacts and other personal information omitted",
     "OrderCreate: ROUTINE, physician 1, test_ids=[1], panel_ids=[] -> REQUESTED",
-    "Payment: SKIP (not a processing or release prerequisite; no financial record)",
     "SpecimenCreate: sample type 1 + returned order_item_id -> PENDING; order IN_PROGRESS",
     "Collect -> COLLECTED; receive -> RECEIVED (no separate acceptance operation)",
     "ResultCreate: result_value='42', returned specimen_id -> DRAFT; specimen PROCESSED",
@@ -565,7 +564,6 @@ class Runner:
         self.write("Order", "/lab-orders", {"patient_id": self.ids["patient_id"], "physician_id": 1,
                    "priority": "ROUTINE", "test_ids": [1], "panel_ids": [], "request_reason": self.note}, created_order, expected=201)
         self.order("REQUESTED")
-        emit("SKIP", "Payment: no payment gate in the supported workflow; no financial record created.")
         def created_specimen(body):
             matches(body, order_id=self.ids["order_id"], sample_type_id=1, specimen_status="PENDING", remarks=self.note)
             self.capture("specimen_id", body)
@@ -870,7 +868,6 @@ def main(argv=None):
         for label in ("Patient", "Order", "Specimen", "Result", "Report generation", "Signatory", "Release",
                       "Outbox", "Fabric confirmation", "Staff blockchain status", "Public verification"):
             emit("PASS", label)
-        emit("SKIP", "Payment (not required)")
         emit("PASS" if args.patient_portal else "SKIP", "Patient portal" + ("" if args.patient_portal else " (separately gated)"))
         print(json.dumps({**runner.ids, "patient_code": runner.patient_code}, sort_keys=True))
         emit("PASS", "Overall: PASS")

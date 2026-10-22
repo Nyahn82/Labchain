@@ -5,6 +5,8 @@ from sqlalchemy.orm import Session
 
 from app.models.auth import Permission, Role, RolePermission, UserRole
 
+from app.services.permission_catalog import RETIRED_PERMISSION_CODES
+
 SYSTEM_ADMIN_ROLE_CODE = "SYSTEM_ADMIN"
 
 
@@ -21,6 +23,7 @@ def get_user_roles(db: Session, user_id: int) -> list[str]:
 def get_user_permissions(db: Session, user_id: int) -> list[str]:
     rows = db.execute(
         select(Permission.permission_code)
+        .where(Permission.permission_code.not_in(RETIRED_PERMISSION_CODES))
         .join(RolePermission, RolePermission.permission_id == Permission.permission_id)
         .join(Role, Role.role_id == RolePermission.role_id)
         .join(UserRole, UserRole.role_id == Role.role_id)
@@ -44,6 +47,8 @@ def user_has_role(db: Session, user_id: int, role_code: str) -> bool:
 
 
 def user_has_permission(db: Session, user_id: int, permission_code: str) -> bool:
+    if permission_code in RETIRED_PERMISSION_CODES:
+        return False
     if user_has_role(db, user_id, SYSTEM_ADMIN_ROLE_CODE):
         return True
     return permission_code in get_user_permissions(db, user_id)

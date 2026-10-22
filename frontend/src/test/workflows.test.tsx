@@ -198,6 +198,8 @@ describe("orders", () => {
     );
     expect(await screen.findByText("ORD-001")).toBeInTheDocument();
     expect(screen.getAllByText("Glucose").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/payment|billing|cashier/i)).not.toBeInTheDocument();
+    expect(fetch.mock.calls.some(([path]) => path.includes("/payments"))).toBe(false);
     await userEvent.click(screen.getByRole("button", { name: "Cancel order" }));
     expect(fetch.mock.calls.some(([, o]) => o?.method === "POST")).toBe(false);
     await userEvent.type(

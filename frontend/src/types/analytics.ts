@@ -1,7 +1,7 @@
 export type Grain = "auto" | "day" | "week" | "month" | "quarter" | "year";
 export interface AnalyticsMetric {
   key: string; label: string; definition: string; value: number | null;
-  unit: "count" | "percent" | "seconds" | "amount";
+  unit: "count" | "percent" | "seconds";
   previous_value: number | null; absolute_change: number | null; percent_change: number | null; compared: boolean;
 }
 export interface AnalyticsSeries {

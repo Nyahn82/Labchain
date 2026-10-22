@@ -144,7 +144,9 @@ def test_rich_sections_no_phi_and_no_writes(rich, section):
     event.listen(rich.engine, 'before_cursor_execute', observe)
     try: data = get(rich, section)
     finally: event.remove(rich.engine, 'before_cursor_execute', observe)
-    assert not writes
+    # Authentication intentionally updates session presence; analytics must not
+    # write clinical, financial, audit or configuration data.
+    assert all(statement.startswith('UPDATE auth_session SET last_activity_at=') for statement in writes)
     assert 'PRIVATE-' not in json.dumps(data)
 
 
@@ -202,16 +204,16 @@ def test_report_event_dates_and_invalid_tat(rich):
     assert t['review_to_approval']['sample_count']==1 and t['review_to_approval']['average_seconds']==9000
 
 
-def test_referrals_peaks_and_latest_payment_not_history_sum(rich):
+def test_referrals_peaks_exclude_archived_financial_history(rich):
     data=get(rich,'operations')
     assert breakdown(data,'facilities')['total']==5
     unspecified=next(x for x in breakdown(data,'facilities')['items'] if x['key']=='unspecified')
     assert unspecified['count']==3
     assert len(breakdown(data,'weekday')['items'])==7 and len(breakdown(data,'hour')['items'])==24
     assert sum(x['count'] for x in breakdown(data,'hour')['items'])==5
-    assert metrics(data)['recorded_amount']['value']==150
-    payments={x['key']:x['count'] for x in breakdown(data,'payments')['items']}
-    assert payments['PAID']==1 and payments['PENDING']==0 and payments['NOT_RECORDED']==3
+    assert not data['metrics']
+    assert {b['key'] for b in data['breakdowns']} == {'physicians', 'facilities', 'weekday', 'hour'}
+    assert not any(word in json.dumps(data).lower() for word in ['payment', 'amount', 'revenue'])
 
 
 def test_system_aggregates_only(rich):

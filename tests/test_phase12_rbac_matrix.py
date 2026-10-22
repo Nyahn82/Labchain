@@ -13,7 +13,7 @@ from app.services.permission_catalog import PERMISSION_CATALOG, ensure_permissio
 from app.services.rbac_service import ensure_core_roles
 
 STAFF = set('''PATIENT_READ PATIENT_CREATE PATIENT_UPDATE PHYSICIAN_READ LAB_MASTER_READ
-LAB_ORDER_READ LAB_ORDER_CREATE PAYMENT_READ SPECIMEN_READ SPECIMEN_REGISTER SPECIMEN_COLLECT
+LAB_ORDER_READ LAB_ORDER_CREATE SPECIMEN_READ SPECIMEN_REGISTER SPECIMEN_COLLECT
 SPECIMEN_RECEIVE LAB_RESULT_READ LAB_RESULT_ENTER REPORT_READ REPORT_DOWNLOAD REPORT_PRINT'''.split())
 EXTRA = set('''LAB_ORDER_CANCEL SPECIMEN_REJECT REJECTION_REASON_MANAGE LAB_RESULT_REVIEW
 LAB_RESULT_VERIFY REPORT_GENERATE REPORT_TEMPLATE_READ SIGNATORY_READ SIGNATORY_MANAGE
@@ -55,10 +55,10 @@ def snapshot(factory):
 
 
 def test_exact_approved_policy():
-    assert matrix.ROLE_PERMISSION_MATRIX_VERSION == '1.0.0'
+    assert matrix.ROLE_PERMISSION_MATRIX_VERSION == '1.1.0'
     assert matrix.ROLE_PERMISSION_MATRIX == {
         'LAB_STAFF': STAFF, 'LAB_SUPERVISOR': STAFF | EXTRA, 'LAB_SIGNER': {'REPORT_SIGN'}}
-    assert len(STAFF) == 17 and len(STAFF | EXTRA) == 32 and STAFF <= STAFF | EXTRA
+    assert len(STAFF) == 16 and len(STAFF | EXTRA) == 31 and STAFF <= STAFF | EXTRA
     assert 'REPORT_SIGN' not in STAFF | EXTRA
     assert matrix.UNMANAGED_ROLES == {'SYSTEM_ADMIN', 'PATIENT', 'DOCTOR'}
     assert all(codes <= {r[0] for r in PERMISSION_CATALOG} for codes in matrix.ROLE_PERMISSION_MATRIX.values())
@@ -125,14 +125,14 @@ def test_partial_state_only_adds_missing_and_is_idempotent(factory):
     plan = matrix.preflight(factory)
     assert plan == matrix.preflight(factory)
     staff = next(r for r in plan['roles'] if r['role_code'] == 'LAB_STAFF')
-    assert staff['current_count'] == 1 and staff['expected_count'] == 17
+    assert staff['current_count'] == 1 and staff['expected_count'] == 16
     assert staff['missing_grants'] == sorted(STAFF - {'PATIENT_READ'})
     added = matrix.execute_matrix(factory, plan)
-    assert len(added) == 49
+    assert len(added) == 47
     assert matrix.execute_matrix(factory, matrix.preflight(factory)) == []
     with factory() as db:
         rows = list(db.scalars(select(RolePermission)))
-        assert len(rows) == 50 and len({(r.role_id, r.permission_id) for r in rows}) == 50
+        assert len(rows) == 48 and len({(r.role_id, r.permission_id) for r in rows}) == 48
 
 
 def test_only_managed_grant_rows_change(factory):
@@ -148,7 +148,7 @@ def test_only_managed_grant_rows_change(factory):
     before = snapshot(factory)
     plan = matrix.preflight(factory)
     assert next(r for r in plan['roles'] if r['role_code'] == 'LAB_STAFF')['assignment_count'] == 1
-    assert len(matrix.execute_matrix(factory, plan)) == 50
+    assert len(matrix.execute_matrix(factory, plan)) == 48
     after = snapshot(factory)
     assert {k: v for k, v in before.items() if k != 'role_permission'} == {
         k: v for k, v in after.items() if k != 'role_permission'}
@@ -171,7 +171,7 @@ def test_injected_partial_failure_rolls_back(factory):
 
 def test_evidence_failure_rolls_back(factory):
     def fail(rows):
-        assert len(rows) == 50
+        assert len(rows) == 48
         raise OSError('Synthetic evidence failure')
     with pytest.raises(OSError):
         matrix.execute_matrix(factory, matrix.preflight(factory), record_prepared=fail)
@@ -192,7 +192,7 @@ def test_cli_execute_receipt_and_second_no_changes(factory, monkeypatch, capsys,
     first, second = tmp_path / 'first.json', tmp_path / 'second.json'
     assert cli.main(['--execute', '--receipt-file', str(first)]) == 0
     receipt = json.loads(first.read_text())
-    assert receipt['state'] == 'COMMITTED' and len(receipt['added']) == 50
+    assert receipt['state'] == 'COMMITTED' and len(receipt['added']) == 48
     assert first.stat().st_mode & 0o777 == 0o600
     assert all(set(r) == {'role_permission_id', 'role_id', 'role_code', 'permission_id', 'permission_code'}
                for r in receipt['added'])
@@ -229,3 +229,19 @@ def test_missing_administration_mutex_preflight_refuses(factory):
     with factory.begin() as db:
         db.delete(db.scalar(select(Role).where(Role.role_code == 'SYSTEM_ADMIN')))
     assert not matrix.preflight(factory)['safe_to_execute']
+
+
+def test_archived_grants_are_preserved_and_not_bootstrapped(factory):
+    matrix.execute_matrix(factory, matrix.preflight(factory))
+    with factory.begin() as db:
+        role = db.scalar(select(Role).where(Role.role_code == 'LAB_STAFF'))
+        for code in ('PAYMENT_READ', 'PAYMENT_RECORD'):
+            permission = Permission(permission_code=code, permission_name='Historical')
+            db.add(permission); db.flush()
+            db.add(RolePermission(role_id=role.role_id, permission_id=permission.permission_id))
+    before = snapshot(factory)
+    plan = matrix.preflight(factory)
+    assert plan['safe_to_execute'] and plan['action'] == 'NO_CHANGES'
+    assert all(not any(c.startswith('PAYMENT_') for c in r['current_grants']) for r in plan['roles'])
+    assert matrix.execute_matrix(factory, plan) == []
+    assert snapshot(factory) == before

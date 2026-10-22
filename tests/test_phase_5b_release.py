@@ -299,7 +299,9 @@ def test_revision_supersession_and_snapshot_refresh(api):
     assert new['report_id'] == 2 and new['version_no'] == 2 and new['supersedes_report_id'] == 1
     assert new['report_status'] == 'GENERATED' and new['signatories'] == [] and new['pdf_path'] is None
     assert new['patient_snapshot']['patient_name'].startswith('Updated')
-    assert any(line['test_name_snapshot'] == 'Current catalog name' for line in new['result_snapshots'])
+    # Revising demographics does not rewrite captured examination definitions.
+    assert [line['test_name_snapshot'] for line in new['result_snapshots']] == [
+        line['test_name_snapshot'] for line in old['result_snapshots']]
     assert report(api) == old
     assert verify(api).json()['status'] == 'REGISTERED'
     link = create(api, '/reports/2/signatories', {'signatory_id': 1, 'signatory_type': 'PATHOLOGIST'})

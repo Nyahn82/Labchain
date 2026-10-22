@@ -1,8 +1,7 @@
 """Phase 4A contracts. Server provenance and lifecycle fields are output-only."""
 
 from datetime import datetime
-from decimal import Decimal
-from typing import Annotated, Literal
+from typing import Literal
 
 from pydantic import Field, model_validator
 
@@ -11,9 +10,7 @@ from app.schemas.laboratory import Output, Partial
 
 Priority = Literal['ROUTINE', 'STAT', 'URGENT']
 OrderStatus = Literal['REQUESTED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']
-PaymentStatus = Literal['PENDING', 'PAID', 'FREE', 'WAIVED', 'SUBSIDIZED']
 SpecimenStatus = Literal['PENDING', 'COLLECTED', 'RECEIVED', 'REJECTED', 'PROCESSED']
-Amount = Annotated[Decimal, Field(ge=0, max_digits=12, decimal_places=2, allow_inf_nan=False)]
 
 
 class OrderCreate(Input):
@@ -37,13 +34,6 @@ class OrderCreate(Input):
 
 class CancelRequest(Input):
     reason: text_field(500)
-
-
-class PaymentCreate(Input):
-    payment_status: PaymentStatus
-    amount: Amount | None = None
-    payment_method: text_field(50) | None = None
-    reference_number: text_field(80) | None = None
 
 
 class SpecimenCreate(Input):
@@ -165,17 +155,6 @@ class OrderItemResponse(Output):
     test: TestSummary
 
 
-class PaymentResponse(Output):
-    payment_id: int
-    order_id: int
-    payment_status: PaymentStatus
-    amount: Decimal | None
-    payment_method: str | None
-    reference_number: str | None
-    recorded_by_user_id: int | None
-    recorded_at: datetime
-
-
 class MappingResponse(Output):
     specimen_order_item_id: int
     specimen_id: int
@@ -216,5 +195,4 @@ class OrderDetail(OrderResponse):
     physician: PhysicianSummary | None
     panels: list[OrderPanelResponse]
     items: list[OrderItemResponse]
-    payments: list[PaymentResponse]
     specimens: list[SpecimenResponse]

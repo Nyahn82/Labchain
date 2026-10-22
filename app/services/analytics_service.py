@@ -1,11 +1,11 @@
 """Read-only SQL aggregates. Python only assembles bounded grouped results."""
 from datetime import datetime, time, timedelta
-from sqlalchemy import String, cast, and_, case, exists, extract, func, literal, or_, select
+from sqlalchemy import and_, case, exists, extract, func, literal, or_, select
 from sqlalchemy.orm import aliased
 from app.models import (
     Patient, LabOrder, LabOrderItem, OrderPanel, TestCatalog, TestPanel, LabDepartment,
     Specimen, SpecimenRejection, RejectionReason, LabResultItem, LabReport, ReportResultItem,
-    RequestingPhysician, ReferringFacility, LabPayment, LoginLog, AuthSession,
+    RequestingPhysician, ReferringFacility, LoginLog, AuthSession,
     StaffAccountLink, PatientAccountLink, UserAccount, BlockchainEvent,
 )
 from app.schemas.analytics import AnalyticsResponse, AnalyticsQuery, RangeInfo, next_bucket
@@ -301,22 +301,8 @@ def operations(db, query):
         rows = dict(db.execute(base.with_only_columns(expression, func.count()).group_by(expression)).all())
         breakdowns.append(dict(key=key, label=label, definition='All order creation timestamps in UTC; not specimen-processing workload.', total=total,
             items=[dict(key=str(i), label=name, count=rows.get(i, 0), share=ratio(rows.get(i, 0), total)) for i, name in enumerate(labels)]))
-    # LabPayment is append-only history, not a financial ledger. Select exactly
-    # one latest record per selected order, with deterministic timestamp/id ties.
-    newer = aliased(LabPayment)
-    latest = ~exists(select(newer.payment_id).where(newer.order_id == LabPayment.order_id, or_(
-        newer.recorded_at > LabPayment.recorded_at, and_(newer.recorded_at == LabPayment.recorded_at, newer.payment_id > LabPayment.payment_id))))
-    payment_join = and_(LabPayment.order_id == LabOrder.order_id, latest)
-    payment_state = func.coalesce(cast(LabPayment.payment_status, String(20)), 'NOT_RECORDED')
-    payments = base.outerjoin(LabPayment, payment_join)
-    breakdowns.append(distribution(db, 'payments', 'Latest recorded payment status of period-created orders',
-        'One latest payment-history record per order by recorded_at then payment_id. Includes orders with no record.',
-        payment_state, payments, ['PENDING','PAID','FREE','WAIVED','SUBSIDIZED','NOT_RECORDED']))
-    amount = db.scalar(payments.with_only_columns(func.sum(LabPayment.amount)))
-    return response(query, breakdowns=breakdowns, metrics=[metric('recorded_amount', 'Latest recorded amount for selected orders',
-        float(amount) if amount is not None else None, 'Sum of non-null amounts from the latest payment record per selected order, across all payment statuses. Not accounting revenue; currency is not specified in the schema.', 'amount')],
-        notes=['Payments have recorded_at, not paid_at. No revenue or payment-date trend is shown. Amounts may include unpaid, waived or subsidized entries; no currency is assumed.',
-               'Referral attribution uses the current physician/facility relationship, not a historical snapshot. Bounded rankings include an Other total.'])
+    return response(query, breakdowns=breakdowns,
+        notes=['Referral attribution uses the current physician/facility relationship, not a historical snapshot. Bounded rankings include an Other total.'])
 
 
 def system(db, query):

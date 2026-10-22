@@ -22,7 +22,6 @@ export interface Order extends Row {
   physician: Row | null;
   panels: Row[];
   items: Row[];
-  payments: Row[];
   specimens: Specimen[];
 }
 export interface Specimen extends Row {

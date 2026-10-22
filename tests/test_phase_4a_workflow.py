@@ -1,7 +1,6 @@
 """Synthetic authenticated workflow, provenance, atomicity and privacy checks."""
 
 from datetime import datetime
-from decimal import Decimal
 import json
 import re
 
@@ -12,7 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.api import workflow
 from app.cli import bootstrap_permissions
 from app.models import (
-    AuditLog, CodeSequence, LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
+    AuditLog, CodeSequence, LabOrder, LabOrderItem, OrderPanel, PanelTest, Patient,
     Permission, RejectionReason, RequestingPhysician, RolePermission, SampleType,
     Specimen, SpecimenOrderItem, SpecimenRejection, TestCatalog as Catalog,
     TestPanel as Panel, TestSampleType as SampleLink, UserRole,
@@ -25,7 +24,6 @@ from test_phase_3c_laboratory import lab_api
 
 BASE = '/api/v1'
 ORDER = {'patient_id': 1, 'physician_id': 1, 'priority': 'ROUTINE', 'panel_ids': [1, 2], 'test_ids': [1]}
-PAYMENT = {'payment_status': 'PAID', 'amount': '350.00', 'payment_method': 'CASH', 'reference_number': None}
 REASON = {'reason_code': 'CLOTTED', 'reason_name': 'Synthetic clotted specimen'}
 REJECT = {'rejection_reason_id': 1, 'details': 'Synthetic details', 'recollection_required': True}
 
@@ -98,8 +96,6 @@ ENDPOINTS = [
     ('GET', '/lab-orders', None, 'LAB_ORDER_READ'),
     ('GET', '/lab-orders/999', None, 'LAB_ORDER_READ'),
     ('POST', '/lab-orders/999/cancel', {'reason': 'Synthetic withdrawal'}, 'LAB_ORDER_CANCEL'),
-    ('POST', '/lab-orders/999/payments', PAYMENT, 'PAYMENT_RECORD'),
-    ('GET', '/lab-orders/999/payments', None, 'PAYMENT_READ'),
     ('POST', '/lab-orders/999/specimens', {'sample_type_id': 1, 'order_item_ids': [1]}, 'SPECIMEN_REGISTER'),
     ('GET', '/lab-orders/999/specimens', None, 'SPECIMEN_READ'),
     ('GET', '/specimens/999', None, 'SPECIMEN_READ'),
@@ -168,7 +164,7 @@ def test_order_expansion_provenance_and_safe_detail(admin, priority):
     assert row['items'][0]['definition_snapshot']['selected_individually']
     assert all(i['status'] == 'REQUESTED' and i['created_at'] for i in row['items'])
     assert all(p['status'] == 'REQUESTED' for p in row['panels'])
-    assert row['payments'] == row['specimens'] == []
+    assert 'payments' not in row and row['specimens'] == []
     assert detail(admin) == row
     rendered = json.dumps(row)
     for private in ('password', 'session', 'unrelated-address', 'private@example', 'result_value', '_sa_instance_state'):
@@ -254,43 +250,6 @@ def test_completed_order_cannot_cancel_or_register(admin):
     assert detail(admin)['status'] == 'COMPLETED'
 
 
-@pytest.mark.parametrize('status', ['PENDING', 'PAID', 'FREE', 'WAIVED', 'SUBSIDIZED'])
-def test_payment_append_only_decimal_history(admin, status):
-    order(admin)
-    first = create(admin, '/lab-orders/1/payments', {**PAYMENT, 'payment_status': status})
-    second = create(admin, '/lab-orders/1/payments', {'payment_status': 'PENDING'})
-    assert first['payment_id'] != second['payment_id']
-    assert first['amount'] == '350.00' and first['recorded_by_user_id'] == 1 and first['recorded_at']
-    assert second['amount'] is None
-    history = call(admin, 'GET', '/lab-orders/1/payments?page_size=1&page=2').json()
-    assert history['total'] == 2 and history['items'] == [second]
-    assert detail(admin)['payments'] == [first, second]
-    with admin.factory() as db:
-        amount = db.get(LabPayment, first['payment_id']).amount
-        assert isinstance(amount, Decimal) and amount == Decimal('350.00')
-    for method in ('PUT', 'PATCH', 'DELETE'):
-        assert call(admin, method, '/lab-orders/1/payments', PAYMENT).status_code == 405
-
-
-@pytest.mark.parametrize('changes', [
-    {'amount': '-0.01'}, {'amount': 'NaN'}, {'amount': 'Infinity'}, {'amount': '0.001'}, {'amount': '10000000000'},
-    {'payment_status': 'paid'}, {'payment_status': 'PAID '}, {'payment_status': 'REFUNDED'},
-    {'recorded_by_user_id': 2}, {'recorded_at': '2000-01-01'}, {'payment_id': 1}, {'order_id': 2},
-    {'payment_method': 'x' * 51}, {'reference_number': 'x' * 81},
-])
-def test_invalid_payment(admin, changes):
-    order(admin)
-    assert call(admin, 'POST', '/lab-orders/1/payments', {**PAYMENT, **changes}).status_code == 422
-    assert detail(admin)['payments'] == []
-
-
-def test_zero_max_decimal_payments_and_terminal_order_history(admin):
-    order(admin)
-    call(admin, 'POST', '/lab-orders/1/cancel', {'reason': 'Synthetic'})
-    for amount in ('0.00', '9999999999.99'):
-        assert create(admin, '/lab-orders/1/payments', {**PAYMENT, 'amount': amount})['amount'] == amount
-
-
 @pytest.mark.parametrize('changes,status', [
     ({'sample_type_id': 999}, 422), ({'sample_type_id': 3}, 409), ({'order_item_ids': []}, 422),
     ({'order_item_ids': [1, 1]}, 422), ({'order_item_ids': [1, 999]}, 422),
@@ -339,7 +298,7 @@ def test_register_mapping_and_selective_processing_without_payment(admin):
     assert after['status'] == 'IN_PROGRESS' and after['updated_at']
     assert [i['status'] for i in after['items']] == ['IN_PROGRESS', 'REQUESTED']
     assert [p['status'] for p in after['panels']] == ['IN_PROGRESS', 'IN_PROGRESS']
-    assert after['payments'] == []
+    assert 'payments' not in after
     assert transition(admin, 'collect').status_code == 200
     second = specimen(admin, row, sample_type_id=2, order_item_ids=[row['items'][0]['order_item_id']])
     assert second['specimen_code'] != first['specimen_code']
@@ -514,7 +473,7 @@ def test_order_failure_rollback(admin, target):
 @pytest.mark.parametrize('action,target', [
     ('register', 'specimen'), ('register', 'specimen_order_item'), ('register', 'audit_log'),
     ('collect', 'audit_log'), ('receive', 'audit_log'), ('reject', 'specimen_rejection'), ('reject', 'audit_log'),
-    ('cancel', 'audit_log'), ('payment', 'lab_payment'), ('payment', 'audit_log'),
+    ('cancel', 'audit_log'),
 ])
 def test_workflow_failure_rollback(admin, action, target):
     order(admin)
@@ -534,8 +493,6 @@ def test_workflow_failure_rollback(admin, action, target):
             response = call(admin, 'POST', '/lab-orders/1/specimens', {'sample_type_id': 1, 'order_item_ids': [1, 2]})
         elif action == 'cancel':
             response = call(admin, 'POST', '/lab-orders/1/cancel', {'reason': 'Synthetic'})
-        elif action == 'payment':
-            response = call(admin, 'POST', '/lab-orders/1/payments', PAYMENT)
         else:
             response = transition(admin, action, body=REJECT if action == 'reject' else None)
         assert response.status_code == 503 and 'private' not in response.text
@@ -568,7 +525,6 @@ def test_code_collision_retry_whole_transaction(admin, monkeypatch, kind, exhaus
 
 def test_all_audits_bootstrap_and_privacy(admin, caplog):
     row = order(admin, clinical_notes='private-clinical-note', diagnosis='private-clinician-diagnosis', request_reason='private-request')
-    create(admin, '/lab-orders/1/payments', {**PAYMENT, 'reference_number': 'private-reference'})
     specimen(admin, row, remarks='private-remarks')
     transition(admin, 'collect')
     transition(admin, 'receive')
@@ -583,9 +539,9 @@ def test_all_audits_bootstrap_and_privacy(admin, caplog):
         assert set(db.scalars(select(Permission.permission_code))) >= {endpoint[3] for endpoint in ENDPOINTS}
         logs = list(db.scalars(select(AuditLog).where(AuditLog.action != 'AUTH_LOGIN')))
         assert {log.action for log in logs} == {
-            'LAB_ORDER_CREATE', 'LAB_ORDER_CANCEL', 'PAYMENT_RECORD', 'SPECIMEN_REGISTER', 'SPECIMEN_COLLECT',
+            'LAB_ORDER_CREATE', 'LAB_ORDER_CANCEL', 'SPECIMEN_REGISTER', 'SPECIMEN_COLLECT',
             'SPECIMEN_RECEIVE', 'SPECIMEN_REJECT', 'REJECTION_REASON_CREATE', 'REJECTION_REASON_UPDATE'}
-        assert len(logs) == 9 and all(log.record_id and log.user_id == 1 and log.created_at for log in logs)
+        assert len(logs) == 8 and all(log.record_id and log.user_id == 1 and log.created_at for log in logs)
         serialized = json.dumps([{'old': log.old_value, 'new': log.new_value} for log in logs])
     assert 'private-' not in serialized + caplog.text
     assert 'P-SYNTH' not in serialized and 'Synthetic1' not in serialized
@@ -600,9 +556,57 @@ def test_openapi_phase4a_contract():
     phase = {path: methods for path, methods in paths.items() if path.startswith((
         BASE + '/lab-orders', BASE + '/specimens', BASE + '/lab/rejection-reasons'))
         and not path.endswith(('/results', '/reports'))}
-    assert sum(len(methods) for methods in phase.values()) == 16
+    assert sum(len(methods) for methods in phase.values()) == 14
     assert not any('result' in path for path in phase)
     for methods in phase.values():
         assert 'delete' not in methods and 'put' not in methods
         for operation in methods.values():
             assert operation['security'] and operation['tags']
+
+
+def test_retired_payment_routes_and_archived_records(admin):
+    from app.models import LabPayment
+    row = order(admin)
+    with admin.factory.begin() as db:
+        db.add_all(LabPayment(order_id=row['order_id'], payment_status=status,
+                             amount='12.25', reference_number='archived-reference', recorded_at=utc_now())
+                   for status in ('PENDING', 'PAID'))
+    with admin.factory() as db:
+        before = list(db.execute(select(LabPayment.__table__)))
+    for method in ('GET', 'POST', 'PUT', 'PATCH', 'DELETE'):
+        assert call(admin, method, '/lab-orders/1/payments', {'payment_status': 'PAID'}).status_code == 404
+    # Ordering and specimen processing must not even read archived financial data.
+    def no_financial_queries(connection, cursor, statement, *args):
+        assert 'lab_payment' not in statement.lower()
+    event.listen(admin.engine, 'before_cursor_execute', no_financial_queries)
+    try:
+        assert 'payments' not in detail(admin)
+        specimen(admin, row)
+        assert transition(admin, 'collect').status_code == 200
+        assert transition(admin, 'receive').status_code == 200
+        assert 'payments' not in order(admin)
+    finally:
+        event.remove(admin.engine, 'before_cursor_execute', no_financial_queries)
+    with admin.factory() as db:
+        assert list(db.execute(select(LabPayment.__table__))) == before
+
+
+def test_archived_permissions_not_exposed_or_effective(admin):
+    from app.api import administration
+    from app.services.rbac_service import get_user_permissions, user_has_permission
+    from app.services.administration_service import role_permissions
+    admin.app.include_router(administration.router, prefix=BASE)
+    with admin.factory.begin() as db:
+        for code in ('PAYMENT_READ', 'PAYMENT_RECORD'):
+            permission = Permission(permission_code=code, permission_name='Archived capability')
+            db.add(permission); db.flush()
+            db.add(RolePermission(role_id=2, permission_id=permission.permission_id))
+    with admin.factory() as db:
+        assert not any(p.startswith('PAYMENT_') for p in get_user_permissions(db, 1))
+        assert not any(p.startswith('PAYMENT_') for p in role_permissions(db, [2]))
+        assert not user_has_permission(db, 1, 'PAYMENT_RECORD')
+        assert user_has_permission(db, 1, 'LAB_ORDER_CREATE')
+        assert len(list(db.scalars(select(Permission).where(Permission.permission_code.like('PAYMENT_%'))))) == 2
+    response = call(admin, 'GET', '/permissions')
+    assert response.status_code == 200
+    assert not any(p['permission_code'].startswith('PAYMENT_') for p in response.json())

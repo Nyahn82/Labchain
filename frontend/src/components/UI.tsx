@@ -14,7 +14,7 @@ export function Alert({ error }: { error?: Error | null }) {
 }
 export function statusTone(value: string): "success" | "warning" | "danger" | "neutral" {
   value = value.toUpperCase().replaceAll(" ", "_");
-  if (["ONLINE", "NORMAL", "RELEASED", "VERIFIED", "COMPLETED", "ACTIVE", "RECEIVED", "PAID", "AUTHENTIC", "SUCCESS", "CONFIRMED", "VALID", "PROCESSED"].includes(value)) return "success";
+  if (["ONLINE", "NORMAL", "RELEASED", "VERIFIED", "COMPLETED", "ACTIVE", "RECEIVED", "AUTHENTIC", "SUCCESS", "CONFIRMED", "VALID", "PROCESSED"].includes(value)) return "success";
   if (["DEGRADED", "PENDING", "PROCESSING", "REQUESTED", "HIGH", "LOW", "ABNORMAL", "COLLECTED", "IN_PROGRESS", "REVIEWED", "APPROVED", "UNREVIEWED"].includes(value)) return "warning";
   if (["OFFLINE", "FAILED", "DEAD", "MISMATCH", "CRITICAL_HIGH", "CRITICAL_LOW", "REJECTED", "REVOKED", "CANCELLED", "LOCKED", "SUSPENDED", "DISABLED"].includes(value)) return "danger";
   return "neutral";

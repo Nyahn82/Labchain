@@ -35,7 +35,6 @@ export const order: Order = {
       order_panel_id: 10,
     },
   ],
-  payments: [],
   specimens: [],
 };
 export const result: Result = {

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.api.private import PrivateRoute
 from app.dependencies.auth import get_db, get_request_ip, require_permission
+from app.services.permission_catalog import RETIRED_PERMISSION_CODES
 from app.models import Permission, Role, UserAccount, StaffAccountLink, PatientAccountLink
 from app.schemas.administration import (
     AccountResponse, AccountStatus, PermissionResponse, RoleReplacement,
@@ -73,7 +74,7 @@ def roles(actor: UserAccount = Depends(require_permission('ROLE_READ')), db: Ses
 
 @router.get('/permissions', response_model=list[PermissionResponse])
 def permissions(actor: UserAccount = Depends(require_permission('ROLE_READ')), db: Session = Depends(get_db)):
-    return db.scalars(select(Permission).order_by(Permission.permission_code, Permission.permission_id)).all()
+    return db.scalars(select(Permission).where(Permission.permission_code.not_in(RETIRED_PERMISSION_CODES)).order_by(Permission.permission_code, Permission.permission_id)).all()
 
 
 @router.post('/users/{user_id}/suspend', response_model=AccountResponse)

@@ -90,7 +90,7 @@ class Metric(SafeModel):
     label: str
     definition: str
     value: float | None
-    unit: Literal['count', 'percent', 'seconds', 'amount'] = 'count'
+    unit: Literal['count', 'percent', 'seconds'] = 'count'
     previous_value: float | None = None
     absolute_change: float | None = None
     percent_change: float | None = None

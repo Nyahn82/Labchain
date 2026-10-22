@@ -10,7 +10,7 @@ from sqlalchemy import func, inspect, or_, select
 from sqlalchemy.exc import IntegrityError
 
 from app.models import (
-    LabDepartment, LabOrder, LabOrderItem, LabPayment, OrderPanel, PanelTest, Patient,
+    LabDepartment, LabOrder, LabOrderItem, OrderPanel, PanelTest, Patient,
     RejectionReason, RequestingPhysician, SampleType, Specimen, SpecimenOrderItem,
     SpecimenRejection, TestCatalog, TestPanel, TestSampleType,
 )
@@ -128,14 +128,11 @@ def order_detail(db, order_id, *, lock=False):
               for op, panel in db.execute(current(select(OrderPanel, TestPanel)
                   .join(TestPanel, TestPanel.panel_id == OrderPanel.panel_id)
                   .where(OrderPanel.order_id == order_id).order_by(OrderPanel.order_panel_id), lock))]
-    payments = [s.PaymentResponse.model_validate(row) for row in db.scalars(current(
-        select(LabPayment).where(LabPayment.order_id == order_id)
-        .order_by(LabPayment.recorded_at, LabPayment.payment_id), lock))]
     specimens = list(db.scalars(current(select(Specimen).where(Specimen.order_id == order_id)
                                        .order_by(Specimen.created_at, Specimen.specimen_id), lock)))
     return s.OrderDetail(**fields(order), patient=s.PatientSummary.model_validate(patient),
                          physician=s.PhysicianSummary.model_validate(physician) if physician else None,
-                         panels=panels, items=order_items(db, order_id, lock=lock), payments=payments,
+                         panels=panels, items=order_items(db, order_id, lock=lock),
                          specimens=specimen_views(db, specimens, lock=lock))
 
 
@@ -246,19 +243,6 @@ def cancel_order(db, order_id, payload, actor_id, ip_address):
         audit(db, actor_id, 'LAB_ORDER_CANCEL', 'lab_order', order_id, ip_address,
               old={'status': previous}, new={'status': 'CANCELLED', 'reason': payload.reason})
         result = s.OrderResponse.model_validate(order)
-    return result
-
-
-@retry_deadlocks
-def record_payment(db, order_id, payload, actor_id, ip_address):
-    with mutation(db):
-        get_record(db, LabOrder, order_id, lock=True)
-        payment = LabPayment(order_id=order_id, **payload.model_dump(), recorded_by_user_id=actor_id, recorded_at=utc_now())
-        db.add(payment)
-        db.flush()
-        audit(db, actor_id, 'PAYMENT_RECORD', 'lab_payment', payment.payment_id, ip_address,
-              new={'order_id': order_id, 'payment_status': payment.payment_status})
-        result = s.PaymentResponse.model_validate(payment)
     return result
 
 

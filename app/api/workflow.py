@@ -1,4 +1,4 @@
-"""Phase 4A protected orders, append-only payments and specimen workflow."""
+"""Phase 4A protected orders and specimen workflow."""
 
 from datetime import date
 from typing import Annotated
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.api.laboratory import Paging
 from app.api.private import PrivateRoute
 from app.dependencies.auth import get_db, get_request_ip, require_permission
-from app.models import LabOrder, LabPayment, RejectionReason, Specimen, UserAccount
+from app.models import LabOrder, RejectionReason, Specimen, UserAccount
 from app.schemas import workflow as s
 from app.schemas.identity import Identifier, Page
 from app.services import workflow_service as service
@@ -49,19 +49,6 @@ def get_order(order_id: Identifier, db: Db, actor: OrderReader):
 def cancel_order(order_id: Identifier, payload: s.CancelRequest, request: Request, db: Db,
                  actor: Annotated[UserAccount, Depends(require_permission('LAB_ORDER_CANCEL'))]):
     return service.cancel_order(db, order_id, payload, actor.user_id, get_request_ip(request))
-
-
-@router.post('/lab-orders/{order_id}/payments', response_model=s.PaymentResponse, status_code=201, tags=['Payments'])
-def record_payment(order_id: Identifier, payload: s.PaymentCreate, request: Request, db: Db,
-                   actor: Annotated[UserAccount, Depends(require_permission('PAYMENT_RECORD'))]):
-    return service.record_payment(db, order_id, payload, actor.user_id, get_request_ip(request))
-
-
-@router.get('/lab-orders/{order_id}/payments', response_model=Page[s.PaymentResponse], tags=['Payments'])
-def list_payments(order_id: Identifier, db: Db, paging: Paging,
-                  actor: Annotated[UserAccount, Depends(require_permission('PAYMENT_READ'))]):
-    get_record(db, LabOrder, order_id)
-    return list_records(db, LabPayment, **paging, filters={'order_id': order_id})
 
 
 @router.post('/lab-orders/{order_id}/specimens', response_model=s.SpecimenResponse, status_code=201, tags=['Specimens'])
