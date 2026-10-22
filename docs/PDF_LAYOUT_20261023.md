@@ -31,3 +31,15 @@ The examples were rasterized and visually inspected. QR decoding from the final 
 - Frontend production assets are unchanged; no frontend build or application dependency changes are required. Rasterization/QR tools used for inspection were installed only in `/tmp`.
 
 Protected predeployment source and stored-PDF backups, file hashes, read-only database fingerprints, environment hash and service state are under `/var/backups/rhu-labchain/20261023-pdf-layout`. Deployment acceptance is recorded after the API restart and public checks.
+
+## Deployment acceptance
+
+- Deployed source commit: `a9d716faf82b7e88c3a9324b95a04f6e1ad40376`.
+- Only `rhu-labchain-node1` was restarted. Worker, monitor and nginx process IDs remained unchanged; Fabric was not restarted.
+- Public HTTPS `/`, `/api/v1/health` and `/api/v1/ready`: HTTP 200.
+- Both previously stored PDF files remained byte-for-byte unchanged. All 53 non-operational database tables matched their predeployment fingerprints; only routine service observations changed. Frontend files and environment configuration were unchanged.
+- Both existing live released reports: official PDF comparison `MATCH`, altered in-memory PDF comparison `MISMATCH`, stored artifact `MATCH`, live blockchain evidence `VERIFIED`, QR browser redirect 303, and unauthenticated private PDF access denied.
+- All four Fabric peers and the orderer remained online at ledger height 8; all three existing outbox events were confirmed. No synthetic report was inserted into the active database for this layout deployment.
+- Newly generated files were tested through the isolated release endpoint and inspected visually. Production acceptance checked the deployed source/API restart and existing official reports without modifying their clinical records or artifacts.
+
+Detailed checks are retained in the protected backup directory as `release.json`, `final-integrity.json` and `verification-evidence.tar.gz`; the deployment manifest is `/var/log/rhu-labchain-deployments/20261023-pdf-layout.json`.
