@@ -233,3 +233,92 @@ def test_renderer_context_cannot_be_submitted_by_clients(api, field):
     assert response.status_code == 422
     with api.factory() as db:
         assert list(db.scalars(sa.select(LabReport))) == []
+
+
+@pytest.mark.parametrize('count', [1, 10])
+def test_compact_blue_report_keeps_qr_and_signatures_on_one_a4_page(api, monkeypatch, count):
+    """Short panels retain their warnings, upper-right QR and signed final section."""
+    ready(api)
+    detail = detail_for(api)
+    detail._presentation = deepcopy(detail._presentation)
+    context = detail._presentation
+    context['template'] = {
+        'header_title': 'LABORATORY REPORT — SIMULATION ONLY',
+        'footer_note': 'NOT FOR CLINICAL USE — Fictional training data.',
+    }
+    seed = detail.result_snapshots[0]
+    detail.result_snapshots = [seed.model_copy(update={
+        'result_item_id': i, 'test_name_snapshot': f'Synthetic examination {i:02}',
+        'section_name_snapshot': None, 'reference_range_snapshot': None,
+    }) for i in range(1, count + 1)]
+    context['results'] = {str(i): {
+        'department': 'Hematology', 'panel': 'Synthetic panel',
+        'specimen_code': 'SP-SYNTHETIC', 'sample_type': 'Whole blood',
+        'collected_at': detail.generated_at.isoformat(), 'received_at': detail.generated_at.isoformat(),
+    } for i in range(1, count + 1)}
+    detail.remarks = 'SIMULATION ONLY — No actual laboratory examination performed.'
+    from reportlab.platypus import Image as PdfImage, Paragraph
+    from reportlab.lib.pagesizes import A4
+    image_draw, paragraph_draw = PdfImage.drawOn, Paragraph.drawOn
+    images, signature_positions = [], []
+
+    def capture_image(image, canvas, x, y, _sW=0):
+        images.append((canvas.getPageNumber(), *canvas.absolutePosition(x, y), image.drawWidth, image.drawHeight))
+        return image_draw(image, canvas, x, y, _sW)
+
+    def capture_signature(paragraph, canvas, x, y, _sW=0):
+        if paragraph.getPlainText().startswith('Electronically signed:'):
+            signature_positions.append(canvas.absolutePosition(x, y)[1])
+        return paragraph_draw(paragraph, canvas, x, y, _sW)
+
+    monkeypatch.setattr(PdfImage, 'drawOn', capture_image)
+    monkeypatch.setattr(Paragraph, 'drawOn', capture_signature)
+    data = report_pdf.render_pdf(detail, 'https://verify.example.test/api/v1/verify/' + 'x' * 43, detail.generated_at)
+    reader = PdfReader(BytesIO(data))
+    assert len(reader.pages) == 1
+    assert float(reader.pages[0].mediabox.width) == pytest.approx(A4[0], abs=.01)
+    assert float(reader.pages[0].mediabox.height) == pytest.approx(A4[1], abs=.01)
+    text = ' '.join(pdf_text(data).split())
+    for expected in ['SIMULATION ONLY', 'NOT FOR CLINICAL USE', 'Hematology / Synthetic panel',
+                     'REFERENCE RANGE', 'Specimen: SP-SYNTHETIC', 'Electronically signed:', f'Synthetic examination {count:02}']:
+        assert expected in text
+    assert 'Not configured' not in text  # Missing reference ranges are not invented.
+    assert len(images) == 1  # No invented facility logo or signature image.
+    page, x, y, w, h = images[0]
+    assert page == 1 and x > A4[0] / 2 and y > A4[1] / 2
+    assert x + w < A4[0] - 44 and y + h < A4[1] - 40
+    assert signature_positions and all(50 < y < 180 for y in signature_positions)
+
+
+def test_many_signatories_and_long_footer_continue_without_losing_stored_text(api):
+    ready(api)
+    detail = detail_for(api)
+    detail._presentation = deepcopy(detail._presentation)
+    seed = detail.signatories[0]
+    captured = detail._presentation['signatories']['1']
+    detail.signatories = [seed.model_copy(update={'report_signatory_id': i}) for i in range(1, 31)]
+    detail._presentation['signatories'] = {
+        str(i): {**captured, 'name': f'Synthetic authorized signer {i:02}'} for i in range(1, 31)
+    }
+    detail._presentation['template']['footer_note'] = ('Recorded footer text.\n' * 150) + 'FOOTER END'
+    data = report_pdf.render_pdf(detail, 'https://verify.example.test/api/v1/verify/' + 'x' * 43, detail.generated_at)
+    text = pdf_text(data)
+    assert len(PdfReader(BytesIO(data)).pages) > 1
+    assert 'FOOTER END' in text
+    for i in range(1, 31):
+        assert f'Synthetic authorized signer {i:02}' in text
+
+
+def test_v2_download_after_layout_update_uses_existing_bytes(api, monkeypatch):
+    ready(api)
+    row = release(api)
+    original = (settings.report_storage_dir / row['pdf_path']).read_bytes()
+    original_hash = metadata(api)['report_hash']
+
+    def forbid(*args):
+        raise AssertionError('Layout updates must not regenerate released PDFs')
+
+    monkeypatch.setattr(report_pdf, 'render_pdf', forbid)
+    assert call(api, 'GET', '/reports/1/pdf').content == original
+    assert call(api, 'POST', '/reports/1/print', {'copies': 1}).content == original
+    assert metadata(api)['report_hash'] == original_hash == hashlib.sha256(original).hexdigest()
