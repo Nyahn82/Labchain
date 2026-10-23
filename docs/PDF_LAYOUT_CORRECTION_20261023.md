@@ -28,3 +28,13 @@ The layout regression now checks that a single signatory is centered and follows
 A separate isolated API acceptance generates, signs, approves and releases a report, decodes its final PDF QR, compares the official download bytes, checks the SHA-256 digest and public PDF comparison, and confirms the release outbox contains the PDF hash.
 
 Final focused regression: **198 passed**, one optional browser-fixture export skipped. Additional isolated release/QR/hash acceptance: **1 passed**. The final renderer was visually inspected with short, full ten-test and multipage examples. Deployment acceptance is recorded below after completion. Protected source and existing-PDF backups and read-only integrity baselines are under `/var/backups/rhu-labchain/20261023-pdf-layout-fixed`.
+
+## Deployment acceptance
+
+- Deployed source: `f360e73122505499a468a82842439c53c724b1b6`.
+- API-only restart completed; public HTTPS website, health and readiness endpoints all returned HTTP 200.
+- All three historical stored PDFs remained byte-for-byte unchanged. All 53 non-operational database tables matched the predeployment fingerprints; only service observations changed.
+- Both current released reports passed public official-PDF comparison (`MATCH`), altered-PDF comparison (`MISMATCH`), stored artifact checks (`MATCH`) and live blockchain evidence (`VERIFIED`). QR redirects and private PDF access controls remained functional.
+- All four peers and the orderer were online at ledger height 10; the five existing outbox events were confirmed. Worker, monitor and nginx process IDs, frontend files and environment configuration were unchanged. Fabric was not restarted.
+- No synthetic clinical records or new reports were inserted into the active database. New-file generation and QR decoding were verified through isolated synthetic release tests; production verification checked the deployed source/API and existing official artifacts.
+- Protected evidence: `/var/backups/rhu-labchain/20261023-pdf-layout-fixed/verification-evidence.tar.gz`. Deployment manifest: `/var/log/rhu-labchain-deployments/20261023-pdf-layout-fixed.json`.
