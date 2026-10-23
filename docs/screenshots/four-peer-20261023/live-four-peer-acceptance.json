@@ -1,0 +1,244 @@
+[
+  {
+    "historical_report": 1,
+    "version": 1,
+    "lifecycle": "RELEASED",
+    "status": "FOUR_PEER_VERIFIED",
+    "observed_at": "2026-10-23T09:26:31.047000+00:00",
+    "events": [
+      "REPORT_RELEASED"
+    ],
+    "peers": [
+      {
+        "peer": "peer1",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.048000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer2",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.048000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer3",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.047000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer4",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.056000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      }
+    ]
+  },
+  {
+    "historical_report": 2,
+    "version": 1,
+    "lifecycle": "SUPERSEDED",
+    "status": "FOUR_PEER_VERIFIED",
+    "observed_at": "2026-10-23T09:26:31.133000+00:00",
+    "events": [
+      "REPORT_RELEASED",
+      "REPORT_SUPERSEDED"
+    ],
+    "peers": [
+      {
+        "peer": "peer1",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.133000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer2",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.133000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer3",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.140000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer4",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.133000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      }
+    ]
+  },
+  {
+    "historical_report": 3,
+    "version": 2,
+    "lifecycle": "SUPERSEDED",
+    "status": "FOUR_PEER_VERIFIED",
+    "observed_at": "2026-10-23T09:26:31.198000+00:00",
+    "events": [
+      "REPORT_RELEASED",
+      "REPORT_SUPERSEDED"
+    ],
+    "peers": [
+      {
+        "peer": "peer1",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.211000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer2",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.212000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer3",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.201000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer4",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.198000+00:00",
+        "committed_witnesses": 2,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      }
+    ]
+  },
+  {
+    "historical_report": 4,
+    "version": 3,
+    "lifecycle": "RELEASED",
+    "status": "FOUR_PEER_VERIFIED",
+    "observed_at": "2026-10-23T09:26:31.253000+00:00",
+    "events": [
+      "REPORT_RELEASED"
+    ],
+    "peers": [
+      {
+        "peer": "peer1",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.253000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer2",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.259000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer3",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.261000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      },
+      {
+        "peer": "peer4",
+        "status": "VERIFIED",
+        "checked_at": "2026-10-23T09:26:31.268000+00:00",
+        "committed_witnesses": 1,
+        "canonical_commitment_matches": true,
+        "pdf_digest_version_association_matches": true,
+        "transaction_valid": true,
+        "relevant_block_matches": true,
+        "issuer_msp_matches": true,
+        "lifecycle_predecessor_matches": true
+      }
+    ]
+  }
+]

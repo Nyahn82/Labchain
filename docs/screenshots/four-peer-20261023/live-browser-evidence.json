@@ -1,0 +1,41 @@
+{
+  "mode": "deployed public HTTPS; actual four-peer Fabric; existing historical PDF only",
+  "physical_camera": false,
+  "clinical_writes": 0,
+  "checks": [
+    "Public camera decoded the exact QR image embedded in the unchanged historical PDF; four actual peer responses shown; no private PDF",
+    "Live image upload decoded full historical PDF page",
+    "Actual browser upload of original PDF receives document match plus four-peer confirmation",
+    "Same genuine QR in altered PDF remains MISMATCH while original ledger evidence remains four-peer verified",
+    "Live Scan Again resets evidence and restores focus; manual token identifies same historical report",
+    "Authenticated staff camera scan retrieves exact original PDF; blob hash and full PDF link match stored digest; four peer results shown without unauthorized internal identifiers",
+    "Desktop PDF left wider than summary; mobile summary before PDF; no horizontal overflow; zero scanner WCAG A/AA axe violations at 390/1280px; clinical PDF area masked in saved screenshots",
+    "Staff without explorer permissions sees privacy-safe peer results and is denied protected technical identifiers"
+  ],
+  "peers": [
+    {
+      "peer": "peer1",
+      "status": "VERIFIED",
+      "checked_at": "2026-10-23T09:35:13.352000Z",
+      "protected_identifiers_withheld": true
+    },
+    {
+      "peer": "peer2",
+      "status": "VERIFIED",
+      "checked_at": "2026-10-23T09:35:13.354000Z",
+      "protected_identifiers_withheld": true
+    },
+    {
+      "peer": "peer3",
+      "status": "VERIFIED",
+      "checked_at": "2026-10-23T09:35:13.358000Z",
+      "protected_identifiers_withheld": true
+    },
+    {
+      "peer": "peer4",
+      "status": "VERIFIED",
+      "checked_at": "2026-10-23T09:35:13.359000Z",
+      "protected_identifiers_withheld": true
+    }
+  ]
+}

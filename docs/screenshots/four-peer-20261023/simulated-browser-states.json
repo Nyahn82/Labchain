@@ -1,0 +1,41 @@
+{
+  "mode": "isolated browser with explicit synthetic state overrides",
+  "checks": [
+    {
+      "status": "FOUR_PEER_VERIFIED",
+      "peerState": "VERIFIED",
+      "viewport": 390,
+      "a11y_violations": 0
+    },
+    {
+      "status": "PARTIAL",
+      "peerState": "OFFLINE",
+      "viewport": 390,
+      "a11y_violations": 0
+    },
+    {
+      "status": "PARTIAL",
+      "peerState": "LAGGING",
+      "viewport": 390,
+      "a11y_violations": 0
+    },
+    {
+      "status": "CONFLICT",
+      "peerState": "CONFLICT",
+      "viewport": 390,
+      "a11y_violations": 0
+    },
+    {
+      "status": "FAILED",
+      "peerState": "FAILED",
+      "viewport": 390,
+      "a11y_violations": 0
+    },
+    {
+      "status": "UNAVAILABLE",
+      "peerState": "OFFLINE",
+      "viewport": 390,
+      "a11y_violations": 0
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "source_commit": "7a8fc17d02b70c0036a952ac55ab14ac2928fdef",
+  "unchanged_database_tables": 48,
+  "expected_operational_changes": [
+    "audit_log",
+    "auth_session",
+    "code_sequence",
+    "login_log",
+    "service_observation",
+    "user_account"
+  ],
+  "accounts_restored": true,
+  "temporary_staff_profile_and_link_removed": true,
+  "staff_code_allocation": {
+    "consumed": 1,
+    "recycled": false,
+    "other_sequences_unchanged": true
+  },
+  "synthetic_sessions_revoked": true,
+  "historical_report_files_unchanged": true,
+  "environment_unchanged": true,
+  "previous_assets_preserved": true,
+  "live_release_hashes_match": true,
+  "worker_nginx_pids_unchanged": true,
+  "api_active_after_restart": true,
+  "historical_financial_rows": 1,
+  "historical_financial_hash_unchanged": true
+}

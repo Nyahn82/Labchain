@@ -1,0 +1,100 @@
+{
+  "transport": "public HTTPS",
+  "reports": [
+    {
+      "registered": "REGISTERED",
+      "scan_document": "NOT_COMPARED",
+      "official_upload": "MATCH",
+      "altered_upload": "MISMATCH",
+      "stored_artifact": "MATCH",
+      "live_blockchain": "FOUR_PEER_VERIFIED",
+      "independent_peers": [
+        {
+          "peer": "peer1",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:08.888000Z"
+        },
+        {
+          "peer": "peer2",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:08.876000Z"
+        },
+        {
+          "peer": "peer3",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:08.887000Z"
+        },
+        {
+          "peer": "peer4",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:08.886000Z"
+        }
+      ],
+      "issuer_evidence": "LEGACY_UNAVAILABLE",
+      "browser_redirect": 303,
+      "invalid_pdf": 415,
+      "private_access_denied": true
+    },
+    {
+      "registered": "REGISTERED",
+      "scan_document": "NOT_COMPARED",
+      "official_upload": "MATCH",
+      "altered_upload": "MISMATCH",
+      "stored_artifact": "MATCH",
+      "live_blockchain": "FOUR_PEER_VERIFIED",
+      "independent_peers": [
+        {
+          "peer": "peer1",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:09.206000Z"
+        },
+        {
+          "peer": "peer2",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:09.212000Z"
+        },
+        {
+          "peer": "peer3",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:09.214000Z"
+        },
+        {
+          "peer": "peer4",
+          "status": "VERIFIED",
+          "checked_at": "2026-10-23T09:35:09.215000Z"
+        }
+      ],
+      "issuer_evidence": "SNAPSHOT",
+      "browser_redirect": 303,
+      "invalid_pdf": 415,
+      "private_access_denied": true
+    }
+  ],
+  "network": {
+    "status": "ONLINE",
+    "orderer": "ONLINE",
+    "peers": {
+      "peer1": {
+        "status": "ONLINE",
+        "height": 12
+      },
+      "peer2": {
+        "status": "ONLINE",
+        "height": 12
+      },
+      "peer3": {
+        "status": "ONLINE",
+        "height": 12
+      },
+      "peer4": {
+        "status": "ONLINE",
+        "height": 12
+      }
+    },
+    "height": 12
+  },
+  "outbox": {
+    "CONFIRMED": 7
+  },
+  "method": "Live HTTPS API; actual monitor socket queries against all four peers; historical PDFs read-only"
+}

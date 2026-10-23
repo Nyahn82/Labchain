@@ -1,0 +1,15 @@
+{
+  "mode": "isolated synthetic backend; Fabric double",
+  "physical_camera": false,
+  "checks": [
+    "real ZXing camera-video decode; correct token; independent evidence; tracks stopped; no public PDF",
+    "unrelated image QR rejected without external navigation",
+    "embedded synthetic official PDF QR image decoded",
+    "390px responsive viewport has no horizontal overflow",
+    "manual invalid-token fallback gives neutral not-found",
+    "real synthetic login, camera scan, permission-protected original PDF bytes, inline viewer and full PDF link, ledger witness in same workflow",
+    "staff image scan again without application restart",
+    "simulated browser camera denial displays image/manual fallbacks",
+    "1280px desktop layout has no horizontal overflow"
+  ]
+}
