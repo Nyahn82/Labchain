@@ -30,15 +30,22 @@ assert str(build).startswith('/tmp/rhu-') and (build/'index.html').is_file()
 main.FRONTEND_BUILD_DIR=build
 # Explicit synthetic Fabric double. Live Fabric is tested separately against the public site.
 def query(request,kind):
+    assert request['action']=='report_evidence'
+    peers=[]
     with factory() as db:
-        if request['action']=='anchor':
-            e=db.scalar(select(BlockchainEvent).where(BlockchainEvent.event_uuid==request['anchor_id']))
-            p=json.loads(e.canonical_payload)
-            return kind(anchor_id=e.event_uuid,entity_reference=e.entity_reference,event_type=e.event_type,
-                content_hash=e.record_hash,previous_hash=e.previous_hash,transaction_id=e.fabric_transaction_id,
-                source_node=p['source_node'],source_msp=p['source_msp'],source_peer='peer1',checked_at=datetime.now(timezone.utc))
-        return kind(transaction_id=request['transaction_id'],validation_code=0,validation_status='VALID',timestamp=None,
-            block_number=7,block_hash='e'*64,source_peer='peer1',checked_at=datetime.now(timezone.utc))
+        for i in range(1,5):
+            events=[]
+            for requested in request['events']:
+                e=db.scalar(select(BlockchainEvent).where(BlockchainEvent.event_uuid==requested['anchor_id']))
+                p=json.loads(e.canonical_payload)
+                anchor=dict(anchor_id=e.event_uuid,entity_type='REPORT',entity_reference=e.entity_reference,event_type=e.event_type,
+                    content_hash=e.record_hash,previous_hash=e.previous_hash,transaction_id=e.fabric_transaction_id,
+                    source_node=p['source_node'],source_msp=p['source_msp'],created_at=datetime.now(timezone.utc))
+                tx=dict(transaction_id=e.fabric_transaction_id,validation_code=0,validation_status='VALID',timestamp=None,
+                    block_number=e.fabric_block_number,block_hash='e'*64,channel='labchain-channel',creator_msp=p['source_msp'])
+                events.append(dict(anchor_id=e.event_uuid,status='OBSERVED',evidence=dict(anchor=anchor,transaction=tx)))
+            peers.append(dict(peer=f'peer{i}',msp='Org1MSP' if i<3 else 'Org2MSP',channel='labchain-channel',checked_at=datetime.now(timezone.utc),events=events))
+    return kind(channel='labchain-channel',checked_at=datetime.now(timezone.utc),peers=peers)
 monitor.query=query
 if __name__=='__main__':
     import uvicorn

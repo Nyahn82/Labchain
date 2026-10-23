@@ -29,23 +29,34 @@ def ledger(api, monkeypatch, defect=None):
             event.fabric_block_number=7; event.fabric_validation_code=0; event.confirmed_at=datetime.now(timezone.utc).replace(tzinfo=None)
     def query(request, kind):
         if defect=='unavailable': raise monitor.MonitorUnavailable()
+        assert request['action'] == 'report_evidence'
+        peers = []
         with api.factory() as db:
-            if request['action']=='anchor':
-                e=db.scalar(select(BlockchainEvent).where(BlockchainEvent.event_uuid==request['anchor_id']))
-                p=json.loads(e.canonical_payload)
-                values=dict(anchor_id=e.event_uuid,entity_reference=e.entity_reference,event_type=e.event_type,
-                    content_hash=e.record_hash,previous_hash=e.previous_hash,transaction_id=e.fabric_transaction_id,
-                    source_node=p['source_node'],source_msp=p['source_msp'],source_peer='peer1',checked_at=datetime.now(timezone.utc))
-                if defect=='digest': values['content_hash']='f'*64
-                if defect=='reference': values['entity_reference']='00000000-0000-4000-8000-000000000000'
-                if defect=='issuer': values['source_msp']='Org2MSP'
-                if defect=='legacy_monitor': values['source_msp']=None
-                return kind(**values)
-            values=dict(transaction_id=request['transaction_id'],validation_code=0,validation_status='VALID',timestamp=None,
-                block_number=7,block_hash='e'*64,source_peer='peer1',checked_at=datetime.now(timezone.utc))
-            if defect=='invalid_transaction': values.update(validation_code=11,validation_status='INVALID_OTHER_REASON')
-            if defect=='wrong_block': values['block_number']=8
-            return kind(**values)
+            for index in range(1, 5):
+                peer_name = f'peer{index}'
+                issue = defect.get(peer_name) if isinstance(defect, dict) else defect
+                observations = []
+                for requested in request['events']:
+                    e=db.scalar(select(BlockchainEvent).where(BlockchainEvent.event_uuid==requested['anchor_id']))
+                    p=json.loads(e.canonical_payload)
+                    anchor=dict(anchor_id=e.event_uuid,entity_type='REPORT',entity_reference=e.entity_reference,event_type=e.event_type,
+                        content_hash=e.record_hash,previous_hash=e.previous_hash,transaction_id=e.fabric_transaction_id,
+                        source_node=p['source_node'],source_msp=p['source_msp'],created_at=datetime.now(timezone.utc))
+                    tx=dict(transaction_id=e.fabric_transaction_id,validation_code=0,validation_status='VALID',timestamp=None,
+                        block_number=7,block_hash='e'*64,channel='labchain-channel',creator_msp=p['source_msp'])
+                    if issue=='digest': anchor['content_hash']='f'*64
+                    if issue=='reference': anchor['entity_reference']='00000000-0000-4000-8000-000000000000'
+                    if issue=='issuer': anchor['source_msp']='Org2MSP'
+                    if issue=='creator': tx['creator_msp']='Org2MSP'
+                    if issue=='channel': tx['channel']='wrong-channel'
+                    if issue=='invalid_transaction': tx.update(validation_code=11,validation_status='INVALID_OTHER_REASON')
+                    if issue=='wrong_block': tx['block_number']=8
+                    if issue=='different_block_hash': tx['block_hash']='f'*64
+                    if issue=='wrong_transaction': tx['transaction_id']='f'*64
+                    status={'offline':'OFFLINE','timeout':'TIMEOUT','lagging':'LAGGING','missing':'MISSING','legacy_monitor':'UNAVAILABLE'}.get(issue,'OBSERVED')
+                    observations.append(dict(anchor_id=e.event_uuid,status=status,evidence=dict(anchor=anchor,transaction=tx) if status=='OBSERVED' else None))
+                peers.append(dict(peer=peer_name,msp='Org1MSP' if index<3 else 'Org2MSP',channel='labchain-channel',checked_at=datetime.now(timezone.utc),events=observations))
+        return kind(channel='labchain-channel',checked_at=datetime.now(timezone.utc),peers=peers)
     monkeypatch.setattr(monitor,'query',query)
 
 
@@ -58,7 +69,7 @@ def test_registration_is_not_document_verification_and_issuer_is_frozen(api,monk
     with api.factory.begin() as db: db.get(FacilityProfile,1).facility_name='RENAMED AFTER ISSUE'
     response=api.client.get(url); body=response.json()
     assert response.status_code==200 and body['status']=='REGISTERED'
-    assert body['document_comparison']=='NOT_COMPARED' and body['blockchain_evidence']=='VERIFIED'
+    assert body['document_comparison']=='NOT_COMPARED' and body['blockchain_evidence']=='FOUR_PEER_VERIFIED'
     assert body['issuing_facility']!='RENAMED AFTER ISSUE' and body['issuer_evidence']=='SNAPSHOT'
     forbidden={'patient_name','patient_code','result_value','pdf_path','report_id','report_hash','transaction_id','source_msp','canonical_payload'}
     assert not forbidden.intersection(body)
@@ -69,7 +80,7 @@ def test_registration_is_not_document_verification_and_issuer_is_frozen(api,monk
 def test_official_match_and_copied_qr_modified_lab_value(api,monkeypatch):
     url,pdf=issued(api); ledger(api,monkeypatch)
     original=compare(api,url,pdf).json()
-    assert original['document_comparison']=='MATCH' and original['blockchain_evidence']=='VERIFIED'
+    assert original['document_comparison']=='MATCH' and original['blockchain_evidence']=='FOUR_PEER_VERIFIED'
     with api.factory() as db: value=db.scalar(select(ReportResultItem.result_value_snapshot).order_by(ReportResultItem.report_result_item_id))
     reader=PdfReader(BytesIO(pdf)); writer=PdfWriter(); writer.clone_document_from_reader(reader)
     changed=False
@@ -86,13 +97,13 @@ def test_official_match_and_copied_qr_modified_lab_value(api,monkeypatch):
     assert [hashlib.sha256(i.data).hexdigest() for p in reader.pages for i in p.images]==[hashlib.sha256(i.data).hexdigest() for p in PdfReader(BytesIO(altered)).pages for i in p.images]
     body=compare(api,url,altered).json()
     assert body['status']=='REGISTERED' and body['document_comparison']=='MISMATCH'
-    assert body['blockchain_evidence']=='VERIFIED' # genuine registration does not certify changed bytes
+    assert body['blockchain_evidence']=='FOUR_PEER_VERIFIED' # genuine registration does not certify changed bytes
     assert api.client.get(url).json()['document_comparison']=='NOT_COMPARED'
     assert len(list(settings.report_storage_dir.rglob('*.pdf')))==1
     assert next(settings.report_storage_dir.rglob('*.pdf')).read_bytes()==pdf
 
 
-@pytest.mark.parametrize('defect,expected',[('unavailable','UNAVAILABLE'),('digest','FAILED'),('reference','FAILED'),('issuer','FAILED'),('legacy_monitor','UNAVAILABLE'),('invalid_transaction','FAILED'),('wrong_block','FAILED')])
+@pytest.mark.parametrize('defect,expected',[('unavailable','UNAVAILABLE'),('digest','CONFLICT'),('reference','CONFLICT'),('issuer','CONFLICT'),('legacy_monitor','UNAVAILABLE'),('invalid_transaction','FAILED'),('wrong_block','CONFLICT')])
 def test_independent_evidence_failures_cannot_be_confirmed(api,monkeypatch,defect,expected):
     url,pdf=issued(api); ledger(api,monkeypatch,defect)
     body=compare(api,url,pdf).json()
@@ -117,7 +128,7 @@ def test_revoked_and_superseded_versions_never_current(api,monkeypatch):
     assert sign(api,link['report_signatory_id'],2).status_code==200
     assert call(api,'POST','/reports/2/approve').status_code==200
     newer=release(api,2); ledger(api,monkeypatch)
-    body=compare(api,url,pdf).json(); assert body['status']=='SUPERSEDED' and body['blockchain_evidence']=='VERIFIED'
+    body=compare(api,url,pdf).json(); assert body['status']=='SUPERSEDED' and body['blockchain_evidence']=='FOUR_PEER_VERIFIED'
     newpdf=(settings.report_storage_dir/newer['pdf_path']).read_bytes()
     assert compare(api,url,newpdf).json()['document_comparison']=='MISMATCH'
     assert api.client.get(url,headers={'Accept':'text/html'},follow_redirects=False).status_code==303
@@ -202,7 +213,7 @@ def test_mysql_release_timestamp_precision(fraction,second_shift,expected):
     assert not release_time_matches(event_time,event_time+timedelta(microseconds=2))
 
 
-@pytest.mark.parametrize('offset,expected',[(0,'VERIFIED'),(2,'FAILED')])
+@pytest.mark.parametrize('offset,expected',[(0,'FOUR_PEER_VERIFIED'),(2,'FAILED')])
 def test_public_verification_preserves_mysql_second_precision(api,monkeypatch,offset,expected):
     from datetime import timedelta
     url,pdf=issued(api); ledger(api,monkeypatch)
@@ -211,3 +222,61 @@ def test_public_verification_preserves_mysql_second_precision(api,monkeypatch,of
         db.get(LabReport,1).released_at=(event.occurred_at+timedelta(microseconds=500000,seconds=offset)).replace(microsecond=0)
     body=compare(api,url,pdf).json()
     assert body['document_comparison']=='MATCH' and body['blockchain_evidence']==expected
+
+
+@pytest.mark.parametrize('peer,defect,overall,state,count', [
+    ('peer4','offline','PARTIAL','OFFLINE',3), ('peer1','offline','PARTIAL','OFFLINE',3),
+    ('peer2','timeout','PARTIAL','TIMEOUT',3), ('peer3','lagging','PARTIAL','LAGGING',3),
+    ('peer3','missing','PARTIAL','MISSING',3), ('peer3','digest','CONFLICT','CONFLICT',3),
+    ('peer4','invalid_transaction','FAILED','FAILED',3), ('peer2','wrong_block','CONFLICT','CONFLICT',3),
+    ('peer2','wrong_transaction','CONFLICT','CONFLICT',3), ('peer2','issuer','CONFLICT','CONFLICT',3),
+    ('peer2','creator','FAILED','FAILED',3), ('peer2','channel','FAILED','FAILED',3),
+    ('peer3','different_block_hash','CONFLICT','CONFLICT',0),
+])
+def test_four_peer_aggregation_never_votes_away_a_conflict(api,monkeypatch,peer,defect,overall,state,count):
+    url,pdf=issued(api); ledger(api,monkeypatch,{peer:defect})
+    body=compare(api,url,pdf).json()
+    assert body['blockchain_evidence']==overall
+    assert body['blockchain_verified_count']==count
+    assert len(body['blockchain_peers'])==4
+    assert next(p for p in body['blockchain_peers'] if p['peer']==peer)['status']==state
+    assert body['document_comparison']=='MATCH'
+    for p in body['blockchain_peers']:
+        assert set(p)=={'peer','status','checked_at'}
+
+
+def test_all_four_offline_cannot_reuse_mysql_confirmation(api,monkeypatch):
+    url,pdf=issued(api);ledger(api,monkeypatch,{f'peer{i}':'offline' for i in range(1,5)})
+    body=compare(api,url,pdf).json()
+    assert body['blockchain_evidence']=='UNAVAILABLE' and body['blockchain_verified_count']==0
+    assert all(p['status']=='OFFLINE' for p in body['blockchain_peers'])
+
+
+@pytest.mark.parametrize('defect,expected,count', [
+    ('duplicate_peer','FAILED',0), ('wrong_peer_msp','FAILED',3), ('missing_event','FAILED',3),
+    ('stale','PARTIAL',3), ('future','PARTIAL',3), ('malformed','FAILED',0),
+    ('timeout_invalid','FAILED',3), ('timeout_conflict','CONFLICT',3),
+])
+def test_four_peer_response_identity_freshness_and_partial_invalid_evidence(api,monkeypatch,defect,expected,count):
+    from datetime import timedelta
+    url,pdf=issued(api);ledger(api,monkeypatch)
+    original=monitor.query
+    def query(request,kind):
+        if defect=='malformed': raise monitor.MonitorInvalidEvidence()
+        result=original(request,kind)
+        p=result.peers[3]
+        if defect=='duplicate_peer': p.peer='peer1'
+        if defect=='wrong_peer_msp': p.msp='Org1MSP'
+        if defect=='missing_event': p.events[0].anchor_id='00000000-0000-4000-8000-000000000099'
+        if defect=='stale': p.checked_at-=timedelta(minutes=2)
+        if defect=='future': p.checked_at+=timedelta(minutes=2)
+        if defect=='timeout_invalid':
+            p.events[0].status='TIMEOUT';p.events[0].evidence.anchor=None
+            p.events[0].evidence.transaction.validation_code=11
+        if defect=='timeout_conflict':
+            p.events[0].status='TIMEOUT';p.events[0].evidence.transaction=None
+            p.events[0].evidence.anchor.content_hash='f'*64
+        return result
+    monkeypatch.setattr(monitor,'query',query)
+    body=compare(api,url,pdf).json()
+    assert body['blockchain_evidence']==expected and body['blockchain_verified_count']==count

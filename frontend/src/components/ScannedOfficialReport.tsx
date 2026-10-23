@@ -20,12 +20,17 @@ export function ScannedOfficialReport({ scan }: { scan: StaffScan }) {
   }, [scan.report_id]);
   return <section className="official-scan-report" aria-label="Authorized official report">
     <h2>Official laboratory report — version {scan.verification.version}</h2>
-    <p>Compare the patient identification, specimen, dates, laboratory results, reference ranges and signatories on this original report with the presented document. Historical reports retain the information recorded at release.</p>
     <State loading={!url && !error} error={error} />
-    {url && <><p><a href={url} target="_blank" rel="noopener noreferrer">Open full official PDF</a></p><iframe className="report-pdf-preview" title="Official laboratory report PDF" src={url + "#view=FitH&navpanes=0"} /><p className="small">If this browser cannot display PDFs inline, use Open full official PDF. This is the exact stored artifact, not a regenerated report.</p></>}
-    <h3>Independent ledger evidence</h3>
-    <p>The verification outcome above comes from live anchor and committed-transaction checks. Viewing the official PDF does not compare the surrounding printed document automatically.</p>
+    {url && <><iframe className="report-pdf-preview" title="Official laboratory report PDF" src={url + "#view=FitH&navpanes=0"} /><p><a href={url} target="_blank" rel="noopener noreferrer">Open full official PDF</a></p><p className="small">PDF not visible? Use Open full official PDF.</p></>}
+
+  </section>;
+}
+
+export function ScannedLedgerEvidence({ scan }: { scan: StaffScan }) {
+  return (
+    <details className="technical-evidence"><summary>Technical evidence (authorized personnel)</summary>
     {scan.ledger_details_authorized ? scan.ledger_details.length ? scan.ledger_details.map((e, i) => <details key={e.transaction_id+i}><summary>{e.event_type} — committed transaction {e.validation_status}, block {e.block_number}</summary><dl>
       <dt>Official PDF SHA-256</dt><dd>{e.artifact_sha256}</dd><dt>Canonical commitment SHA-256</dt><dd>{e.content_hash}</dd><dt>Transaction</dt><dd>{e.transaction_id}</dd><dt>Issuer organization</dt><dd>{e.source_msp}</dd><dt>Queried peer</dt><dd>{e.source_peer}</dd><dt>Evidence observed</dt><dd>{new Date(e.checked_at).toLocaleString()}</dd></dl><p>Each listed witness passed its independent checks at this time. The overall outcome above also includes lifecycle and freshness checks.</p></details>) : <p>No independently validated transaction details are available.</p> : <p>Detailed ledger identifiers require blockchain explorer and integrity permissions. The privacy-safe live verification outcome remains visible above.</p>}
-  </section>;
+    </details>
+  );
 }

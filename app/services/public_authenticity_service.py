@@ -8,7 +8,7 @@ from sqlalchemy import select
 from app.models import BlockchainEvent, LabReport, ReportVerification
 from app.models.blockchain import OutboxIntegrityError
 from app.schemas import blockchain_monitor as schemas
-from app.schemas.reporting import PublicVerificationResponse
+from app.schemas.reporting import PublicVerificationResponse, PublicPeerEvidence
 from app.services import blockchain_monitor_client as monitor
 from app.services.blockchain_event_validation import validate_event, utc
 from app.services.blockchain_monitor_service import artifact_hash
@@ -28,23 +28,91 @@ def release_time_matches(event_time, report_time):
         event_time + timedelta(microseconds=500000)).replace(microsecond=0)
 
 
+PEER_MSPS = {'peer1': 'Org1MSP', 'peer2': 'Org1MSP', 'peer3': 'Org2MSP', 'peer4': 'Org2MSP'}
+
+
+def peer_outcome(status, checked_at=None):
+    return [dict(peer=peer, status=status, checked_at=checked_at) for peer in PEER_MSPS]
+
+
+def aggregate_peer_evidence(observed, events, pending=False, details=None):
+    """Validate every independently returned observation; disagreement never wins a vote."""
+    now = datetime.now(timezone.utc)
+    expected = {e.event_uuid: e for e in events}
+    if observed.channel != 'labchain-channel' or sorted(p.peer for p in observed.peers) != sorted(PEER_MSPS):
+        return 'FAILED', None, peer_outcome('FAILED')
+    results, blocks, witnesses = [], {}, []
+    priority = {'VERIFIED': 0, 'OFFLINE': 1, 'TIMEOUT': 2, 'UNAVAILABLE': 3,
+                'MISSING': 4, 'LAGGING': 5, 'PENDING': 6, 'FAILED': 7, 'CONFLICT': 8}
+    for peer in observed.peers:
+        status = 'PENDING' if pending else 'VERIFIED'
+        def mark(value):
+            nonlocal status
+            if priority[value] > priority[status]: status = value
+        if peer.msp != PEER_MSPS[peer.peer] or peer.channel != 'labchain-channel': mark('FAILED')
+        fresh = peer.checked_at.tzinfo is not None and -5 <= (now - peer.checked_at).total_seconds() <= 30
+        if not fresh: mark('UNAVAILABLE')
+        if sorted(e.anchor_id for e in peer.events) != sorted(expected): mark('FAILED')
+        for observation in peer.events:
+            event = expected.get(observation.anchor_id)
+            if event is None: mark('FAILED'); continue
+            if observation.status != 'OBSERVED': mark(observation.status)
+            if observation.evidence is None:
+                if observation.status == 'OBSERVED': mark('FAILED')
+                continue
+            anchor, tx = observation.evidence.anchor, observation.evidence.transaction
+            payload = json.loads(event.canonical_payload)
+            if anchor is not None and not (anchor.anchor_id == event.event_uuid and anchor.entity_reference == event.entity_reference
+                and anchor.event_type == event.event_type and anchor.content_hash == event.record_hash
+                and anchor.previous_hash == event.previous_hash and anchor.transaction_id == event.fabric_transaction_id
+                and anchor.source_node == payload['source_node'] and anchor.source_msp == payload['source_msp']):
+                mark('CONFLICT'); continue
+            if tx is not None:
+                if tx.validation_code != 0 or tx.validation_status != 'VALID': mark('FAILED'); continue
+                if tx.channel != 'labchain-channel' or tx.creator_msp != payload['source_msp']: mark('FAILED'); continue
+                if tx.transaction_id != event.fabric_transaction_id or tx.block_number != event.fabric_block_number:
+                    mark('CONFLICT'); continue
+            if anchor is None or tx is None:
+                if observation.status == 'OBSERVED': mark('FAILED')
+                continue
+            if fresh:
+                blocks.setdefault(event.event_uuid, []).append((peer.peer, tx.block_hash))
+                witnesses.append(dict(event_type=event.event_type, artifact_sha256=payload['artifact_sha256'],
+                    content_hash=anchor.content_hash, transaction_id=tx.transaction_id, block_number=tx.block_number,
+                    validation_status=tx.validation_status, source_msp=anchor.source_msp, source_peer=peer.peer,
+                    checked_at=peer.checked_at))
+        results.append(dict(peer=peer.peer, status=status, checked_at=peer.checked_at))
+    for values in blocks.values():
+        if len({block_hash for _, block_hash in values}) > 1:
+            affected = {peer for peer, _ in values}
+            for result in results:
+                if result['peer'] in affected: result['status'] = 'CONFLICT'
+    results.sort(key=lambda item: item['peer'])
+    if details is not None:
+        verified = {p['peer'] for p in results if p['status'] == 'VERIFIED'}
+        details.extend(w for w in witnesses if w['source_peer'] in verified)
+    states = [p['status'] for p in results]
+    status = ('CONFLICT' if 'CONFLICT' in states else 'FAILED' if 'FAILED' in states else
+              'FOUR_PEER_VERIFIED' if states.count('VERIFIED') == 4 else
+              'PARTIAL' if 'VERIFIED' in states else 'PENDING' if pending else 'UNAVAILABLE')
+    times = [p['checked_at'] for p in results if p['checked_at'].tzinfo is not None
+             and -5 <= (now - p['checked_at']).total_seconds() <= 30]
+    return status, min(times) if times else None, results
+
+
 def ledger_evidence(db, report, digest, replacement, details=None):
     events = list(db.scalars(select(BlockchainEvent).where(
         BlockchainEvent.entity_type == 'REPORT', BlockchainEvent.entity_id == report.report_id)
         .order_by(BlockchainEvent.event_id).limit(5)))
     releases = [e for e in events if e.event_type == 'REPORT_RELEASED']
-    if not events:
-        return 'UNAVAILABLE', None
-    if len(releases) != 1 or len(events) > 4:
-        return 'FAILED', None
+    def unavailable(status): return status, None, peer_outcome(status)
+    if not events: return unavailable('UNAVAILABLE')
+    if len(releases) != 1 or len(events) > 4: return unavailable('FAILED')
     release = releases[0]
     required = 'REPORT_SUPERSEDED' if replacement else 'REPORT_REVOKED' if report.report_status == 'REVOKED' else None
-    if required and not any(e.event_type == required for e in events):
-        return 'UNAVAILABLE', None
-    if not required and any(e.event_type != 'REPORT_RELEASED' for e in events):
-        return 'FAILED', None
-    checked = []
-    state = 'VERIFIED'
+    if required and not any(e.event_type == required for e in events): return unavailable('UNAVAILABLE')
+    if not required and any(e.event_type != 'REPORT_RELEASED' for e in events): return unavailable('FAILED')
+    confirmed, pending = [], False
     for event in events:
         try:
             validate_event(event)
@@ -54,42 +122,20 @@ def ledger_evidence(db, report, digest, replacement, details=None):
                 (event is release and not release_time_matches(event.occurred_at, report.released_at)) or
                 (event is not release and (event.predecessor_event_id != release.event_id or event.previous_hash != release.record_hash)) or
                 (event.event_type == 'REPORT_SUPERSEDED' and (replacement is None or payload['superseding_entity_reference'] != replacement.blockchain_entity_uuid))):
-                return 'FAILED', None
-        except (OutboxIntegrityError, ValueError, TypeError, KeyError):
-            return 'FAILED', None
-        if event.event_status in {'FAILED', 'DEAD'}:
-            return 'FAILED', None
-        if event.event_status != 'CONFIRMED':
-            state = 'PENDING'
-            continue
-        try:
-            anchor = monitor.query({'action': 'anchor', 'anchor_id': event.event_uuid}, schemas.AnchorEvidence)
-            tx = monitor.query({'action': 'transaction', 'transaction_id': anchor.transaction_id}, schemas.TransactionDetail)
-        except monitor.MonitorUnavailable:
-            if state != 'PENDING': state = 'UNAVAILABLE'
-            continue
-        if anchor.source_node is None or anchor.source_msp is None:
-            if state != 'PENDING': state = 'UNAVAILABLE'
-            continue
-        if not (anchor.anchor_id == event.event_uuid and anchor.entity_reference == event.entity_reference
-            and anchor.event_type == event.event_type and anchor.content_hash == event.record_hash
-            and anchor.previous_hash == event.previous_hash and anchor.transaction_id == event.fabric_transaction_id
-            and anchor.source_node == payload['source_node'] and anchor.source_msp == payload['source_msp']
-            and tx.transaction_id == anchor.transaction_id and tx.validation_code == 0
-            and tx.validation_status == 'VALID' and event.fabric_validation_code == 0
-            and event.fabric_block_number == tx.block_number):
-            return 'FAILED', min(checked) if checked else None
-        checked.extend([anchor.checked_at, tx.checked_at])
-        if details is not None:
-            details.append(dict(event_type=event.event_type, artifact_sha256=digest,
-                content_hash=anchor.content_hash, transaction_id=tx.transaction_id,
-                block_number=tx.block_number, validation_status=tx.validation_status,
-                source_msp=anchor.source_msp, source_peer=anchor.source_peer,
-                checked_at=min(anchor.checked_at, tx.checked_at)))
-    observed = min(checked) if checked else None
-    if state == 'VERIFIED' and (observed is None or not -5 <= (datetime.now(timezone.utc) - observed).total_seconds() <= 60):
-        state = 'UNAVAILABLE'
-    return state, observed
+                return unavailable('FAILED')
+        except (OutboxIntegrityError, ValueError, TypeError, KeyError): return unavailable('FAILED')
+        if event.event_status in {'FAILED', 'DEAD'}: return unavailable('FAILED')
+        if event.event_status != 'CONFIRMED': pending = True; continue
+        if event.fabric_validation_code != 0 or event.fabric_block_number is None or not event.fabric_transaction_id:
+            return unavailable('FAILED')
+        confirmed.append(event)
+    if not confirmed: return unavailable('PENDING')
+    try:
+        observed = monitor.query({'action': 'report_evidence', 'events': [dict(anchor_id=e.event_uuid,
+            transaction_id=e.fabric_transaction_id, block_number=e.fabric_block_number) for e in confirmed]}, schemas.FourPeerEvidence)
+    except monitor.MonitorInvalidEvidence: return unavailable('FAILED')
+    except monitor.MonitorUnavailable: return unavailable('UNAVAILABLE')
+    return aggregate_peer_evidence(observed, confirmed, pending, details)
 
 
 def public_verification(db, token, ip_address, uploaded_digest=None, ledger_details=None):
@@ -142,7 +188,9 @@ def public_verification(db, token, ip_address, uploaded_digest=None, ledger_deta
                   new={'severity': 'HIGH', 'failure': failure})
     # Read-only independent ledger queries; no submission, backfill or clinical changes.
     marker = (report.report_status, report.revoked_at, verification.verification_status, verification.report_hash)
-    result.blockchain_evidence, result.blockchain_checked_at = ledger_evidence(db, report, verification.report_hash, replacement, ledger_details)
+    result.blockchain_evidence, result.blockchain_checked_at, peers = ledger_evidence(db, report, verification.report_hash, replacement, ledger_details)
+    result.blockchain_peers = [PublicPeerEvidence(**p) for p in peers]
+    result.blockchain_verified_count = sum(p['status'] == 'VERIFIED' for p in peers)
     replacement_id = replacement.report_id if replacement else None
     report_id = report.report_id
     verification_id = verification.verification_id
@@ -154,6 +202,9 @@ def public_verification(db, token, ip_address, uploaded_digest=None, ledger_deta
     if current_replacement != replacement_id or current is None or v is None or marker != (current.report_status, current.revoked_at, v.verification_status, v.report_hash):
         result.status = 'UNAVAILABLE'
         result.blockchain_evidence = 'UNAVAILABLE'
+        result.blockchain_peers = [PublicPeerEvidence(**p) for p in peer_outcome('UNAVAILABLE')]
+        result.blockchain_verified_count = 0
+        result.blockchain_checked_at = None
         result.document_comparison = 'NOT_COMPARED'
         result.message = 'Report state changed during verification. Check again.'
         if ledger_details is not None: ledger_details.clear()

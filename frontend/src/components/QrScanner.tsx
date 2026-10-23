@@ -41,11 +41,11 @@ export function QrScanner({ onToken }: { onToken: (token: string) => void }) {
     return () => { stop(); document.removeEventListener("visibilitychange", hidden); };
   }, [open, facing]);
   return <section className="qr-scanner" aria-label="QR scanner">
-    <div className="toolbar"><button className="primary" type="button" onClick={() => { generation.current++; setError(""); setOpen(true); }}>Scan QR Code</button>
-      {open && <><button type="button" onClick={() => { stopCamera.current(); setFacing(f => f === "environment" ? "user" : "environment"); }}>Switch camera</button><button type="button" onClick={() => { stopCamera.current(); setOpen(false); setBusy(false); }}>Close camera</button></>}
+    <div className="toolbar"><button className="primary" type="button" onClick={() => { generation.current++; setError(""); setOpen(true); }}>Start Camera</button>
+      {open && <><button type="button" onClick={() => { stopCamera.current(); setFacing(f => f === "environment" ? "user" : "environment"); }}>Switch camera</button><button type="button" onClick={() => { stopCamera.current(); setOpen(false); setBusy(false); }}>Stop Camera</button></>}
     </div>
     {open && <><video ref={video} autoPlay muted playsInline aria-label="Live QR camera preview" /><p role="status">{busy ? "Opening camera…" : "Point the camera at the report QR. Scanning stops when a valid report is found."}</p></>}
-    <label>Choose a QR image<input type="file" accept="image/png,image/jpeg,image/webp" disabled={open} onChange={async e => {
+    <label>Upload QR Image<input type="file" accept="image/png,image/jpeg,image/webp" disabled={open} onChange={async e => {
       const file = e.target.files?.[0]; e.target.value = ""; if (!file) return;
       const current = ++generation.current; setError(""); setBusy(true);
       if (!['image/png','image/jpeg','image/webp'].includes(file.type) || file.size > 10 * 1024 * 1024) { setError("Choose a PNG, JPEG or WebP QR image up to 10 MiB."); setBusy(false); return; }
@@ -66,6 +66,6 @@ export function QrScanner({ onToken }: { onToken: (token: string) => void }) {
     }} /></label>
     {busy && !open && <p role="status">Reading QR image…</p>}
     {error && <p role="alert">{error}</p>}
-    <p className="small muted">Camera frames and QR images stay on this device. Only the decoded report token is used to request verification. You can scan another report at any time.</p>
+    <p className="small muted">Camera frames and QR images stay on this device.</p>
   </section>;
 }

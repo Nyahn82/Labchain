@@ -4,7 +4,7 @@ import https from 'node:https';
 import { createHash } from 'node:crypto';
 import * as grpc from '@grpc/grpc-js';
 import { connect, signers } from '@hyperledger/fabric-gateway';
-import { common, gateway, peer } from '@hyperledger/fabric-protos';
+import { common, gateway, peer, msp, ledger } from '@hyperledger/fabric-protos';
 import { configuration, credentials } from './connection.js';
 import { parseAnchor } from './protocol.js';
 
@@ -113,6 +113,7 @@ export async function openPeer(config, target) {
   try { ca = publicCA(target.tlsCA); } catch { throw new MonitorError('NOT_CONFIGURED'); }
   const endpoint = `127.0.0.1:${target.port}`;
   const client = new peer.EndorserClient(endpoint, grpc.credentials.createSsl(ca), {
+    'grpc.ssl_target_name_override': `${target.name}.${target.msp === 'Org1MSP' ? 'org1' : 'org2'}.labchain.internal`,
     'grpc.max_receive_message_length': MAX_BLOCK, 'grpc.max_send_message_length': 65536, 'grpc.enable_retries': 0,
   });
   return directSession(config, client, material);
@@ -131,6 +132,7 @@ export function directSession(config, client, material) {
         { deadline: Date.now() + TIMEOUT }, (error, value) => error ? reject(new MonitorError(
           error.code === grpc.status.DEADLINE_EXCEEDED ? 'TIMEOUT' : 'UNAVAILABLE')) : resolve(value)));
       const result = response.getResponse();
+      if (contract === CHAINCODE && name === 'LabchainAnchor:ReadAnchor' && result?.getStatus() !== 200 && /Anchor not found\./.test(result?.getMessage() || '')) throw new MonitorError('MISSING');
       ensure(result?.getStatus() === 200, 'QUERY_FAILED');
       return result.getPayload_asU8();
     },
@@ -158,7 +160,7 @@ export function ordererHealth(caPath) {
 export function validateRequest(r) {
   ensure(r && typeof r === 'object' && !Array.isArray(r), 'INVALID_REQUEST');
   const keys = { overview: ['action'], blocks: ['action', 'before', 'limit'], block: ['action', 'number'],
-    transaction: ['action', 'transaction_id'], anchor: ['action', 'anchor_id'] }[r.action];
+    transaction: ['action', 'transaction_id'], anchor: ['action', 'anchor_id'], report_evidence: ['action', 'events'] }[r.action];
   ensure(keys && Object.keys(r).sort().join() === keys.sort().join(), 'INVALID_REQUEST');
   if (r.action === 'blocks') {
     ensure(Number.isInteger(r.limit) && r.limit >= 1 && r.limit <= 10, 'INVALID_REQUEST');
@@ -167,10 +169,19 @@ export function validateRequest(r) {
   if (r.action === 'block') number(r.number);
   if (r.action === 'transaction') ensure(HASH.test(r.transaction_id), 'INVALID_REQUEST');
   if (r.action === 'anchor') ensure(UUID.test(r.anchor_id), 'INVALID_REQUEST');
+  if (r.action === 'report_evidence') {
+    ensure(Array.isArray(r.events) && r.events.length >= 1 && r.events.length <= 4, 'INVALID_REQUEST');
+    for (const e of r.events) {
+      ensure(e && Object.keys(e).sort().join() === 'anchor_id,block_number,transaction_id', 'INVALID_REQUEST');
+      ensure(UUID.test(e.anchor_id) && HASH.test(e.transaction_id), 'INVALID_REQUEST'); number(e.block_number);
+    }
+    ensure(new Set(r.events.map(e => e.anchor_id)).size === r.events.length, 'INVALID_REQUEST');
+  }
 }
 export async function executeMonitor(request, cfg, open = openPeer, health = ordererHealth) {
   validateRequest(request);
   const checked = new Date().toISOString();
+  if (request.action === 'report_evidence') return reportEvidence(request, cfg, open);
   if (request.action === 'overview') {
     const nodes = await Promise.all(cfg.peers.map(async target => {
       const node = { name: target.name, msp: target.msp, status: 'UNKNOWN', channel_member: null,
@@ -243,4 +254,74 @@ export async function executeMonitor(request, cfg, open = openPeer, health = ord
       source_node: anchor.source_node, source_msp: anchor.source_msp,
       source_peer: 'peer1', checked_at: checked };
   } finally { session.close(); }
+}
+
+// Read the actual committed write for this anchor, not just a world-state lookup.
+export function committedReport(bytes, transactionId, anchorId) {
+  const detail = blockDetail(bytes);
+  const tx = detail.transactions.find(t => t.transaction_id === transactionId);
+  if (!tx) throw new MonitorError('MISSING');
+  const block = common.Block.deserializeBinary(bytes);
+  const envelope = common.Envelope.deserializeBinary(block.getData().getDataList_asU8()[detail.transactions.indexOf(tx)]);
+  const payload = common.Payload.deserializeBinary(envelope.getPayload_asU8());
+  const header = common.ChannelHeader.deserializeBinary(payload.getHeader().getChannelHeader_asU8());
+  ensure(header.getChannelId() === CHANNEL && header.getType() === common.HeaderType.ENDORSER_TRANSACTION);
+  const signature = common.SignatureHeader.deserializeBinary(payload.getHeader().getSignatureHeader_asU8());
+  const creator = msp.SerializedIdentity.deserializeBinary(signature.getCreator_asU8());
+  const transaction = peer.Transaction.deserializeBinary(payload.getData_asU8());
+  const writes = [];
+  for (const action of transaction.getActionsList()) {
+    const cap = peer.ChaincodeActionPayload.deserializeBinary(action.getPayload_asU8());
+    const response = peer.ProposalResponsePayload.deserializeBinary(cap.getAction().getProposalResponsePayload_asU8());
+    const result = peer.ChaincodeAction.deserializeBinary(response.getExtension_asU8());
+    if (result.getChaincodeId()?.getName() !== CHAINCODE) continue;
+    const set = ledger.rwset.TxReadWriteSet.deserializeBinary(result.getResults_asU8());
+    for (const ns of set.getNsRwsetList()) if (ns.getNamespace() === CHAINCODE) {
+      for (const write of ledger.rwset.kvrwset.KVRWSet.deserializeBinary(ns.getRwset_asU8()).getWritesList()) {
+        if (write.getKey() === `anchor:${anchorId}` && !write.getIsDelete()) writes.push(parseAnchor(write.getValue_asU8(), anchorId));
+      }
+    }
+  }
+  ensure(writes.length === 1);
+  return { ...tx, block_number: detail.number, block_hash: detail.block_hash,
+    channel: header.getChannelId(), creator_msp: creator.getMspid(), committed_anchor: writes[0] };
+}
+async function reportEvidence(request, cfg, open) {
+  // Each TLS-pinned endpoint owns its session. No Gateway discovery/failover,
+  // shared peer response, health substitution or agreement cache is used.
+  const peers = await Promise.all(PEERS.map(async identity => {
+    const target = cfg.peers.find(p => p.name === identity.name);
+    let session;
+    const observation = { peer: identity.name, msp: identity.msp, channel: CHANNEL, checked_at: new Date().toISOString(), events: [] };
+    const failure = (event, e) => ({ anchor_id: event.anchor_id, status:
+      e?.code === 'TIMEOUT' ? 'TIMEOUT' : e?.code === 'UNAVAILABLE' ? 'OFFLINE' :
+      e?.code === 'NOT_CONFIGURED' ? 'UNAVAILABLE' : e?.code === 'MISSING' ? 'MISSING' : 'FAILED', evidence: null });
+    try {
+      ensure(target && target.port === identity.port && target.msp === identity.msp, 'NOT_CONFIGURED');
+      session = await open(cfg, target);
+      const info = ledgerInfo(await session.query('qscc', 'GetChainInfo', [CHANNEL]));
+      observation.events = await Promise.all(request.events.map(async event => {
+        if (info.height <= event.block_number) return { anchor_id: event.anchor_id, status: 'LAGGING', evidence: null };
+        // Both queries settle, so a known invalid answer cannot be hidden by
+        // a concurrent timeout. At most four events and two queries per event.
+        const [state, receipt] = await Promise.allSettled([
+          session.query(CHAINCODE, 'LabchainAnchor:ReadAnchor', [event.anchor_id]).then(bytes => parseAnchor(bytes, event.anchor_id)),
+          session.query('qscc', 'GetBlockByNumber', [CHANNEL, String(event.block_number)]).then(bytes => committedReport(bytes, event.transaction_id, event.anchor_id)),
+        ]);
+        const errors = [state, receipt].filter(r => r.status === 'rejected').map(r => failure(event, r.reason));
+        if (errors.length) {
+          const error = errors.find(e => e.status === 'FAILED') || errors[0];
+          error.evidence = { anchor: state.status === 'fulfilled' ? state.value : receipt.status === 'fulfilled' ? receipt.value.committed_anchor : null, transaction: receipt.status === 'fulfilled' ? (({ committed_anchor, ...tx }) => tx)(receipt.value) : null };
+          return error;
+        }
+        const { committed_anchor, ...tx } = receipt.value;
+        if (Object.keys(state.value).some(k => state.value[k] !== committed_anchor[k])) return { anchor_id: event.anchor_id, status: 'CONFLICT', evidence: null };
+        return { anchor_id: event.anchor_id, status: 'OBSERVED', evidence: { anchor: state.value, transaction: tx } };
+      }));
+    } catch (e) { observation.events = request.events.map(event => failure(event, e)); }
+    finally { session?.close(); }
+    observation.checked_at = new Date().toISOString();
+    return observation;
+  }));
+  return { channel: CHANNEL, checked_at: new Date().toISOString(), peers };
 }

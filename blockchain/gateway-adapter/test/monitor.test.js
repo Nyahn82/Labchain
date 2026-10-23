@@ -155,3 +155,69 @@ test('anchor evidence retains validated organization binding without clinical pa
   anchor.source_msp = 'Org2MSP';
   await assert.rejects(executeMonitor({ action: 'anchor', anchor_id: id }, cfg, open));
 });
+
+test('four-peer report evidence queries independent sessions and committed anchor writes', async () => {
+  const { ledger, msp } = await import('@hyperledger/fabric-protos');
+  const id = '00000000-0000-4000-8000-000000000001';
+  const anchor = { anchor_id:id, entity_type:'REPORT', entity_reference:'00000000-0000-4000-8000-000000000002', event_type:'REPORT_RELEASED', content_hash:H, previous_hash:null, source_node:'node1', source_msp:'Org1MSP', transaction_id:H, created_at:'2026-10-23T00:00:00.000Z' };
+  function committed(code=0, channel='labchain-channel', commitment=H) {
+    const write=new ledger.rwset.kvrwset.KVWrite();write.setKey('anchor:'+id);write.setValue(Buffer.from(JSON.stringify({...anchor,content_hash:commitment})));
+    const kv=new ledger.rwset.kvrwset.KVRWSet();kv.setWritesList([write]);
+    const ns=new ledger.rwset.NsReadWriteSet();ns.setNamespace('labchain-anchor');ns.setRwset(kv.serializeBinary());
+    const set=new ledger.rwset.TxReadWriteSet();set.setNsRwsetList([ns]);
+    const ccid=new peer.ChaincodeID();ccid.setName('labchain-anchor');
+    const ca=new peer.ChaincodeAction();ca.setChaincodeId(ccid);ca.setResults(set.serializeBinary());
+    const proposal=new peer.ProposalResponsePayload();proposal.setExtension$(ca.serializeBinary());
+    const endorsed=new peer.ChaincodeEndorsedAction();endorsed.setProposalResponsePayload(proposal.serializeBinary());
+    const cap=new peer.ChaincodeActionPayload();cap.setAction(endorsed);
+    const action=new peer.TransactionAction();action.setPayload(cap.serializeBinary());
+    const tx=new peer.Transaction();tx.setActionsList([action]);
+    const ch=new common.ChannelHeader();ch.setChannelId(channel);ch.setTxId(H);ch.setType(common.HeaderType.ENDORSER_TRANSACTION);
+    const creator=new msp.SerializedIdentity();creator.setMspid('Org1MSP');creator.setIdBytes(Buffer.from('synthetic'));
+    const sh=new common.SignatureHeader();sh.setCreator(creator.serializeBinary());
+    const head=new common.Header();head.setChannelHeader(ch.serializeBinary());head.setSignatureHeader(sh.serializeBinary());
+    const payload=new common.Payload();payload.setHeader(head);payload.setData(tx.serializeBinary());
+    const env=new common.Envelope();env.setPayload(payload.serializeBinary());
+    const b=block(2,code);b.getData().setDataList([env.serializeBinary()]);b.getHeader().setDataHash(createHash('sha256').update(env.serializeBinary()).digest());
+    return b.serializeBinary();
+  }
+  assert.doesNotThrow(() => committed());
+  const request={action:'report_evidence',events:[{anchor_id:id,transaction_id:H,block_number:2}]};
+  for (const failure of [null,'peer1','lagging','invalid','conflict','bad-channel','timeout-and-invalid','timeout-and-conflict']) {
+    const calls=[],closed=[];
+    const result=await executeMonitor(request,cfg,async(_,target)=>({
+      async query(contract,name,args) {
+        calls.push([target.name,name]);
+        if(target.name===failure) throw new MonitorError('UNAVAILABLE');
+        if(name==='GetChainInfo') return info(failure==='lagging'&&target.name==='peer4'?2:3);
+        if(name==='GetBlockByNumber') return committed(['invalid','timeout-and-invalid'].includes(failure)&&target.name==='peer3'?11:0,failure==='bad-channel'&&target.name==='peer3'?'other-channel':'labchain-channel',failure==='timeout-and-conflict'&&target.name==='peer3'?'b'.repeat(64):H);
+        if(name==='LabchainAnchor:ReadAnchor') {
+          if(['timeout-and-invalid','timeout-and-conflict'].includes(failure)&&target.name==='peer3') throw new MonitorError('TIMEOUT');
+          return Buffer.from(JSON.stringify({...anchor,content_hash:failure==='conflict'&&target.name==='peer3'?'b'.repeat(64):H}));
+        }
+        assert.fail(name);
+      },close(){closed.push(target.name);}
+    }));
+    assert.deepEqual(result.peers.map(p=>p.peer),PEERS.map(p=>p.name));
+    assert.equal(new Set(closed).size,4);
+    const state=p=>result.peers.find(x=>x.peer===p).events[0];
+    if(failure===null) {
+      assert(result.peers.every(p=>p.events[0].status==='OBSERVED'));
+      assert(PEERS.every(p=>calls.filter(c=>c[0]===p.name).length===3));
+      assert(result.peers.every(p=>p.events[0].evidence.transaction.creator_msp==='Org1MSP'));
+    } else if(failure==='peer1') {
+      assert.equal(state('peer1').status,'OFFLINE');
+      assert(result.peers.slice(1).every(p=>p.events[0].status==='OBSERVED'));
+    } else if(failure==='lagging') assert.equal(state('peer4').status,'LAGGING');
+    else if(failure==='invalid') assert.equal(state('peer3').evidence.transaction.validation_code,11);
+    else if(failure==='conflict') assert.equal(state('peer3').status,'CONFLICT');
+    else if(failure==='bad-channel') assert.equal(state('peer3').status,'FAILED');
+    else {
+      assert.equal(state('peer3').status,'TIMEOUT');
+      if(failure==='timeout-and-invalid') assert.equal(state('peer3').evidence.transaction.validation_code,11);
+      else assert.equal(state('peer3').evidence.anchor.content_hash,'b'.repeat(64)); // backend must reject known invalid evidence
+    }
+  }
+  assert.throws(()=>validateRequest({...request,events:Array(5).fill(request.events[0])}));
+  assert.throws(()=>validateRequest({...request,events:[...request.events,...request.events]}));
+});

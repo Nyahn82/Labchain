@@ -22,4 +22,27 @@
 .staff-scan-page { max-width: 90rem; }
 .staff-scan-results { display: grid; grid-template-columns: minmax(18rem, .85fr) minmax(0, 1.15fr); gap: 1.5rem; align-items: start; }
 .staff-scan-results .official-scan-report { margin-top: 0; }
-@media (max-width: 900px) { .staff-scan-results { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) { .verification-page .staff-scan-results { grid-template-columns: minmax(0, 1fr); } }
+
+/* Scanner-only refinements reuse the shared soft-UI controls and surfaces. */
+.verification-page .verification-result { padding: 1rem; border-radius: var(--radius, 1rem); background: var(--surface, #eef3f6); }
+.verification-summary { padding-block: .5rem; border-block: 1px solid var(--border, #cbd5e1); }
+.peer-verification ul { list-style: none; padding: 0; margin: .75rem 0; display: grid; gap: .4rem; }
+.peer-verification li { display: flex; justify-content: space-between; gap: 1rem; align-items: center; }
+.peer-status { font-size: .8rem; padding: .2rem .55rem; border-radius: .5rem; background: #e3e9ee; color: #243e47; }
+.peer-verified { background: #e3f3e9; color: #175d36; }
+.peer-conflict, .peer-failed { background: #fbe4e4; color: #852525; }
+.peer-lagging, .peer-offline, .peer-timeout, .peer-stale { background: #fff0d6; color: #704c12; }
+.verification-page .document-outcome { padding: .75rem; border-width: 1px; margin-block: 1rem; }
+.verification-page .document-outcome h3 { margin: 0 0 .4rem; }
+.verification-page .document-outcome p { margin: 0; }
+.verification-page details > summary { cursor: pointer; padding-block: .65rem; font-weight: 600; min-height: 44px; }
+.verification-explanation, .manual-verification { margin-block: .5rem; }
+.verification-page .staff-scan-results { grid-template-columns: minmax(0, 1.45fr) minmax(20rem, 1fr); }
+.staff-scan-results > .verification-result { grid-column: 2; grid-row: 1; }
+.staff-scan-results > .official-scan-report { grid-column: 1; grid-row: 1; border-top: 0; padding-top: 0; }
+.staff-scan-results .official-scan-report iframe { min-height: 80vh; }
+@media (max-width: 900px) {
+  .verification-page .staff-scan-results { grid-template-columns: minmax(0, 1fr); }
+  .staff-scan-results > .verification-result, .staff-scan-results > .official-scan-report { grid-column: auto; grid-row: auto; }
+}

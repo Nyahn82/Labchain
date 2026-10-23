@@ -116,7 +116,7 @@ describe("authenticator enrollment", () => {
     );
     expect(
       await screen.findByRole("heading", {
-        name: "Verify a laboratory report",
+        name: "Scan Laboratory Report",
       }),
     ).toBeInTheDocument();
     expect(

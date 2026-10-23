@@ -125,3 +125,48 @@ class Integrity(SafeModel):
     record_hash: Hash | None = None
     ledger_content_hash: Hash | None = None
     source_peer: Literal['peer1'] | None = None
+
+
+class CommittedReportAnchor(SafeModel):
+    anchor_id: Annotated[str, Field(max_length=64)]
+    entity_type: Literal['REPORT']
+    entity_reference: Annotated[str, Field(max_length=64)]
+    event_type: Annotated[str, Field(max_length=64)]
+    content_hash: Hash
+    previous_hash: Hash | None
+    transaction_id: Hash
+    source_node: Annotated[str, Field(max_length=64)]
+    source_msp: Annotated[str, Field(max_length=64)]
+    created_at: datetime
+
+
+class ReportTransaction(Transaction):
+    block_number: Number
+    block_hash: Hash
+    channel: Annotated[str, Field(max_length=64)]
+    creator_msp: Annotated[str, Field(max_length=64)]
+
+
+class ReportEventEvidence(SafeModel):
+    anchor: CommittedReportAnchor | None
+    transaction: ReportTransaction | None
+
+
+class PeerEventObservation(SafeModel):
+    anchor_id: Annotated[str, Field(max_length=64)]
+    status: Literal['OBSERVED', 'LAGGING', 'MISSING', 'OFFLINE', 'TIMEOUT', 'FAILED', 'CONFLICT', 'UNAVAILABLE']
+    evidence: ReportEventEvidence | None
+
+
+class PeerReportObservation(SafeModel):
+    peer: Annotated[str, Field(max_length=16)]
+    msp: Annotated[str, Field(max_length=64)]
+    channel: Annotated[str, Field(max_length=64)]
+    checked_at: datetime
+    events: Annotated[list[PeerEventObservation], Field(min_length=1, max_length=4)]
+
+
+class FourPeerEvidence(SafeModel):
+    channel: Annotated[str, Field(max_length=64)]
+    checked_at: datetime
+    peers: Annotated[list[PeerReportObservation], Field(min_length=4, max_length=4)]

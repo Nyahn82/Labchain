@@ -5,7 +5,7 @@ import { patientFetch, portal } from "./patient.helpers";
 import { respond } from "./helpers";
 import { documentMatched } from "../pages/Verification";
 import type { PublicVerification } from "../types/patient";
-const evidence = (): PublicVerification => ({ status: "REGISTERED", message: "PRIVATE-MESSAGE", report_code: "REP-001", issuing_facility: "Synthetic Laboratory", issuer_evidence: "SNAPSHOT", version: 1, released_at: "2026-10-19T00:00:00Z", checked_at: new Date().toISOString(), blockchain_checked_at: new Date().toISOString(), document_comparison: "NOT_COMPARED", stored_artifact: "MATCH", blockchain_evidence: "VERIFIED", max_upload_bytes: 10485760 });
+const evidence = (): PublicVerification => ({ status: "REGISTERED", message: "PRIVATE-MESSAGE", report_code: "REP-001", issuing_facility: "Synthetic Laboratory", issuer_evidence: "SNAPSHOT", version: 1, released_at: "2026-10-19T00:00:00Z", checked_at: new Date().toISOString(), blockchain_checked_at: new Date().toISOString(), document_comparison: "NOT_COMPARED", stored_artifact: "MATCH", blockchain_evidence: "FOUR_PEER_VERIFIED", blockchain_verified_count:4, blockchain_peers:[1,2,3,4].map(i=>({peer:`peer${i}`,status:"VERIFIED",checked_at:new Date().toISOString()})), max_upload_bytes: 10485760 });
 describe("public authenticity", () => {
   it("never certifies a copied QR alone and exposes only safe registration fields", async () => {
     patientFetch(p => p.startsWith("/api/v1/verify/") ? respond({ ...evidence(), patient_name: "PRIVATE-PATIENT", result_value: "PRIVATE-RESULT", pdf_path: "PRIVATE-PATH" }) : undefined, null);
@@ -13,7 +13,9 @@ describe("public authenticity", () => {
     expect(await screen.findByRole("heading", { name: "Registered / document not yet compared" })).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Verified document match" })).not.toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/PRIVATE-/);
+    await userEvent.click(screen.getByText("What does this verification mean?"));
     expect(screen.getByText(/cannot validate the surrounding printed text/)).toBeVisible();
+    await userEvent.click(screen.getByText("Compare a printed report"));
     expect(screen.getByRole("link", { name: "Patient reports (sign in required)" })).toHaveAttribute("href", "/patient/reports");
     expect(screen.getByLabelText("PDF to compare")).toHaveAttribute("aria-describedby", "upload-privacy");
   });
@@ -61,13 +63,13 @@ describe("public authenticity", () => {
     patientFetch(p => p.endsWith("/verify/TOKEN") ? ++count === 1 ? respond({ detail: "PRIVATE-ERROR" },503) : respond(evidence()) : undefined, null);
     portal("/verify/TOKEN"); await screen.findByRole("alert");
     if (method === "retry") await userEvent.click(screen.getByRole("button", { name: "Try again" }));
-    else { await userEvent.type(screen.getByLabelText("Verification token"), "TOKEN"); await userEvent.click(screen.getByRole("button", { name: "Check report" })); }
+    else { await userEvent.click(screen.getByText("Enter Verification Code")); await userEvent.type(screen.getByLabelText("Verification token"), "TOKEN"); await userEvent.click(screen.getByRole("button", { name: "Check report" })); }
     expect(await screen.findByRole("heading", { name: "Registered report" })).toBeVisible();
     expect(document.body).not.toHaveTextContent("PRIVATE-ERROR");
   });
   it("accepts token entry without authentication and neutralizes missing records", async () => {
     patientFetch(p => p.startsWith("/api/v1/verify/") ? respond({},404) : undefined,null);
-    portal("/verify"); await userEvent.type(screen.getByLabelText("Verification token"),"unknown");
+    portal("/verify"); await userEvent.click(screen.getByText("Enter Verification Code")); await userEvent.type(screen.getByLabelText("Verification token"),"unknown");
     await userEvent.click(screen.getByRole("button",{name:"Check report"}));
     expect(await screen.findByRole("heading",{name:"Verification record not found."})).toBeVisible();
   });
@@ -85,4 +87,30 @@ describe("public authenticity", () => {
     expect(screen.getByRole("button",{name:"Compare PDF"})).toBeDisabled();
     // jsdom verifies semantics only; real responsive layout/camera walkthrough is separate.
   });
+});
+
+it.each([
+  ['PARTIAL','OFFLINE',3,'PARTIAL VERIFICATION — 3/4'],
+  ['PARTIAL','LAGGING',3,'PARTIAL VERIFICATION — 3/4'],
+  ['CONFLICT','CONFLICT',3,'CONSISTENCY CONFLICT'],
+  ['FAILED','FAILED',3,'VERIFICATION FAILED'],
+  ['UNAVAILABLE','TIMEOUT',0,'VERIFICATION UNAVAILABLE'],
+])('shows truthful %s peer results without certifying matching bytes',async(status,peerState,count,label)=>{
+  const data=evidence();
+  data.blockchain_evidence=status as PublicVerification['blockchain_evidence'];
+  data.blockchain_verified_count=count as number;
+  data.blockchain_peers![0].status=peerState as string;
+  data.document_comparison='MATCH';
+  patientFetch(p=>p.startsWith('/api/v1/verify/')?respond(data):undefined,null);
+  portal('/verify/TOKEN');
+  expect(await screen.findByText(label as string,{exact:true})).toBeVisible();
+  expect(screen.getByRole('region',{name:'Blockchain Peer Verification'})).toHaveTextContent(peerState==='LAGGING'?'PEER LAGGING':peerState as string);
+  expect(screen.queryByRole('heading',{name:'Verified document match'})).not.toBeInTheDocument();
+});
+it('scan again clears report evidence and returns focus to camera control',async()=>{
+  patientFetch(p=>p.startsWith('/api/v1/verify/')?respond(evidence()):undefined,null);
+  portal('/verify/TOKEN');await screen.findByRole('heading',{name:'Registered report'});
+  await userEvent.click(screen.getByRole('button',{name:'Scan Again'}));
+  await waitFor(()=>expect(screen.getByRole('button',{name:'Start Camera'})).toHaveFocus());
+  expect(screen.queryByRole('region',{name:'Verification outcome'})).not.toBeInTheDocument();
 });

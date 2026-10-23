@@ -8,6 +8,10 @@ from pydantic import ValidationError
 from app.config import settings
 
 
+class MonitorInvalidEvidence(Exception):
+    pass
+
+
 class MonitorUnavailable(Exception):
     pass
 
@@ -42,5 +46,9 @@ def query(request, schema):
         if observed.tzinfo is None or not -5 <= (datetime.now(timezone.utc) - observed).total_seconds() <= 30:
             raise MonitorUnavailable()
         return parsed
-    except (OSError, ValueError, TypeError, ValidationError):
+    except ValidationError:
+        if request.get('action') == 'report_evidence':
+            raise MonitorInvalidEvidence() from None
+        raise MonitorUnavailable() from None
+    except (OSError, ValueError, TypeError):
         raise MonitorUnavailable() from None

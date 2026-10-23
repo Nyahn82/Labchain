@@ -40,7 +40,9 @@ export interface PublicVerification {
   checked_at?: string; blockchain_checked_at?: string; max_upload_bytes?: number;
   document_comparison?: "NOT_COMPARED" | "MATCH" | "MISMATCH";
   stored_artifact?: "MATCH" | "MISMATCH" | "UNAVAILABLE";
-  blockchain_evidence?: "VERIFIED" | "PENDING" | "FAILED" | "UNAVAILABLE";
+  blockchain_peers?: { peer: string; status: string; checked_at?: string }[];
+  blockchain_verified_count?: number;
+  blockchain_evidence?: "FOUR_PEER_VERIFIED" | "PARTIAL" | "CONFLICT" | "PENDING" | "FAILED" | "UNAVAILABLE";
 }
 export interface Enrollment {
   secret: string;

@@ -20,7 +20,7 @@ def test_staff_scan_returns_exact_report_pdf_real_checks_contract_and_audits(api
     result=resolve(api,url)
     assert result.status_code==200 and result.headers['cache-control']=='no-store'
     body=result.json(); assert body['report_id']==1 and body['verification']['version']==1
-    assert body['verification']['blockchain_evidence']=='VERIFIED'
+    assert body['verification']['blockchain_evidence']=='FOUR_PEER_VERIFIED'
     assert body['verification']['document_comparison']=='NOT_COMPARED'
     assert body['ledger_details_authorized'] and body['ledger_details'][0]['artifact_sha256']==hashlib.sha256(pdf).hexdigest()
     downloaded=api.client.get('/api/v1/reports/1/pdf')
@@ -51,7 +51,7 @@ def test_staff_scan_requires_both_report_permissions(api,permissions):
 def test_basic_staff_gets_live_evidence_without_privileged_ledger_identifiers(api,monkeypatch):
     url,_=issued(api); ledger(api,monkeypatch); personnel(api,['REPORT_READ','REPORT_DOWNLOAD'])
     body=resolve(api,url).json()
-    assert body['verification']['blockchain_evidence']=='VERIFIED'
+    assert body['verification']['blockchain_evidence']=='FOUR_PEER_VERIFIED'
     assert body['ledger_details']==[] and body['ledger_details_authorized'] is False
 
 

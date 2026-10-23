@@ -179,6 +179,12 @@ class VerificationResponse(Output):
     verification_url: str
 
 
+class PublicPeerEvidence(Output):
+    peer: Literal['peer1', 'peer2', 'peer3', 'peer4']
+    status: Literal['VERIFIED', 'OFFLINE', 'TIMEOUT', 'LAGGING', 'MISSING', 'CONFLICT', 'FAILED', 'UNAVAILABLE', 'PENDING']
+    checked_at: datetime | None = None
+
+
 class PublicVerificationResponse(Output):
     status: Literal['REGISTERED', 'REVOKED', 'SUPERSEDED', 'NOT_FOUND', 'UNAVAILABLE']
     report_code: str | None = None
@@ -189,7 +195,9 @@ class PublicVerificationResponse(Output):
     version: int | None = None
     document_comparison: Literal['NOT_COMPARED', 'MATCH', 'MISMATCH'] = 'NOT_COMPARED'
     stored_artifact: Literal['MATCH', 'MISMATCH', 'UNAVAILABLE'] = 'UNAVAILABLE'
-    blockchain_evidence: Literal['VERIFIED', 'PENDING', 'FAILED', 'UNAVAILABLE'] = 'UNAVAILABLE'
+    blockchain_evidence: Literal['FOUR_PEER_VERIFIED', 'PARTIAL', 'CONFLICT', 'PENDING', 'FAILED', 'UNAVAILABLE'] = 'UNAVAILABLE'
+    blockchain_peers: list[PublicPeerEvidence] = Field(default_factory=list, max_length=4)
+    blockchain_verified_count: int = Field(default=0, ge=0, le=4)
     blockchain_checked_at: datetime | None = None
     checked_at: datetime
     max_upload_bytes: int

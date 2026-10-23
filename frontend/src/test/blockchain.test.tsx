@@ -232,7 +232,7 @@ describe("public registration never trusts a MySQL anchoring badge", () => {
     patientFetch(p => p.startsWith("/api/v1/verify/") ? respond({ status: "REGISTERED", message: "PRIVATE-MESSAGE", blockchain_status, ...privateReceipt }) : undefined, null);
     portal("/verify/TOKEN");
     expect(await screen.findByRole("heading", { name: "Registered report" })).toBeVisible();
-    expect(screen.getByText("Blockchain verification unavailable")).toBeVisible();
+    expect(screen.getByText("VERIFICATION UNAVAILABLE")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Verified document match" })).not.toBeInTheDocument();
     expectPrivateFieldsHidden();
   });
