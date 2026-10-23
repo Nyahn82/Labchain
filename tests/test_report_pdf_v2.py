@@ -237,7 +237,7 @@ def test_renderer_context_cannot_be_submitted_by_clients(api, field):
 
 @pytest.mark.parametrize('count', [1, 10])
 def test_compact_blue_report_keeps_qr_and_signatures_on_one_a4_page(api, monkeypatch, count):
-    """Short panels retain their warnings, upper-right QR and signed final section."""
+    """Short panels retain their warnings, upper-right QR and compact, centered signing section."""
     ready(api)
     detail = detail_for(api)
     detail._presentation = deepcopy(detail._presentation)
@@ -260,15 +260,23 @@ def test_compact_blue_report_keeps_qr_and_signatures_on_one_a4_page(api, monkeyp
     from reportlab.platypus import Image as PdfImage, Paragraph
     from reportlab.lib.pagesizes import A4
     image_draw, paragraph_draw = PdfImage.drawOn, Paragraph.drawOn
-    images, signature_positions = [], []
+    images, signature_positions, section_positions = [], [], {}
 
     def capture_image(image, canvas, x, y, _sW=0):
         images.append((canvas.getPageNumber(), *canvas.absolutePosition(x, y), image.drawWidth, image.drawHeight))
         return image_draw(image, canvas, x, y, _sW)
 
     def capture_signature(paragraph, canvas, x, y, _sW=0):
-        if paragraph.getPlainText().startswith('Electronically signed:'):
-            signature_positions.append(canvas.absolutePosition(x, y)[1])
+        text = paragraph.getPlainText()
+        left, bottom = canvas.absolutePosition(x, y)
+        if text.startswith('Electronically signed:'):
+            signature_positions.append(bottom)
+            assert paragraph.style.alignment == 1
+            assert left + paragraph.width / 2 == pytest.approx(A4[0] / 2, abs=.1)
+        if text == detail.remarks:
+            section_positions['remarks_bottom'] = bottom
+        if text == 'Authorized signatories':
+            section_positions['signatures_top'] = bottom + paragraph.height
         return paragraph_draw(paragraph, canvas, x, y, _sW)
 
     monkeypatch.setattr(PdfImage, 'drawOn', capture_image)
@@ -287,7 +295,8 @@ def test_compact_blue_report_keeps_qr_and_signatures_on_one_a4_page(api, monkeyp
     page, x, y, w, h = images[0]
     assert page == 1 and x > A4[0] / 2 and y > A4[1] / 2
     assert x + w < A4[0] - 44 and y + h < A4[1] - 40
-    assert signature_positions and all(50 < y < 180 for y in signature_positions)
+    assert signature_positions and all(y > 50 for y in signature_positions)
+    assert 0 <= section_positions['remarks_bottom'] - section_positions['signatures_top'] <= 30
 
 
 def test_many_signatories_and_long_footer_continue_without_losing_stored_text(api):

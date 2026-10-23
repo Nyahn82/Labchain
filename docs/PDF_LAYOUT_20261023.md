@@ -1,5 +1,7 @@
 # Laboratory report PDF layout — 23 October 2026
 
+The shared example PDFs/images were subsequently updated by the [spacing correction](PDF_LAYOUT_CORRECTION_20261023.md). The acceptance record below describes the original deployment; its original examples remain in Git history.
+
 The existing snapshot-based PDF renderer now follows the supplied blue-header preview: blue facility letterhead, compact patient/order metadata, upper-right verification QR, department/panel result sections, specimen details and recorded notes, and authorized signatories at the bottom of the final page.
 
 ## Scope and historical safety

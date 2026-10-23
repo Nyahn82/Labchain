@@ -7,7 +7,7 @@ from xml.sax.saxutils import escape
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.platypus import Image, LongTable, Paragraph, SimpleDocTemplate, Spacer, TableStyle, TopPadder
+from reportlab.platypus import Image, LongTable, Paragraph, SimpleDocTemplate, Spacer, TableStyle
 
 
 def render(report, verification_url, released_at, context):
@@ -29,6 +29,12 @@ def render(report, verification_url, released_at, context):
     note_heading = ParagraphStyle('v2noteheading', parent=bold, textColor=blue, spaceBefore=7, spaceAfter=3, keepWithNext=True)
     result_style = ParagraphStyle('v2result', parent=body, alignment=2)
     abnormal_style = ParagraphStyle('v2abnormal', parent=result_style, fontName='RHU-Bold')
+    centered = ParagraphStyle('v2centered', parent=small, alignment=1)
+    centered_bold = ParagraphStyle('v2centeredbold', parent=bold, alignment=1)
+    flag_style = ParagraphStyle('v2flag', parent=body, alignment=1)
+    flag_bold = ParagraphStyle('v2flagbold', parent=bold, alignment=1)
+    result_heading = ParagraphStyle('v2resultheading', parent=column_heading, alignment=2)
+    flag_heading = ParagraphStyle('v2flagheading', parent=column_heading, alignment=1)
     qr_caption = ParagraphStyle('v2qr', parent=small, alignment=1, textColor=blue)
 
     def p(value, style=body):
@@ -100,8 +106,8 @@ def render(report, verification_url, released_at, context):
         [p(f'Requested: {date(context["order_date"])}', small), p(f'Generated: {date(report.generated_at.isoformat())}', small)],
         [p(f'Approved: {date(report.approved_at.isoformat() if report.approved_at else None)}', small), p(f'Released: {date(released_at.isoformat())}', small)],
     ], [width / 2, width / 2], [('LINEBELOW', (0, -1), (-1, -1), .6, rule),
-        ('LEFTPADDING', (0, 0), (-1, -1), 0), ('TOPPADDING', (0, 0), (-1, -1), 3),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]), Spacer(1, 12)]
+        ('BACKGROUND', (0, 0), (-1, -1), light), ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]), Spacer(1, 8)]
     if template.get('section_title'):
         story += [p(template['section_title'], note_heading), Spacer(1, 3)]
 
@@ -116,10 +122,14 @@ def render(report, verification_url, released_at, context):
     for key, lines in groups:
         label = ' / '.join(dict.fromkeys(part for part in key if part)) or 'Laboratory results'
         rows = [[p(label, group_heading), '', '', '', ''],
-                [p(value, column_heading) for value in ('TEST', 'FLAG', 'RESULT', 'UNIT', 'REFERENCE RANGE')]]
+                [p(value, style) for value, style in zip(
+                    ('TEST', 'FLAG', 'RESULT', 'UNIT', 'REFERENCE RANGE'),
+                    (column_heading, flag_heading, result_heading, column_heading, column_heading))]]
         commands = [('SPAN', (0, 0), (-1, 0)), ('BACKGROUND', (0, 0), (-1, 0), blue), ('BACKGROUND', (0, 1), (-1, 1), light),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'), ('LINEBELOW', (0, 1), (-1, 1), .7, ink),
-            ('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4)]
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 8), ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+            ('LINEBELOW', (0, 1), (-1, 1), .7, ink),
+            ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3)]
         details = []
         specimens = {}
         for line, extra in lines:
@@ -132,14 +142,14 @@ def render(report, verification_url, released_at, context):
             if collected or received:
                 specimen_rows.append([p(f'Collected: {date(collected)}', small) if collected else '',
                                       p(f'Received: {date(received)}', small) if received else ''])
-            specimen_details += [p('Specimen details', note_heading), table(specimen_rows, [width * .55, width * .45], [
-                ('LEFTPADDING', (0, 0), (-1, -1), 0), ('TOPPADDING', (0, 0), (-1, -1), 2),
+            specimen_details += [p('Specimen details', note_heading), table(specimen_rows, [width / 2, width / 2], [
+                ('BACKGROUND', (0, 0), (-1, -1), light), ('TOPPADDING', (0, 0), (-1, -1), 2),
                 ('BOTTOMPADDING', (0, 0), (-1, -1), 2)])]
             if len(test_names) != len(lines):
                 specimen_details.append(p('Tests: ' + '; '.join(test_names), small))
         for line, extra in lines:
             abnormal = line.flag_snapshot not in (None, '', 'NORMAL')
-            rows.append([p(line.test_name_snapshot), p(line.flag_snapshot or '', bold if abnormal else body),
+            rows.append([p(line.test_name_snapshot), p(line.flag_snapshot or '', flag_bold if abnormal else flag_style),
                 p(line.result_value_snapshot, abnormal_style if abnormal else result_style),
                 p(line.unit_snapshot or ''), p(line.reference_range_snapshot or '')])
             notes = []
@@ -151,40 +161,46 @@ def render(report, verification_url, released_at, context):
             if notes:
                 details += [p(line.test_name_snapshot + ' — test details', note_heading), p('\n'.join(notes), small)]
             commands.append(('LINEBELOW', (0, len(rows)-1), (-1, len(rows)-1), .25, colors.HexColor('#bcc6cc')))
-        results_table = LongTable(rows, colWidths=[width*.32, width*.10, width*.18, width*.13, width*.27],
+        results_table = LongTable(rows, colWidths=[width*.30, width*.12, width*.18, width*.13, width*.27],
                           repeatRows=2, splitInRow=1, hAlign='LEFT')
         results_table.setStyle(TableStyle(commands))
         story += [results_table, Spacer(1, 3), *specimen_details, *details, Spacer(1, 8)]
     story.append(p('Flags are supplied by the laboratory workflow. Bold flags and results identify recorded abnormal findings.', small))
     if report.remarks:
-        story += [p('Report remarks', note_heading), p(report.remarks)]
+        story += [p('Report remarks', note_heading),
+                  table([[p(report.remarks)]], [width], [('BACKGROUND', (0, 0), (-1, -1), light)])]
     if template.get('clinical_note'):
         story += [Spacer(1, 5), p(template['clinical_note'])]
     story.append(Spacer(1, 6))
-    # End-of-report signatures sit at the foot of the final page. The table can
-    # continue when there are many signatories or long configured footer notes.
+    # Signatures follow the notes without stretching the page. A single signer
+    # is centered across the report; multiple signers retain two columns.
     signatures = [[p('Authorized signatories', note_heading), '']]
     signature_commands = [('TOPPADDING', (0, 0), (-1, -1), 4), ('BOTTOMPADDING', (0, 0), (-1, -1), 4), ('SPAN', (0, 0), (-1, 0)), ('LINEABOVE', (0, 0), (-1, 0), .7, rule)]
+    single_signer = len(report.signatories) == 1
+    name_style = centered_bold if single_signer else bold
+    signing_style = centered if single_signer else small
     cells = []
     for assignment in report.signatories:
         captured = context['signatories'].get(str(assignment.report_signatory_id))
         if assignment.signed_at is None or captured is None:
             raise ValueError('Signed presentation is incomplete')
-        elements = [p(captured['name'], bold), p(captured['capacity'].replace('_', ' '), small)]
-        if captured.get('designation'): elements.append(p(captured['designation'], small))
-        if captured.get('license'): elements.append(p('License: ' + captured['license'], small))
-        elements.append(p('Electronically signed: ' + date(captured['signed_at']), small))
+        elements = [p(captured['name'], name_style), p(captured['capacity'].replace('_', ' '), signing_style)]
+        if captured.get('designation'): elements.append(p(captured['designation'], signing_style))
+        if captured.get('license'): elements.append(p('License: ' + captured['license'], signing_style))
+        elements.append(p('Electronically signed: ' + date(captured['signed_at']), signing_style))
         cells.append(elements)
         if len(cells) == 2:
             signatures.append(cells)
             cells = []
     if cells:
         signatures.append([*cells, ''])
+        if single_signer:
+            signature_commands.append(('SPAN', (0, 1), (-1, 1)))
     for key in ('footer_note', 'medico_legal_note'):
         if template.get(key):
-            signatures.append([p(template[key], small), ''])
+            signatures.append([p(template[key], centered if single_signer else small), ''])
             signature_commands.append(('SPAN', (0, len(signatures)-1), (-1, len(signatures)-1)))
-    story.append(TopPadder(table(signatures, [width / 2, width / 2], signature_commands, repeatRows=1)))
+    story.append(table(signatures, [width / 2, width / 2], signature_commands, repeatRows=1))
 
     def furniture(canvas, doc):
         canvas.saveState()
@@ -196,14 +212,14 @@ def render(report, verification_url, released_at, context):
             canvas.setFont('RHU', 7)
             canvas.drawString(50, A4[1]-39, f'Patient code: {patient.patient_code}')
         canvas.setFillColor(blue)
-        canvas.rect(0, 0, A4[0], 40, stroke=0, fill=1)
+        canvas.rect(50, 20, width, 22, stroke=0, fill=1)
         canvas.setFillColor(colors.white)
         canvas.setFont('RHU', 7)
-        canvas.drawString(50, 24, f'PDF v2 | Version {report.version_no} | Verify authenticity using the QR')
-        canvas.drawRightString(A4[0]-50, 24, f'Page {doc.page}')
+        canvas.drawString(58, 28, f'PDF v2 | Version {report.version_no} | Verify authenticity using the QR')
+        canvas.drawRightString(A4[0]-58, 28, f'Page {doc.page}')
         canvas.restoreState()
 
     doc = SimpleDocTemplate(output, pagesize=A4, leftMargin=44, rightMargin=44,
-        topMargin=44, bottomMargin=52, title=f'Laboratory report {report.report_code}', author=facility['facility_name'])
+        topMargin=44, bottomMargin=44, title=f'Laboratory report {report.report_code}', author=facility['facility_name'])
     doc.build(story, onFirstPage=furniture, onLaterPages=furniture)
     return output.getvalue()
