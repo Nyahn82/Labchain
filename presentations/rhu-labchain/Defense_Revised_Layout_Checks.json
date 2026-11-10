@@ -1,0 +1,149 @@
+{
+  "1": {
+    "lines": 5,
+    "max_words": 5,
+    "font_sizes": [
+      24,
+      30,
+      42
+    ]
+  },
+  "2": {
+    "lines": 5,
+    "max_words": 6,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "3": {
+    "lines": 5,
+    "max_words": 8,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "4": {
+    "lines": 5,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "5": {
+    "lines": 6,
+    "max_words": 6,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "6": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "7": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "8": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "9": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "10": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "11": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "12": {
+    "lines": 6,
+    "max_words": 8,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "13": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "14": {
+    "lines": 2,
+    "max_words": 6,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "15": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      22,
+      24,
+      36
+    ]
+  },
+  "16": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "17": {
+    "lines": 6,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      36
+    ]
+  },
+  "18": {
+    "lines": 5,
+    "max_words": 7,
+    "font_sizes": [
+      24,
+      26,
+      36
+    ]
+  }
+}
